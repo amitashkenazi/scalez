@@ -13,7 +13,7 @@ const NotificationsView = ({ scales }) => {
 
   const getWhatsAppLink = (scale, status) => {
     const message = encodeURIComponent(
-      `Alert for ${scale.productName}: ${status.message}. \nCurrent weight: ${scale.currentWeight}${scale.unit}\nPlease send me coffee! ☕️`
+      `I am running out of ${scale.productName}: ${status.message}. \nCurrent weight: ${scale.currentWeight}${scale.unit}\nPlease send me coffee! ☕️`
     );
     const number = scale.notifications?.lower?.phoneNumber || '+972545868545'; // Fallback number if not set
     return `https://wa.me/${number.replace('+', '')}?text=${message}`;
