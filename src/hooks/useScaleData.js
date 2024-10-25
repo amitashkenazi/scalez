@@ -10,7 +10,7 @@ const useScaleData = () => {
     setScales(scalesData.scales);
   }, []);
 
-  return { scales };
+  return { scales, setScales };
 };
 
 export default useScaleData;

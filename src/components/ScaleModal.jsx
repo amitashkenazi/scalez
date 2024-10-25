@@ -1,35 +1,56 @@
-// src/components/ScaleModal.jsx
 import React, { useState } from 'react';
 import ScaleGraph from './ScaleGraph';
 import ThresholdSettings from './ThresholdSettings';
 import { Button } from '@/components/ui/button';
+import { Card } from '@/components/ui/card';
 
-const ScaleModal = ({ scale, isOpen, onClose }) => {
+const ScaleModal = ({ scale, isOpen, onClose, onSave }) => {
   const [thresholds, setThresholds] = useState(scale.thresholds);
   const [action, setAction] = useState(scale.action);
+  const [isSaving, setIsSaving] = useState(false);
 
-  const handleSaveSettings = () => {
-    // TODO: Implement API call to save settings
-    console.log('Saving settings:', { thresholds, action });
-    onClose();
+  const handleSave = async () => {
+    try {
+      setIsSaving(true);
+      
+      // Create updated scale data
+      const updatedScale = {
+        ...scale,
+        thresholds,
+        action
+      };
+
+      // Call save handler
+      await onSave(updatedScale);
+      onClose();
+    } catch (error) {
+      console.error('Error saving settings:', error);
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   if (!isOpen) return null;
 
+  const isValid = thresholds.upper > thresholds.lower;
+
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
-      <div className="bg-white rounded-lg p-6 max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+      <Card className="bg-white rounded-lg p-6 max-w-4xl w-full max-h-[90vh] overflow-y-auto">
         <div className="flex justify-between items-center mb-4">
           <h2 className="text-2xl font-bold">{scale.productName}</h2>
-          <Button onClick={onClose}>Close</Button>
+          <Button 
+            variant="outline"
+            onClick={onClose}
+          >
+            Close
+          </Button>
         </div>
 
-        <div className="mb-6">
-          <ScaleGraph 
-            history={scale.history} 
-            thresholds={thresholds}
-          />
-        </div>
+        <ScaleGraph 
+          data={scale.history}
+          thresholds={thresholds}
+        />
 
         <ThresholdSettings
           thresholds={thresholds}
@@ -39,11 +60,14 @@ const ScaleModal = ({ scale, isOpen, onClose }) => {
         />
 
         <div className="flex justify-end mt-4">
-          <Button onClick={handleSaveSettings}>
-            Save Settings
+          <Button
+            onClick={handleSave}
+            disabled={!isValid || isSaving}
+          >
+            {isSaving ? 'Saving...' : 'Save Settings'}
           </Button>
         </div>
-      </div>
+      </Card>
     </div>
   );
 };
