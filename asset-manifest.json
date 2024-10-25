@@ -1,15 +1,15 @@
 {
   "files": {
-    "main.css": "/scalez/static/css/main.670b1763.css",
-    "main.js": "/scalez/static/js/main.871c6b4a.js",
+    "main.css": "/scalez/static/css/main.b4299620.css",
+    "main.js": "/scalez/static/js/main.0e6680a7.js",
     "static/js/453.c4b19871.chunk.js": "/scalez/static/js/453.c4b19871.chunk.js",
     "index.html": "/scalez/index.html",
-    "main.670b1763.css.map": "/scalez/static/css/main.670b1763.css.map",
-    "main.871c6b4a.js.map": "/scalez/static/js/main.871c6b4a.js.map",
+    "main.b4299620.css.map": "/scalez/static/css/main.b4299620.css.map",
+    "main.0e6680a7.js.map": "/scalez/static/js/main.0e6680a7.js.map",
     "453.c4b19871.chunk.js.map": "/scalez/static/js/453.c4b19871.chunk.js.map"
   },
   "entrypoints": [
-    "static/css/main.670b1763.css",
-    "static/js/main.871c6b4a.js"
+    "static/css/main.b4299620.css",
+    "static/js/main.0e6680a7.js"
   ]
 }
