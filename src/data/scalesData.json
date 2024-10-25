@@ -2,7 +2,7 @@
   "scales": [
     {
       "id": "scale-001",
-      "productName": "Rice Bags",
+      "productName": "Amber",
       "currentWeight": 450.5,
       "unit": "kg",
       "thresholds": {
@@ -26,7 +26,7 @@
     },
     {
       "id": "scale-002",
-      "productName": "Flour Storage",
+      "productName": "Angelina",
       "currentWeight": 750.2,
       "unit": "kg",
       "thresholds": {
@@ -46,6 +46,230 @@
         {"timestamp": "2024-10-25T04:00:00", "weight": 680.5},
         {"timestamp": "2024-10-25T05:00:00", "weight": 650.2}
       ]
+    },
+    {
+      "id": "scale-0010",
+      "productName": "Emerald",
+      "currentWeight": 45.5,
+      "unit": "kg",
+      "thresholds": {
+        "upper": 50,
+        "lower": 10
+      },
+      "history": [
+        {"timestamp": "2024-10-22T00:00:00", "weight": 48.2},
+        {"timestamp": "2024-10-22T06:00:00", "weight": 47.5},
+        {"timestamp": "2024-10-22T12:00:00", "weight": 46.8},
+        {"timestamp": "2024-10-22T18:00:00", "weight": 46.1},
+        {"timestamp": "2024-10-23T00:00:00", "weight": 45.4},
+        {"timestamp": "2024-10-23T06:00:00", "weight": 44.7},
+        {"timestamp": "2024-10-23T12:00:00", "weight": 44.0},
+        {"timestamp": "2024-10-23T18:00:00", "weight": 43.3},
+        {"timestamp": "2024-10-24T00:00:00", "weight": 42.6},
+        {"timestamp": "2024-10-24T06:00:00", "weight": 41.9},
+        {"timestamp": "2024-10-24T12:00:00", "weight": 41.2},
+        {"timestamp": "2024-10-24T18:00:00", "weight": 40.5},
+        {"timestamp": "2024-10-25T00:00:00", "weight": 48.5},
+        {"timestamp": "2024-10-25T06:00:00", "weight": 47.8},
+        {"timestamp": "2024-10-25T12:00:00", "weight": 47.1},
+        {"timestamp": "2024-10-25T18:00:00", "weight": 46.4},
+        {"timestamp": "2024-10-26T00:00:00", "weight": 45.7},
+        {"timestamp": "2024-10-26T06:00:00", "weight": 45.0},
+        {"timestamp": "2024-10-26T12:00:00", "weight": 44.3},
+        {"timestamp": "2024-10-26T18:00:00", "weight": 43.6}
+      ]
+    },
+    {
+      "id": "scale-012",
+      "productName": "Costa Rica Tarrazu",
+      "currentWeight": 38.2,
+      "unit": "kg",
+      "thresholds": {
+        "upper": 40,
+        "lower": 8
+      },
+      "history": [
+        {"timestamp": "2024-10-22T00:00:00", "weight": 39.8},
+        {"timestamp": "2024-10-22T06:00:00", "weight": 39.5},
+        {"timestamp": "2024-10-22T12:00:00", "weight": 39.1},
+        {"timestamp": "2024-10-22T18:00:00", "weight": 38.8},
+        {"timestamp": "2024-10-23T00:00:00", "weight": 38.4},
+        {"timestamp": "2024-10-23T06:00:00", "weight": 38.1},
+        {"timestamp": "2024-10-23T12:00:00", "weight": 37.7},
+        {"timestamp": "2024-10-23T18:00:00", "weight": 37.3},
+        {"timestamp": "2024-10-24T00:00:00", "weight": 36.9},
+        {"timestamp": "2024-10-24T06:00:00", "weight": 36.5},
+        {"timestamp": "2024-10-24T12:00:00", "weight": 36.1},
+        {"timestamp": "2024-10-24T18:00:00", "weight": 35.7},
+        {"timestamp": "2024-10-25T00:00:00", "weight": 39.5},
+        {"timestamp": "2024-10-25T06:00:00", "weight": 39.2},
+        {"timestamp": "2024-10-25T12:00:00", "weight": 38.8},
+        {"timestamp": "2024-10-25T18:00:00", "weight": 38.5},
+        {"timestamp": "2024-10-26T00:00:00", "weight": 38.2},
+        {"timestamp": "2024-10-26T06:00:00", "weight": 37.8},
+        {"timestamp": "2024-10-26T12:00:00", "weight": 37.5},
+        {"timestamp": "2024-10-26T18:00:00", "weight": 37.1}
+      ]
+    },
+    {
+      "id": "scale-003",
+      "productName": "Guatemala Antigua",
+      "currentWeight": 42.3,
+      "unit": "kg",
+      "thresholds": {
+        "upper": 45,
+        "lower": 10
+      },
+      "history": [
+        {"timestamp": "2024-10-22T00:00:00", "weight": 44.5},
+        {"timestamp": "2024-10-22T06:00:00", "weight": 44.1},
+        {"timestamp": "2024-10-22T12:00:00", "weight": 43.8},
+        {"timestamp": "2024-10-22T18:00:00", "weight": 43.4},
+        {"timestamp": "2024-10-23T00:00:00", "weight": 43.1},
+        {"timestamp": "2024-10-23T06:00:00", "weight": 42.7},
+        {"timestamp": "2024-10-23T12:00:00", "weight": 42.3},
+        {"timestamp": "2024-10-23T18:00:00", "weight": 41.9},
+        {"timestamp": "2024-10-24T00:00:00", "weight": 41.5},
+        {"timestamp": "2024-10-24T06:00:00", "weight": 41.1},
+        {"timestamp": "2024-10-24T12:00:00", "weight": 40.7},
+        {"timestamp": "2024-10-24T18:00:00", "weight": 40.3},
+        {"timestamp": "2024-10-25T00:00:00", "weight": 44.8},
+        {"timestamp": "2024-10-25T06:00:00", "weight": 44.4},
+        {"timestamp": "2024-10-25T12:00:00", "weight": 44.0},
+        {"timestamp": "2024-10-25T18:00:00", "weight": 43.6},
+        {"timestamp": "2024-10-26T00:00:00", "weight": 43.2},
+        {"timestamp": "2024-10-26T06:00:00", "weight": 42.8},
+        {"timestamp": "2024-10-26T12:00:00", "weight": 42.4},
+        {"timestamp": "2024-10-26T18:00:00", "weight": 42.0}
+      ]
+    },
+    {
+      "id": "scale-004",
+      "productName": "Ethiopia Sidamo Natural",
+      "currentWeight": 35.8,
+      "unit": "kg",
+      "thresholds": {
+        "upper": 40,
+        "lower": 8
+      },
+      "history": [
+        {"timestamp": "2024-10-22T00:00:00", "weight": 38.5},
+        {"timestamp": "2024-10-22T06:00:00", "weight": 38.1},
+        {"timestamp": "2024-10-22T12:00:00", "weight": 37.7},
+        {"timestamp": "2024-10-22T18:00:00", "weight": 37.3},
+        {"timestamp": "2024-10-23T00:00:00", "weight": 36.9},
+        {"timestamp": "2024-10-23T06:00:00", "weight": 36.5},
+        {"timestamp": "2024-10-23T12:00:00", "weight": 36.1},
+        {"timestamp": "2024-10-23T18:00:00", "weight": 35.7},
+        {"timestamp": "2024-10-24T00:00:00", "weight": 35.3},
+        {"timestamp": "2024-10-24T06:00:00", "weight": 34.9},
+        {"timestamp": "2024-10-24T12:00:00", "weight": 34.5},
+        {"timestamp": "2024-10-24T18:00:00", "weight": 34.1},
+        {"timestamp": "2024-10-25T00:00:00", "weight": 38.8},
+        {"timestamp": "2024-10-25T06:00:00", "weight": 38.4},
+        {"timestamp": "2024-10-25T12:00:00", "weight": 38.0},
+        {"timestamp": "2024-10-25T18:00:00", "weight": 37.6},
+        {"timestamp": "2024-10-26T00:00:00", "weight": 37.2},
+        {"timestamp": "2024-10-26T06:00:00", "weight": 36.8},
+        {"timestamp": "2024-10-26T12:00:00", "weight": 36.4},
+        {"timestamp": "2024-10-26T18:00:00", "weight": 36.0}
+      ]
+    },
+    {
+      "id": "scale-005",
+      "productName": "Ethiopia Sidamo",
+      "currentWeight": 41.2,
+      "unit": "kg",
+      "thresholds": {
+        "upper": 45,
+        "lower": 10
+      },
+      "history": [
+        {"timestamp": "2024-10-22T00:00:00", "weight": 44.0},
+        {"timestamp": "2024-10-22T06:00:00", "weight": 43.6},
+        {"timestamp": "2024-10-22T12:00:00", "weight": 43.2},
+        {"timestamp": "2024-10-22T18:00:00", "weight": 42.8},
+        {"timestamp": "2024-10-23T00:00:00", "weight": 42.4},
+        {"timestamp": "2024-10-23T06:00:00", "weight": 42.0},
+        {"timestamp": "2024-10-23T12:00:00", "weight": 41.6},
+        {"timestamp": "2024-10-23T18:00:00", "weight": 41.2},
+        {"timestamp": "2024-10-24T00:00:00", "weight": 40.8},
+        {"timestamp": "2024-10-24T06:00:00", "weight": 40.4},
+        {"timestamp": "2024-10-24T12:00:00", "weight": 40.0},
+        {"timestamp": "2024-10-24T18:00:00", "weight": 39.6},
+        {"timestamp": "2024-10-25T00:00:00", "weight": 44.2},
+        {"timestamp": "2024-10-25T06:00:00", "weight": 43.8},
+        {"timestamp": "2024-10-25T12:00:00", "weight": 43.4},
+        {"timestamp": "2024-10-25T18:00:00", "weight": 43.0},
+        {"timestamp": "2024-10-26T00:00:00", "weight": 42.6},
+        {"timestamp": "2024-10-26T06:00:00", "weight": 42.2},
+        {"timestamp": "2024-10-26T12:00:00", "weight": 41.8},
+        {"timestamp": "2024-10-26T18:00:00", "weight": 41.4}
+      ]
+    },
+    {
+      "id": "scale-006",
+      "productName": "Colombia Supremo",
+      "currentWeight": 36.5,
+      "unit": "kg",
+      "thresholds": {
+        "upper": 40,
+        "lower": 8
+      },
+      "history": [
+        {"timestamp": "2024-10-22T00:00:00", "weight": 39.0},
+        {"timestamp": "2024-10-22T06:00:00", "weight": 38.7},
+        {"timestamp": "2024-10-22T12:00:00", "weight": 38.4},
+        {"timestamp": "2024-10-22T18:00:00", "weight": 38.1},
+        {"timestamp": "2024-10-23T00:00:00", "weight": 37.8},
+        {"timestamp": "2024-10-23T06:00:00", "weight": 37.5},
+        {"timestamp": "2024-10-23T12:00:00", "weight": 37.2},
+        {"timestamp": "2024-10-23T18:00:00", "weight": 36.9},
+        {"timestamp": "2024-10-24T00:00:00", "weight": 36.6},
+        {"timestamp": "2024-10-24T06:00:00", "weight": 36.3},
+        {"timestamp": "2024-10-24T12:00:00", "weight": 36.0},
+        {"timestamp": "2024-10-24T18:00:00", "weight": 35.7},
+        {"timestamp": "2024-10-25T00:00:00", "weight": 39.2},
+        {"timestamp": "2024-10-25T06:00:00", "weight": 38.9},
+        {"timestamp": "2024-10-25T12:00:00", "weight": 38.6},
+        {"timestamp": "2024-10-25T18:00:00", "weight": 38.3},
+        {"timestamp": "2024-10-26T00:00:00", "weight": 38.0},
+        {"timestamp": "2024-10-26T06:00:00", "weight": 37.7},
+        {"timestamp": "2024-10-26T12:00:00", "weight": 37.4},
+        {"timestamp": "2024-10-26T18:00:00", "weight": 37.1}
+      ]
+    },
+    {
+      "id": "scale-013",
+      "productName": "House Blend",
+      "currentWeight": 42.3,
+      "unit": "kg",
+      "thresholds": {
+        "upper": 45,
+        "lower": 10
+      },
+      "history": [
+        {"timestamp": "2024-10-22T00:00:00", "weight": 44.5},
+        {"timestamp": "2024-10-22T06:00:00", "weight": 44.1},
+        {"timestamp": "2024-10-22T12:00:00", "weight": 43.8},
+        {"timestamp": "2024-10-22T18:00:00", "weight": 43.4},
+        {"timestamp": "2024-10-23T00:00:00", "weight": 43.1},
+        {"timestamp": "2024-10-23T06:00:00", "weight": 42.7},
+        {"timestamp": "2024-10-23T12:00:00", "weight": 42.3},
+        {"timestamp": "2024-10-23T18:00:00", "weight": 41.9},
+        {"timestamp": "2024-10-24T00:00:00", "weight": 41.5},
+        {"timestamp": "2024-10-24T06:00:00", "weight": 41.1},
+        {"timestamp": "2024-10-24T12:00:00", "weight": 40.7},
+        {"timestamp": "2024-10-24T18:00:00", "weight": 40.3},
+        {"timestamp": "2024-10-25T00:00:00", "weight": 44.8},
+        {"timestamp": "2024-10-25T06:00:00", "weight": 44.4},
+        {"timestamp": "2024-10-25T12:00:00", "weight": 44.0},
+        {"timestamp": "2024-10-25T18:00:00", "weight": 43.6},
+        {"timestamp": "2024-10-26T00:00:00", "weight": 43.2},
+        {"timestamp": "2024-10-26T06:00:00", "weight": 42.8},
+        {"timestamp": "2024-10-26T12:00:00", "weight": 42.4},
+        {"timestamp": "2024-10-26T18:00:00", "weight": 42.0}
+      ]
     }
-  ]
+]
 }

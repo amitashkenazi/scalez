@@ -1,4 +1,3 @@
-// src/hooks/useScaleData.js
 import { useState, useEffect } from 'react';
 import scalesData from '../data/scalesData.json';
 
@@ -6,11 +5,45 @@ const useScaleData = () => {
   const [scales, setScales] = useState([]);
 
   useEffect(() => {
-    // Simulate API call
-    setScales(scalesData.scales);
+    // Load initial data
+    const loadedScales = scalesData.scales.map(scale => ({
+      ...scale,
+      notifications: scale.notifications || {
+        upper: { phoneNumber: '', message: '' },
+        lower: { phoneNumber: '', message: '' }
+      }
+    }));
+    setScales(loadedScales);
   }, []);
 
-  return { scales, setScales };
+  const updateScale = async (updatedScale) => {
+    try {
+      // In a real application, you would make an API call here
+      // For now, we'll just update the local state
+      setScales(currentScales => 
+        currentScales.map(scale => 
+          scale.id === updatedScale.id ? updatedScale : scale
+        )
+      );
+
+      // Simulate API delay
+      await new Promise(resolve => setTimeout(resolve, 500));
+
+      // You could save to localStorage here if needed
+      // localStorage.setItem('scalesData', JSON.stringify({ scales }));
+      
+      return true;
+    } catch (error) {
+      console.error('Error updating scale:', error);
+      throw error;
+    }
+  };
+
+  return {
+    scales,
+    updateScale,
+    setScales,
+  };
 };
 
 export default useScaleData;

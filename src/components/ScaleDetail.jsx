@@ -1,10 +1,26 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine } from 'recharts';
 import { getStatusColor } from '../utils/thresholdUtils';
 import { filterDataByDateRange } from '../utils/dateFilterUtils';
 import DateRangeSelector from './DateRangeSelector';
+import ThresholdSettings from './ThresholdSettings';
 
-const ScaleDetail = ({ scale, onClose, dateRange, onStartDateChange, onEndDateChange }) => {
+const ScaleDetail = ({ scale, onClose, dateRange, onStartDateChange, onEndDateChange, onSave }) => {
+  // Local state for thresholds and notifications
+  const [thresholds, setThresholds] = useState(scale.thresholds);
+  const [notifications, setNotifications] = useState({
+    upper: {
+      phoneNumber: scale.notifications?.upper?.phoneNumber || '',
+      message: scale.notifications?.upper?.message || ''
+    },
+    lower: {
+      phoneNumber: scale.notifications?.lower?.phoneNumber || '',
+      message: scale.notifications?.lower?.message || ''
+    }
+  });
+
+  const [isSaving, setIsSaving] = useState(false);
+
   // Sort and prepare data with gaps
   const sortedData = [...scale.history].sort((a, b) => 
     new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
@@ -32,48 +48,58 @@ const ScaleDetail = ({ scale, onClose, dateRange, onStartDateChange, onEndDateCh
     return result;
   };
 
-  // Filter data based on date range and add gaps
+  const handleSave = async () => {
+    try {
+      setIsSaving(true);
+      await onSave({
+        ...scale,
+        thresholds,
+        notifications
+      });
+      onClose();
+    } catch (error) {
+      console.error('Error saving scale settings:', error);
+      // You might want to show an error message to the user here
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  // Filter data and prepare for display
   const filteredData = filterDataByDateRange(sortedData, dateRange.startDate, dateRange.endDate);
   const dataWithGaps = addGapsToData(filteredData);
-  
-  const latestMeasurement = filteredData[filteredData.length - 1];
-  const currentWeight = latestMeasurement ? latestMeasurement.weight : scale.currentWeight;
 
   const formatXAxis = (timestamp) => {
     const date = new Date(timestamp);
-    const options = {
+    return date.toLocaleDateString('en-US', {
       weekday: 'short',
       month: 'short',
       day: 'numeric',
       hour: '2-digit',
       minute: '2-digit'
-    };
-    return date.toLocaleDateString('en-US', options);
-  };
-
-  const CustomDot = (props) => {
-    const { cx, cy, payload } = props;
-    if (!payload.weight) return null; // Don't render dots for null values
-    
-    const color = payload.weight >= scale.thresholds.upper ? "#22c55e" : 
-                 payload.weight >= scale.thresholds.lower ? "#f97316" : "#dc2626";
-    
-    return (
-      <circle cx={cx} cy={cy} r={4} fill={color} />
-    );
+    });
   };
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
       <div className="bg-white rounded-lg p-6 w-full max-w-4xl max-h-[90vh] overflow-y-auto">
         <div className="flex justify-between items-center mb-4">
-          <h2 className="text-2xl font-bold">{scale.productName} Details</h2>
-          <button 
-            className="text-gray-500 hover:text-gray-700 p-2"
-            onClick={onClose}
-          >
-            Close
-          </button>
+          <h2 className="text-2xl font-bold">{scale.productName}</h2>
+          <div className="space-x-2">
+            <button 
+              onClick={handleSave}
+              disabled={isSaving}
+              className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:bg-gray-400"
+            >
+              {isSaving ? 'Saving...' : 'Save Changes'}
+            </button>
+            <button 
+              className="px-4 py-2 text-gray-700 border rounded hover:bg-gray-100"
+              onClick={onClose}
+            >
+              Close
+            </button>
+          </div>
         </div>
 
         <DateRangeSelector
@@ -82,33 +108,6 @@ const ScaleDetail = ({ scale, onClose, dateRange, onStartDateChange, onEndDateCh
           onStartDateChange={onStartDateChange}
           onEndDateChange={onEndDateChange}
         />
-        
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div className="bg-white rounded-lg p-6 shadow">
-            <h3 className="text-lg font-bold mb-4">Current Status</h3>
-            <div className={`text-2xl font-bold ${getStatusColor(
-              currentWeight,
-              scale.thresholds.upper,
-              scale.thresholds.lower
-            )}`}>
-              {currentWeight} kg
-            </div>
-          </div>
-
-          <div className="bg-white rounded-lg p-6 shadow">
-            <h3 className="text-lg font-bold mb-4">Thresholds</h3>
-            <div className="space-y-4">
-              <div>
-                <span className="block text-sm text-gray-500">Upper Threshold</span>
-                <span className="text-green-600 font-bold">{scale.thresholds.upper} kg</span>
-              </div>
-              <div>
-                <span className="block text-sm text-gray-500">Lower Threshold</span>
-                <span className="text-red-600 font-bold">{scale.thresholds.lower} kg</span>
-              </div>
-            </div>
-          </div>
-        </div>
 
         <div className="mt-4 bg-white rounded-lg p-6 shadow">
           <h3 className="text-lg font-bold mb-4">Weight History</h3>
@@ -126,29 +125,29 @@ const ScaleDetail = ({ scale, onClose, dateRange, onStartDateChange, onEndDateCh
                   tick={{ fontSize: 12 }}
                 />
                 <YAxis domain={[
-                  (dataMin) => Math.floor(Math.min(dataMin, scale.thresholds.lower) * 0.9),
-                  (dataMax) => Math.ceil(Math.max(dataMax, scale.thresholds.upper) * 1.1)
+                  (dataMin) => Math.floor(Math.min(dataMin, thresholds.lower) * 0.9),
+                  (dataMax) => Math.ceil(Math.max(dataMax, thresholds.upper) * 1.1)
                 ]} />
                 <Tooltip 
-                  labelFormatter={(timestamp) => formatXAxis(timestamp)}
+                  labelFormatter={formatXAxis}
                   formatter={(value) => value ? [`${value} kg`, 'Weight'] : ['No data', 'Weight']}
                 />
                 <ReferenceLine 
-                  y={scale.thresholds.upper} 
+                  y={thresholds.upper} 
                   stroke="#22c55e"
                   strokeDasharray="3 3"
                   label={{ 
-                    value: `Upper Threshold (${scale.thresholds.upper}kg)`,
+                    value: `Upper Threshold (${thresholds.upper}kg)`,
                     fill: '#22c55e',
                     fontSize: 12
                   }} 
                 />
                 <ReferenceLine 
-                  y={scale.thresholds.lower} 
+                  y={thresholds.lower} 
                   stroke="#dc2626"
                   strokeDasharray="3 3"
                   label={{ 
-                    value: `Lower Threshold (${scale.thresholds.lower}kg)`,
+                    value: `Lower Threshold (${thresholds.lower}kg)`,
                     fill: '#dc2626',
                     fontSize: 12
                   }} 
@@ -158,13 +157,20 @@ const ScaleDetail = ({ scale, onClose, dateRange, onStartDateChange, onEndDateCh
                   dataKey="weight" 
                   stroke="#4f46e5" 
                   strokeWidth={2}
-                  dot={<CustomDot />}
+                  dot={true}
                   connectNulls={false}
                 />
               </LineChart>
             </ResponsiveContainer>
           </div>
         </div>
+
+        <ThresholdSettings 
+          thresholds={thresholds}
+          onThresholdsChange={setThresholds}
+          notifications={notifications}
+          onNotificationsChange={setNotifications}
+        />
       </div>
     </div>
   );

@@ -1,14 +1,17 @@
-// src/components/ScaleCard.jsx
 import React from 'react';
 import { LineChart, Line, ResponsiveContainer } from 'recharts';
 import { getStatusColor } from '../utils/thresholdUtils';
-import { filterDataByDateRange } from '../utils/dateFilterUtils';
 
 const MiniGraph = ({ data }) => {
+  // Sort data by timestamp to ensure correct display
+  const sortedData = [...data].sort((a, b) => 
+    new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
+  );
+
   return (
     <div className="h-24">
       <ResponsiveContainer width="100%" height="100%">
-        <LineChart data={data}>
+        <LineChart data={sortedData}>
           <Line 
             type="monotone" 
             dataKey="weight" 
@@ -23,11 +26,17 @@ const MiniGraph = ({ data }) => {
   );
 };
 
-const ScaleCard = ({ scale, onCardClick, dateRange }) => {
-  const filteredData = filterDataByDateRange(scale.history, dateRange.startDate, dateRange.endDate);
-  const latestMeasurement = filteredData[filteredData.length - 1];
-  const currentWeight = latestMeasurement ? latestMeasurement.weight : scale.currentWeight;
-  const statusColor = getStatusColor(currentWeight, scale.thresholds.upper, scale.thresholds.lower);
+const ScaleCard = ({ scale, onCardClick }) => {
+  // Get the latest measurement
+  const sortedHistory = [...scale.history].sort((a, b) => 
+    new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
+  );
+  
+  const latestMeasurement = sortedHistory[0];
+  const currentWeight = latestMeasurement ? latestMeasurement.weight : null;
+  const statusColor = currentWeight !== null 
+    ? getStatusColor(currentWeight, scale.thresholds.upper, scale.thresholds.lower)
+    : 'text-gray-400';
   
   return (
     <div 
@@ -37,10 +46,14 @@ const ScaleCard = ({ scale, onCardClick, dateRange }) => {
       <h3 className="text-2xl font-bold mb-4">{scale.productName}</h3>
       <div className="space-y-4">
         <div>
-          <span className="block text-sm text-gray-500 mb-1">Current Weight</span>
-          <span className={`font-bold ${statusColor}`}>
-            {currentWeight} kg
-          </span>
+          <span className="block text-sm text-gray-500 mb-1">Latest Weight</span>
+          {currentWeight !== null ? (
+            <span className={`font-bold ${statusColor}`}>
+              {currentWeight} kg
+            </span>
+          ) : (
+            <span className="text-gray-400">No data available</span>
+          )}
         </div>
         <div>
           <span className="block text-sm text-gray-500 mb-1">Thresholds</span>
@@ -50,7 +63,7 @@ const ScaleCard = ({ scale, onCardClick, dateRange }) => {
           </div>
         </div>
         <div className="mt-4">
-          <MiniGraph data={filteredData} />
+          <MiniGraph data={scale.history} />
         </div>
       </div>
     </div>
