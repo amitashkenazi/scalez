@@ -1,28 +1,30 @@
-// components/SideMenu.jsx
 import React from 'react';
 import { Bell, Users } from 'lucide-react';
 
-export const SideMenu = ({ activeView, onViewChange }) => {
+const SideMenu = ({ activeView, onViewChange }) => {
   return (
-    <div className="w-64 min-h-screen bg-gray-800 text-white p-4">
-      <div className="space-y-2">
+    <div className="h-full pt-16">
+      <div className="flex flex-col space-y-2 p-4">
         <button
           onClick={() => onViewChange('customers')}
-          className={`w-full flex items-center space-x-2 p-3 rounded-lg transition-colors ${
-            activeView === 'customers' ? 'bg-blue-600' : 'hover:bg-gray-700'
-          }`}
+          className={`
+            w-full flex items-center space-x-2 p-3 rounded-lg transition-colors
+            ${activeView === 'customers' ? 'bg-blue-600' : 'hover:bg-gray-700'}
+          `}
         >
           <Users size={20} />
-          <span>Customers</span>
+          <span className="text-white">Customers</span>
         </button>
+        
         <button
           onClick={() => onViewChange('notifications')}
-          className={`w-full flex items-center space-x-2 p-3 rounded-lg transition-colors ${
-            activeView === 'notifications' ? 'bg-blue-600' : 'hover:bg-gray-700'
-          }`}
+          className={`
+            w-full flex items-center space-x-2 p-3 rounded-lg transition-colors
+            ${activeView === 'notifications' ? 'bg-blue-600' : 'hover:bg-gray-700'}
+          `}
         >
           <Bell size={20} />
-          <span>Notifications</span>
+          <span className="text-white">Notifications</span>
         </button>
       </div>
     </div>

@@ -1,14 +1,15 @@
-// Updated App.js
 import React, { useState } from 'react';
 import Dashboard from './components/Dashboard';
 import CustomerDashboard from './components/CustomerDashboard';
 import NotificationsView from './components/NotificationsView';
 import SideMenu from './components/SideMenu';
 import useScaleData from './hooks/useScaleData';
+import { Menu as MenuIcon } from 'lucide-react';
 
 function App() {
   const [selectedScaleIds, setSelectedScaleIds] = useState(null);
   const [activeView, setActiveView] = useState('customers');
+  const [isMenuOpen, setIsMenuOpen] = useState(true);
   const { scales } = useScaleData();
 
   const handleCustomerSelect = (scaleIds) => {
@@ -27,31 +28,58 @@ function App() {
     }
   };
 
+  const toggleMenu = () => {
+    setIsMenuOpen(!isMenuOpen);
+  };
+
   return (
     <div className="flex min-h-screen bg-gray-100">
-      <SideMenu activeView={activeView} onViewChange={handleViewChange} />
-      
-      <div className="flex-1">
-        {activeView === 'customers' ? (
-          selectedScaleIds ? (
-            <>
-              <div className="p-6 max-w-4xl mx-auto">
+      {/* Toggle Button */}
+      <button
+        onClick={toggleMenu}
+        className="fixed top-4 left-4 z-50 p-2 rounded-lg bg-gray-800 text-white hover:bg-gray-700"
+      >
+        <MenuIcon size={24} />
+      </button>
+
+      {/* Menu */}
+      <div 
+        className={`fixed top-0 left-0 h-full bg-gray-800 transition-all duration-300 ease-in-out ${
+          isMenuOpen ? 'w-64' : 'w-0'
+        } overflow-hidden`}
+      >
+        <SideMenu 
+          activeView={activeView} 
+          onViewChange={handleViewChange} 
+        />
+      </div>
+
+      {/* Main Content */}
+      <main 
+        className={`flex-1 transition-all duration-300 ease-in-out ${
+          isMenuOpen ? 'ml-64' : 'ml-16'
+        }`}
+      >
+        <div className="p-6">
+          {activeView === 'customers' ? (
+            selectedScaleIds ? (
+              <>
                 <button
                   onClick={handleBackToCustomers}
                   className="mb-4 text-blue-600 hover:text-blue-800 font-medium"
                 >
                   ← Back to Customers
                 </button>
-              </div>
-              <Dashboard selectedScaleIds={selectedScaleIds} />
-            </>
+                <Dashboard selectedScaleIds={selectedScaleIds} />
+              </>
+            ) : (
+              <CustomerDashboard onCustomerSelect={handleCustomerSelect} />
+            )
           ) : (
-            <CustomerDashboard onCustomerSelect={handleCustomerSelect} />
-          )
-        ) : (
-          <NotificationsView scales={scales} />
-        )}
-      </div>
+            <NotificationsView scales={scales} />
+          )}
+        </div>
+      </main>
     </div>
   );
 }
