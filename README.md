@@ -1,32 +1,59 @@
 <<<<<<< HEAD
+<<<<<<< HEAD
 # scalez
 =======
 # Getting Started with Create React App
+=======
+# IoT Scale Monitor
+>>>>>>> 774697c (Initial commit: IoT Scale Monitor setup)
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+A React application for monitoring IoT scales with real-time weight tracking and threshold alerts.
 
-## Available Scripts
+## Features
 
-In the project directory, you can run:
+- Real-time scale monitoring
+- Weight history visualization
+- Configurable thresholds
+- WhatsApp notifications
+- Color-coded status indicators
 
-### `npm start`
+## Setup
 
-Runs the app in the development mode.\
-Open [http://localhost:3000](http://localhost:3000) to view it in your browser.
+1. Clone the repository
+2. Install dependencies:
+   ```bash
+   npm install
+   ```
+3. Start the development server:
+   ```bash
+   npm start
+   ```
 
-The page will reload when you make changes.\
-You may also see any lint errors in the console.
+## Project Structure
 
-### `npm test`
+```
+src/
+├── components/
+│   ├── Dashboard.jsx
+│   ├── ScaleCard.jsx
+│   ├── ScaleModal.jsx
+│   ├── ScaleGraph.jsx
+│   └── ThresholdSettings.jsx
+├── data/
+│   └── scalesData.json
+├── hooks/
+│   └── useScaleData.js
+└── utils/
+    └── thresholdUtils.js
+```
 
-Launches the test runner in the interactive watch mode.\
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
+## Configuration
 
-### `npm run build`
+Modify `src/data/scalesData.json` to add or update scale configurations.
 
-Builds the app for production to the `build` folder.\
-It correctly bundles React in production mode and optimizes the build for the best performance.
+## Environment Variables
 
+<<<<<<< HEAD
 The build is minified and the filenames include the hashes.\
 Your app is ready to be deployed!
 
@@ -72,3 +99,9 @@ This section has moved here: [https://facebook.github.io/create-react-app/docs/d
 
 This section has moved here: [https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify](https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify)
 >>>>>>> a908fad (Initialize project using Create React App)
+=======
+Create a `.env` file with the following variables:
+```env
+REACT_APP_API_URL=your_api_url_here
+```
+>>>>>>> 774697c (Initial commit: IoT Scale Monitor setup)
