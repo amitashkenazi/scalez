@@ -3,11 +3,11 @@
     {
       "id": "scale-001",
       "productName": "Amber",
-      "currentWeight": 450.5,
+      "currentWeight": 45.5,
       "unit": "kg",
       "thresholds": {
-        "upper": 500,
-        "lower": 100
+        "upper": 40,
+        "lower": 12
       },
       "action": {
         "type": "whatsapp",
@@ -15,23 +15,23 @@
         "recipient": "+1234567890"
       },
       "history": [
-        {"timestamp": "2024-10-25T00:00:00", "weight": 480.5},
-        {"timestamp": "2024-10-25T01:00:00", "weight": 450.5},
-        {"timestamp": "2024-10-25T02:00:00", "weight": 420.5},
-        {"timestamp": "2024-10-25T03:00:00", "weight": 350.2},
-        {"timestamp": "2024-10-25T04:00:00", "weight": 250.1},
-        {"timestamp": "2024-10-26T05:00:00", "weight": 90.5},
-        {"timestamp": "2024-10-26T06:00:00", "weight": 70.5}
+        {"timestamp": "2024-10-25T00:00:00", "weight": 48.5},
+        {"timestamp": "2024-10-25T01:00:00", "weight": 45.5},
+        {"timestamp": "2024-10-25T02:00:00", "weight": 42.5},
+        {"timestamp": "2024-10-25T03:00:00", "weight": 35.2},
+        {"timestamp": "2024-10-25T04:00:00", "weight": 25.1},
+        {"timestamp": "2024-10-26T05:00:00", "weight": 9.5},
+        {"timestamp": "2024-10-26T06:00:00", "weight": 7.5}
       ]
     },
     {
       "id": "scale-002",
       "productName": "Angelina",
-      "currentWeight": 750.2,
+      "currentWeight": 75.2,
       "unit": "kg",
       "thresholds": {
-        "upper": 800,
-        "lower": 200
+        "upper": 80,
+        "lower": 20
       },
       "action": {
         "type": "whatsapp",
@@ -39,12 +39,12 @@
         "recipient": "+1234567890"
       },
       "history": [
-        {"timestamp": "2024-10-25T00:00:00", "weight": 800.0},
-        {"timestamp": "2024-10-25T01:00:00", "weight": 780.5},
-        {"timestamp": "2024-10-25T02:00:00", "weight": 750.2},
-        {"timestamp": "2024-10-25T03:00:00", "weight": 720.0},
-        {"timestamp": "2024-10-25T04:00:00", "weight": 680.5},
-        {"timestamp": "2024-10-25T05:00:00", "weight": 650.2}
+        {"timestamp": "2024-10-25T00:00:00", "weight": 80.0},
+        {"timestamp": "2024-10-25T01:00:00", "weight": 78.5},
+        {"timestamp": "2024-10-25T02:00:00", "weight": 75.2},
+        {"timestamp": "2024-10-25T03:00:00", "weight": 72.0},
+        {"timestamp": "2024-10-25T04:00:00", "weight": 68.5},
+        {"timestamp": "2024-10-25T05:00:00", "weight": 65.2}
       ]
     },
     {
@@ -242,7 +242,7 @@
     {
       "id": "scale-013",
       "productName": "House Blend",
-      "currentWeight": 42.3,
+      "currentWeight": 4.3,
       "unit": "kg",
       "thresholds": {
         "upper": 45,
@@ -268,7 +268,7 @@
         {"timestamp": "2024-10-26T00:00:00", "weight": 43.2},
         {"timestamp": "2024-10-26T06:00:00", "weight": 42.8},
         {"timestamp": "2024-10-26T12:00:00", "weight": 42.4},
-        {"timestamp": "2024-10-26T18:00:00", "weight": 42.0}
+        {"timestamp": "2024-10-26T18:00:00", "weight": 4.0}
       ]
     }
 ]
