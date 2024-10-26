@@ -101,14 +101,14 @@
         {"timestamp": "2024-10-24T06:00:00", "weight": 36.5},
         {"timestamp": "2024-10-24T12:00:00", "weight": 36.1},
         {"timestamp": "2024-10-24T18:00:00", "weight": 35.7},
-        {"timestamp": "2024-10-25T00:00:00", "weight": 39.5},
-        {"timestamp": "2024-10-25T06:00:00", "weight": 39.2},
-        {"timestamp": "2024-10-25T12:00:00", "weight": 38.8},
-        {"timestamp": "2024-10-25T18:00:00", "weight": 38.5},
-        {"timestamp": "2024-10-26T00:00:00", "weight": 38.2},
-        {"timestamp": "2024-10-26T06:00:00", "weight": 37.8},
-        {"timestamp": "2024-10-26T12:00:00", "weight": 37.5},
-        {"timestamp": "2024-10-26T18:00:00", "weight": 37.1}
+        {"timestamp": "2024-10-25T00:00:00", "weight": 33.5},
+        {"timestamp": "2024-10-25T06:00:00", "weight": 33.2},
+        {"timestamp": "2024-10-25T12:00:00", "weight": 32.8},
+        {"timestamp": "2024-10-25T18:00:00", "weight": 32.5},
+        {"timestamp": "2024-10-26T00:00:00", "weight": 32.2},
+        {"timestamp": "2024-10-26T06:00:00", "weight": 31.8},
+        {"timestamp": "2024-10-26T12:00:00", "weight": 31.5},
+        {"timestamp": "2024-10-26T18:00:00", "weight": 31.1}
       ]
     },
     {
