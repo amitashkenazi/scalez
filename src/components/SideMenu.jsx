@@ -1,31 +1,31 @@
 import React from 'react';
-import { Bell, Users, LayoutDashboard, Database, Home } from 'lucide-react';
+import { Bell, Users, LayoutDashboard, Database, Home, Languages } from 'lucide-react';
 import { useLanguage } from '../contexts/LanguageContext';
 import { translations } from '../translations/translations';
 
 const MenuItem = ({ icon: Icon, label, isActive, onClick, language }) => {
-  // Adjust the flexbox order for RTL layout
-  const rtlStyles = language === 'he' ? 'flex-row-reverse' : '';
+  const isRTL = language === 'he';
   
   return (
     <button
       onClick={onClick}
       className={`
-        w-full flex items-center p-3 rounded-lg transition-colors
-        ${rtlStyles}
+        w-full px-3 py-2.5 rounded-lg transition-colors
+        flex items-center gap-3
         ${isActive ? 'bg-blue-600 text-white' : 'text-gray-300 hover:bg-gray-700 hover:text-white'}
-        ${language === 'he' ? 'space-x-reverse' : 'space-x-3'}
+        ${isRTL ? 'flex-row-reverse justify-end text-right' : 'flex-row justify-start text-left'}
       `}
     >
-      <Icon size={20} className={language === 'he' ? 'ml-3' : 'mr-3'} />
+      <Icon size={20} />
       <span className="font-medium">{label}</span>
     </button>
   );
 };
 
 const SideMenu = ({ activeView, onViewChange }) => {
-  const { language } = useLanguage();
+  const { language, toggleLanguage } = useLanguage();
   const t = translations[language];
+  const isRTL = language === 'he';
 
   const menuItems = [
     {
@@ -63,21 +63,21 @@ const SideMenu = ({ activeView, onViewChange }) => {
   return (
     <div 
       className="h-full flex flex-col bg-gray-800"
-      dir={language === 'he' ? 'rtl' : 'ltr'}
+      dir={isRTL ? 'rtl' : 'ltr'}
     >
       {/* Header */}
       <div className="p-6">
-        <h2 className={`text-xl font-bold text-white mb-2 ${language === 'he' ? 'text-right' : 'text-left'}`}>
+        <h2 className={`text-xl font-bold text-white mb-2 ${isRTL ? 'text-right' : 'text-left'}`}>
           {t.menuTitle}
         </h2>
-        <p className={`text-sm text-gray-400 ${language === 'he' ? 'text-right' : 'text-left'}`}>
+        <p className={`text-sm text-gray-400 ${isRTL ? 'text-right' : 'text-left'}`}>
           {t.menuSubtitle}
         </p>
       </div>
 
       {/* Navigation Items */}
       <nav className="flex-1 px-4">
-        <div className="space-y-2">
+        <div className="space-y-1">
           {menuItems.map((item) => (
             <MenuItem
               key={item.view}
@@ -91,9 +91,26 @@ const SideMenu = ({ activeView, onViewChange }) => {
         </div>
       </nav>
 
+      {/* Language Toggle */}
+      <div className="px-4 py-3 border-t border-gray-700">
+        <button
+          onClick={toggleLanguage}
+          className={`
+            w-full px-3 py-2.5 rounded-lg
+            flex items-center gap-3 text-gray-300 hover:bg-gray-700 hover:text-white
+            ${isRTL ? 'flex-row-reverse justify-end text-right' : 'flex-row justify-start text-left'}
+          `}
+        >
+          <Languages size={20} />
+          <span className="font-medium">
+            {language === 'en' ? 'עברית' : 'English'}
+          </span>
+        </button>
+      </div>
+
       {/* Footer */}
       <div className="p-6 border-t border-gray-700">
-        <div className={`text-sm text-gray-400 ${language === 'he' ? 'text-right' : 'text-left'}`}>
+        <div className={`text-sm text-gray-400 ${isRTL ? 'text-right' : 'text-left'}`}>
           <p>{t.version}: 1.0.0</p>
           <p>{t.copyright}</p>
         </div>

@@ -126,14 +126,14 @@ const ScaleDetail = ({ scale, onClose, dateRange, onStartDateChange, onEndDateCh
   };
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
-      <div 
-        className="bg-white rounded-lg p-6 w-full max-w-4xl max-h-[90vh] overflow-y-auto"
-        dir={isRTL ? 'rtl' : 'ltr'}
-      >
+    <div 
+      className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
+      dir={isRTL ? 'rtl' : 'ltr'}
+    >
+      <div className="bg-white rounded-lg p-6 w-full max-w-4xl max-h-[90vh] overflow-y-auto">
         {/* Header */}
         <div className={`flex justify-between items-start mb-6 ${isRTL ? 'flex-row-reverse' : 'flex-row'}`}>
-          <div className={isRTL ? 'text-right' : 'text-left'}>
+          <div>
             <h2 className="text-2xl font-bold">{scale.productName}</h2>
             <p className="text-gray-500">{getCustomerName()}</p>
           </div>
@@ -155,7 +155,7 @@ const ScaleDetail = ({ scale, onClose, dateRange, onStartDateChange, onEndDateCh
         </div>
 
         {/* Status Cards */}
-        <div className={`grid grid-cols-1 md:grid-cols-2 gap-4 mb-6 ${isRTL ? 'text-right' : 'text-left'}`}>
+        <div className={`grid grid-cols-1 md:grid-cols-2 gap-4 mb-6`}>
           <div className="bg-white rounded-lg p-6 shadow">
             <h3 className="text-lg font-bold mb-4">{t.currentStatus}</h3>
             <div className={`text-2xl font-bold ${statusColor}`}>
@@ -189,7 +189,6 @@ const ScaleDetail = ({ scale, onClose, dateRange, onStartDateChange, onEndDateCh
           endDate={dateRange.endDate}
           onStartDateChange={onStartDateChange}
           onEndDateChange={onEndDateChange}
-          isRTL={isRTL}
         />
 
         {/* Weight History Graph */}

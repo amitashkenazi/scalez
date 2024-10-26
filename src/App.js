@@ -4,7 +4,6 @@ import CustomerDashboard from './components/CustomerDashboard';
 import NotificationsView from './components/NotificationsView';
 import SideMenu from './components/SideMenu';
 import LandingPage from './components/LandingPage';
-import LanguageToggle from './components/LanguageToggle';
 import { LanguageProvider, useLanguage } from './contexts/LanguageContext';
 import useScaleData from './hooks/useScaleData';
 import { Menu as MenuIcon } from 'lucide-react';
@@ -90,9 +89,9 @@ function AppContent() {
   const getMenuStyles = () => {
     const baseStyles = 'fixed top-0 h-full bg-gray-800 transition-all duration-300 ease-in-out w-64 z-40';
     if (language === 'he') {
-      return `${baseStyles} ${isMenuOpen ? 'right-0 translate-x-0' : 'right-0 translate-x-full'}`;
+      return `${baseStyles} ${isMenuOpen ? 'right-0' : '-right-64'}`;
     }
-    return `${baseStyles} ${isMenuOpen ? 'left-0 translate-x-0' : 'left-0 -translate-x-full'}`;
+    return `${baseStyles} ${isMenuOpen ? 'left-0' : '-left-64'}`;
   };
 
   const getMainContentStyles = () => {
@@ -105,7 +104,8 @@ function AppContent() {
 
   // Get RTL-aware position for menu button
   const getMenuButtonPosition = () => {
-    return language === 'he' ? 'fixed top-4 right-4 z-50' : 'fixed top-4 left-4 z-50';
+    const baseStyles = 'fixed top-4 z-50 p-2 rounded-lg bg-gray-800 text-white hover:bg-gray-700 md:hidden';
+    return language === 'he' ? `${baseStyles} right-4` : `${baseStyles} left-4`;
   };
 
   return (
@@ -119,12 +119,10 @@ function AppContent() {
       {/* Toggle Button */}
       <button
         onClick={toggleMenu}
-        className={`${getMenuButtonPosition()} p-2 rounded-lg bg-gray-800 text-white hover:bg-gray-700 md:hidden`}
+        className={getMenuButtonPosition()}
       >
         <MenuIcon size={24} />
       </button>
-
-      <LanguageToggle />
 
       {/* Menu */}
       <div ref={menuRef} className={getMenuStyles()}>
@@ -152,9 +150,13 @@ function AppContent() {
               <>
                 <button
                   onClick={handleBackToCustomers}
-                  className="mb-4 text-blue-600 hover:text-blue-800 font-medium"
+                  className={`mb-4 text-blue-600 hover:text-blue-800 font-medium flex items-center
+                    ${language === 'he' ? 'flex-row-reverse' : ''}`}
                 >
-                  {language === 'he' ? '← חזרה ללקוחות' : '← Back to Customers'}
+                  <span className={language === 'he' ? 'mr-2' : 'ml-2'}>
+                    {language === 'he' ? 'חזרה ללקוחות' : 'Back to Customers'}
+                  </span>
+                  {language === 'he' ? '→' : '←'}
                 </button>
                 <Dashboard selectedScaleIds={selectedScaleIds} />
               </>
