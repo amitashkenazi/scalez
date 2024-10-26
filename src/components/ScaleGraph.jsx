@@ -10,13 +10,15 @@ import {
   ResponsiveContainer
 } from 'recharts';
 
-const ScaleGraph = ({ data, thresholds }) => {
+const ScaleGraph = ({ data, thresholds, dateRange }) => {
+  // Function to get dot color based on weight value
   const getDataPointColor = (value) => {
-    if (value >= thresholds.upper) return "#22c55e"; // green
-    if (value >= thresholds.lower) return "#f97316"; // orange
-    return "#dc2626"; // red
+    if (value >= thresholds.upper) return "#22c55e";
+    if (value >= thresholds.lower) return "#f97316";
+    return "#dc2626";
   };
 
+  // Custom dot component
   const CustomDot = (props) => {
     const { cx, cy, payload } = props;
     if (!payload.weight) return null;
@@ -30,46 +32,51 @@ const ScaleGraph = ({ data, thresholds }) => {
     );
   };
 
-  // Sort data by timestamp
-  const sortedData = [...data].sort((a, b) => 
-    new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
-  );
+  // Generate time series data for the selected date range
+  const generateTimeSeriesData = () => {
+    // Convert date strings to timestamps
+    const startTime = new Date(dateRange.startDate).getTime();
+    const endTime = new Date(dateRange.endDate).getTime();
 
-  // Function to check if two dates are consecutive (within 24 hours)
-  const areConsecutiveDates = (date1, date2) => {
-    const diffInHours = Math.abs(new Date(date2) - new Date(date1)) / (1000 * 60 * 60);
-    return diffInHours <= 24;
-  };
+    // Create a map of existing measurements
+    const measurementMap = new Map(
+      data.map(d => [new Date(d.timestamp).getTime(), d.weight])
+    );
 
-  // Add null values between non-consecutive dates
-  const dataWithGaps = [];
-  for (let i = 0; i < sortedData.length; i++) {
-    dataWithGaps.push(sortedData[i]);
-    
-    if (i < sortedData.length - 1 && !areConsecutiveDates(sortedData[i].timestamp, sortedData[i + 1].timestamp)) {
-      dataWithGaps.push({
-        timestamp: new Date(new Date(sortedData[i].timestamp).getTime() + 24 * 60 * 60 * 1000).toISOString(),
-        weight: null
+    const result = [];
+    const interval = 6 * 60 * 60 * 1000; // 6-hour intervals
+
+    // Generate points for every interval within the selected date range
+    for (let time = startTime; time <= endTime; time += interval) {
+      result.push({
+        timestamp: new Date(time).toISOString(),
+        weight: measurementMap.get(time) || null
       });
     }
-  }
+
+    return result;
+  };
+
+  const timeSeriesData = generateTimeSeriesData();
 
   const formatDate = (timestamp) => {
     const date = new Date(timestamp);
-    const options = {
-      weekday: 'short',
+    return date.toLocaleDateString('en-US', {
       month: 'short',
       day: 'numeric',
       hour: '2-digit',
-      minute: '2-digit'
-    };
-    return date.toLocaleDateString('en-US', options);
+      minute: '2-digit',
+      hour12: false
+    });
   };
 
   return (
     <div className="h-64 mt-4">
       <ResponsiveContainer width="100%" height="100%">
-        <LineChart data={dataWithGaps}>
+        <LineChart 
+          data={timeSeriesData}
+          margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
+        >
           <CartesianGrid strokeDasharray="3 3" />
           <XAxis 
             dataKey="timestamp"
@@ -79,11 +86,14 @@ const ScaleGraph = ({ data, thresholds }) => {
             height={80}
             interval="preserveStart"
             tick={{ fontSize: 12 }}
+            minTickGap={50}
           />
-          <YAxis domain={[
-            (dataMin) => Math.floor(Math.min(dataMin, thresholds.lower) * 0.9),
-            (dataMax) => Math.ceil(Math.max(dataMax, thresholds.upper) * 1.1)
-          ]} />
+          <YAxis 
+            domain={[
+              (dataMin) => Math.floor(Math.min(dataMin, thresholds.lower) * 0.9),
+              (dataMax) => Math.ceil(Math.max(dataMax, thresholds.upper) * 1.1)
+            ]}
+          />
           <Tooltip 
             labelFormatter={formatDate}
             formatter={(value) => value ? [`${value} kg`, 'Weight'] : ['No data', 'Weight']}

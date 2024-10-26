@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine } from 'recharts';
 import { getStatusColor } from '../utils/thresholdUtils';
 import { filterDataByDateRange } from '../utils/dateFilterUtils';
@@ -6,6 +6,24 @@ import DateRangeSelector from './DateRangeSelector';
 import ThresholdSettings from './ThresholdSettings';
 
 const ScaleDetail = ({ scale, onClose, dateRange, onStartDateChange, onEndDateChange, onSave }) => {
+  // Get latest measurement using useMemo to avoid recalculation
+  const { sortedHistory, currentWeight, statusColor } = useMemo(() => {
+    // Sort data from newest to oldest for getting current weight
+    const sorted = [...scale.history].sort((a, b) => 
+      new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
+    );
+    const latest = sorted[0]?.weight ?? null;
+    const color = latest !== null 
+      ? getStatusColor(latest, scale.thresholds.upper, scale.thresholds.lower)
+      : 'text-gray-400';
+    
+    return {
+      sortedHistory: sorted,
+      currentWeight: latest,
+      statusColor: color
+    };
+  }, [scale.history, scale.thresholds]);
+
   // Local state for thresholds and notifications
   const [thresholds, setThresholds] = useState(scale.thresholds);
   const [notifications, setNotifications] = useState({
@@ -21,11 +39,6 @@ const ScaleDetail = ({ scale, onClose, dateRange, onStartDateChange, onEndDateCh
 
   const [isSaving, setIsSaving] = useState(false);
 
-  // Sort and prepare data with gaps
-  const sortedData = [...scale.history].sort((a, b) => 
-    new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
-  );
-
   // Function to check if two dates are consecutive (within 24 hours)
   const areConsecutiveDates = (date1, date2) => {
     const diffInHours = Math.abs(new Date(date2) - new Date(date1)) / (1000 * 60 * 60);
@@ -33,14 +46,19 @@ const ScaleDetail = ({ scale, onClose, dateRange, onStartDateChange, onEndDateCh
   };
 
   // Add null values between non-consecutive dates
-  const addGapsToData = (data) => {
+  const prepareChartData = (data) => {
+    // First, sort data from earliest to latest for the chart
+    const sortedData = [...data].sort((a, b) => 
+      new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
+    );
+    
     const result = [];
-    for (let i = 0; i < data.length; i++) {
-      result.push(data[i]);
+    for (let i = 0; i < sortedData.length; i++) {
+      result.push(sortedData[i]);
       
-      if (i < data.length - 1 && !areConsecutiveDates(data[i].timestamp, data[i + 1].timestamp)) {
+      if (i < sortedData.length - 1 && !areConsecutiveDates(sortedData[i].timestamp, sortedData[i + 1].timestamp)) {
         result.push({
-          timestamp: new Date(new Date(data[i].timestamp).getTime() + 24 * 60 * 60 * 1000).toISOString(),
+          timestamp: new Date(new Date(sortedData[i].timestamp).getTime() + 24 * 60 * 60 * 1000).toISOString(),
           weight: null
         });
       }
@@ -59,24 +77,23 @@ const ScaleDetail = ({ scale, onClose, dateRange, onStartDateChange, onEndDateCh
       onClose();
     } catch (error) {
       console.error('Error saving scale settings:', error);
-      // You might want to show an error message to the user here
     } finally {
       setIsSaving(false);
     }
   };
 
-  // Filter data and prepare for display
-  const filteredData = filterDataByDateRange(sortedData, dateRange.startDate, dateRange.endDate);
-  const dataWithGaps = addGapsToData(filteredData);
+  // Filter and prepare chart data
+  const filteredData = filterDataByDateRange(scale.history, dateRange.startDate, dateRange.endDate);
+  const chartData = prepareChartData(filteredData);
 
   const formatXAxis = (timestamp) => {
     const date = new Date(timestamp);
     return date.toLocaleDateString('en-US', {
-      weekday: 'short',
       month: 'short',
       day: 'numeric',
       hour: '2-digit',
-      minute: '2-digit'
+      minute: '2-digit',
+      hour12: false
     });
   };
 
@@ -102,6 +119,29 @@ const ScaleDetail = ({ scale, onClose, dateRange, onStartDateChange, onEndDateCh
           </div>
         </div>
 
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="bg-white rounded-lg p-6 shadow">
+            <h3 className="text-lg font-bold mb-4">Current Status</h3>
+            <div className={`text-2xl font-bold ${statusColor}`}>
+              {currentWeight !== null ? `${currentWeight} kg` : 'No data'}
+            </div>
+          </div>
+
+          <div className="bg-white rounded-lg p-6 shadow">
+            <h3 className="text-lg font-bold mb-4">Thresholds</h3>
+            <div className="space-y-4">
+              <div>
+                <span className="block text-sm text-gray-500">Upper Threshold</span>
+                <span className="text-green-600 font-bold">{thresholds.upper} kg</span>
+              </div>
+              <div>
+                <span className="block text-sm text-gray-500">Lower Threshold</span>
+                <span className="text-red-600 font-bold">{thresholds.lower} kg</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
         <DateRangeSelector
           startDate={dateRange.startDate}
           endDate={dateRange.endDate}
@@ -113,7 +153,7 @@ const ScaleDetail = ({ scale, onClose, dateRange, onStartDateChange, onEndDateCh
           <h3 className="text-lg font-bold mb-4">Weight History</h3>
           <div className="h-64">
             <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={dataWithGaps}>
+              <LineChart data={chartData}>
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis 
                   dataKey="timestamp" 
@@ -124,10 +164,13 @@ const ScaleDetail = ({ scale, onClose, dateRange, onStartDateChange, onEndDateCh
                   interval="preserveStart"
                   tick={{ fontSize: 12 }}
                 />
-                <YAxis domain={[
-                  (dataMin) => Math.floor(Math.min(dataMin, thresholds.lower) * 0.9),
-                  (dataMax) => Math.ceil(Math.max(dataMax, thresholds.upper) * 1.1)
-                ]} />
+                <YAxis 
+                  domain={[
+                    (dataMin) => Math.floor(Math.min(dataMin, thresholds.lower) * 0.9),
+                    (dataMax) => Math.ceil(Math.max(dataMax, thresholds.upper) * 1.1)
+                  ]}
+                  width={60}
+                />
                 <Tooltip 
                   labelFormatter={formatXAxis}
                   formatter={(value) => value ? [`${value} kg`, 'Weight'] : ['No data', 'Weight']}
@@ -139,7 +182,8 @@ const ScaleDetail = ({ scale, onClose, dateRange, onStartDateChange, onEndDateCh
                   label={{ 
                     value: `Upper Threshold (${thresholds.upper}kg)`,
                     fill: '#22c55e',
-                    fontSize: 12
+                    fontSize: 12,
+                    position: 'left'
                   }} 
                 />
                 <ReferenceLine 
@@ -149,7 +193,8 @@ const ScaleDetail = ({ scale, onClose, dateRange, onStartDateChange, onEndDateCh
                   label={{ 
                     value: `Lower Threshold (${thresholds.lower}kg)`,
                     fill: '#dc2626',
-                    fontSize: 12
+                    fontSize: 12,
+                    position: 'left'
                   }} 
                 />
                 <Line 
