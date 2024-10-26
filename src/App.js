@@ -3,12 +3,13 @@ import Dashboard from './components/Dashboard';
 import CustomerDashboard from './components/CustomerDashboard';
 import NotificationsView from './components/NotificationsView';
 import SideMenu from './components/SideMenu';
+import LandingPage from './components/LandingPage';
 import useScaleData from './hooks/useScaleData';
 import { Menu as MenuIcon } from 'lucide-react';
 
 function App() {
   const [selectedScaleIds, setSelectedScaleIds] = useState(null);
-  const [activeView, setActiveView] = useState('customers');
+  const [activeView, setActiveView] = useState('landing');
   const [isMenuOpen, setIsMenuOpen] = useState(true);
   const { scales } = useScaleData();
   
@@ -16,7 +17,7 @@ function App() {
   const touchStartX = useRef(null);
   const touchEndX = useRef(null);
   const menuRef = useRef(null);
-  const minSwipeDistance = 50; // Minimum distance for swipe to register
+  const minSwipeDistance = 50;
 
   const handleTouchStart = (e) => {
     touchStartX.current = e.touches[0].clientX;
@@ -26,9 +27,7 @@ function App() {
   const handleTouchMove = (e) => {
     touchEndX.current = e.touches[0].clientX;
     
-    // If we're swiping from near the left edge or the menu is open
     if (touchStartX.current < 50 || isMenuOpen) {
-      // Prevent default scrolling
       e.preventDefault();
     }
   };
@@ -38,13 +37,10 @@ function App() {
 
     const swipeDistance = touchEndX.current - touchStartX.current;
     
-    // If swipe distance is greater than minimum and we're swiping from left edge
     if (Math.abs(swipeDistance) > minSwipeDistance) {
       if (swipeDistance < 0 && isMenuOpen) {
-        // Swipe left - close menu
         setIsMenuOpen(false);
       } else if (swipeDistance > 0 && !isMenuOpen && touchStartX.current < 50) {
-        // Swipe right from left edge - open menu
         setIsMenuOpen(true);
       }
     }
@@ -101,7 +97,7 @@ function App() {
         />
       </div>
 
-      {/* Overlay to capture touches when menu is open on mobile */}
+      {/* Overlay */}
       {isMenuOpen && (
         <div
           className="fixed inset-0 bg-black bg-opacity-50 z-30 md:hidden"
@@ -116,7 +112,9 @@ function App() {
         }`}
       >
         <div className="p-6">
-          {activeView === 'customers' ? (
+          {activeView === 'landing' ? (
+            <LandingPage onViewChange={handleViewChange} />
+          ) : activeView === 'customers' ? (
             selectedScaleIds ? (
               <>
                 <button
@@ -130,9 +128,11 @@ function App() {
             ) : (
               <CustomerDashboard onCustomerSelect={handleCustomerSelect} />
             )
-          ) : (
+          ) : activeView === 'notifications' ? (
             <NotificationsView scales={scales} />
-          )}
+          ) : activeView === 'dashboard' || activeView === 'allScales' ? (
+            <Dashboard selectedScaleIds={null} />
+          ) : null}
         </div>
       </main>
     </div>
