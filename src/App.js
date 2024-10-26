@@ -4,14 +4,20 @@ import CustomerDashboard from './components/CustomerDashboard';
 import NotificationsView from './components/NotificationsView';
 import SideMenu from './components/SideMenu';
 import LandingPage from './components/LandingPage';
+import LanguageToggle from './components/LanguageToggle';
+import { LanguageProvider, useLanguage } from './contexts/LanguageContext';
 import useScaleData from './hooks/useScaleData';
 import { Menu as MenuIcon } from 'lucide-react';
+import { translations } from './translations/translations';
 
-function App() {
+// Create an inner App component that uses the language context
+function AppContent() {
   const [selectedScaleIds, setSelectedScaleIds] = useState(null);
   const [activeView, setActiveView] = useState('landing');
   const [isMenuOpen, setIsMenuOpen] = useState(true);
   const { scales } = useScaleData();
+  const { language } = useLanguage();
+  const t = translations[language];
   
   // Touch handling
   const touchStartX = useRef(null);
@@ -37,17 +43,28 @@ function App() {
 
     const swipeDistance = touchEndX.current - touchStartX.current;
     
-    if (Math.abs(swipeDistance) > minSwipeDistance) {
-      if (swipeDistance < 0 && isMenuOpen) {
-        setIsMenuOpen(false);
-      } else if (swipeDistance > 0 && !isMenuOpen && touchStartX.current < 50) {
-        setIsMenuOpen(true);
+    // Adjust swipe direction based on language
+    if (language === 'he') {
+      if (Math.abs(swipeDistance) > minSwipeDistance) {
+        if (swipeDistance > 0 && isMenuOpen) {
+          setIsMenuOpen(false);
+        } else if (swipeDistance < 0 && !isMenuOpen && touchStartX.current > window.innerWidth - 50) {
+          setIsMenuOpen(true);
+        }
+      }
+    } else {
+      if (Math.abs(swipeDistance) > minSwipeDistance) {
+        if (swipeDistance < 0 && isMenuOpen) {
+          setIsMenuOpen(false);
+        } else if (swipeDistance > 0 && !isMenuOpen && touchStartX.current < 50) {
+          setIsMenuOpen(true);
+        }
       }
     }
     
     touchStartX.current = null;
     touchEndX.current = null;
-  }, [isMenuOpen]);
+  }, [isMenuOpen, language]);
 
   const handleCustomerSelect = (scaleIds) => {
     setSelectedScaleIds(scaleIds);
@@ -69,28 +86,48 @@ function App() {
     setIsMenuOpen(!isMenuOpen);
   };
 
+  // Determine RTL-aware styles
+  const getMenuStyles = () => {
+    const baseStyles = 'fixed top-0 h-full bg-gray-800 transition-all duration-300 ease-in-out w-64 z-40';
+    if (language === 'he') {
+      return `${baseStyles} ${isMenuOpen ? 'right-0 translate-x-0' : 'right-0 translate-x-full'}`;
+    }
+    return `${baseStyles} ${isMenuOpen ? 'left-0 translate-x-0' : 'left-0 -translate-x-full'}`;
+  };
+
+  const getMainContentStyles = () => {
+    const baseStyles = 'flex-1 transition-all duration-300 ease-in-out';
+    if (language === 'he') {
+      return `${baseStyles} ${isMenuOpen ? 'md:mr-64' : 'mr-0'}`;
+    }
+    return `${baseStyles} ${isMenuOpen ? 'md:ml-64' : 'ml-0'}`;
+  };
+
+  // Get RTL-aware position for menu button
+  const getMenuButtonPosition = () => {
+    return language === 'he' ? 'fixed top-4 right-4 z-50' : 'fixed top-4 left-4 z-50';
+  };
+
   return (
     <div 
       className="flex min-h-screen bg-gray-100"
       onTouchStart={handleTouchStart}
       onTouchMove={handleTouchMove}
       onTouchEnd={handleTouchEnd}
+      dir={language === 'he' ? 'rtl' : 'ltr'}
     >
       {/* Toggle Button */}
       <button
         onClick={toggleMenu}
-        className="fixed top-4 left-4 z-50 p-2 rounded-lg bg-gray-800 text-white hover:bg-gray-700 md:hidden"
+        className={`${getMenuButtonPosition()} p-2 rounded-lg bg-gray-800 text-white hover:bg-gray-700 md:hidden`}
       >
         <MenuIcon size={24} />
       </button>
 
+      <LanguageToggle />
+
       {/* Menu */}
-      <div 
-        ref={menuRef}
-        className={`fixed top-0 left-0 h-full bg-gray-800 transition-all duration-300 ease-in-out ${
-          isMenuOpen ? 'w-64 translate-x-0' : 'w-64 -translate-x-full'
-        } z-40`}
-      >
+      <div ref={menuRef} className={getMenuStyles()}>
         <SideMenu 
           activeView={activeView} 
           onViewChange={handleViewChange} 
@@ -106,11 +143,7 @@ function App() {
       )}
 
       {/* Main Content */}
-      <main 
-        className={`flex-1 transition-all duration-300 ease-in-out ${
-          isMenuOpen ? 'md:ml-64' : 'ml-0'
-        }`}
-      >
+      <main className={getMainContentStyles()}>
         <div className="p-6">
           {activeView === 'landing' ? (
             <LandingPage onViewChange={handleViewChange} />
@@ -121,7 +154,7 @@ function App() {
                   onClick={handleBackToCustomers}
                   className="mb-4 text-blue-600 hover:text-blue-800 font-medium"
                 >
-                  ← Back to Customers
+                  {language === 'he' ? '← חזרה ללקוחות' : '← Back to Customers'}
                 </button>
                 <Dashboard selectedScaleIds={selectedScaleIds} />
               </>
@@ -136,6 +169,15 @@ function App() {
         </div>
       </main>
     </div>
+  );
+}
+
+// Wrapper component that provides the LanguageProvider
+function App() {
+  return (
+    <LanguageProvider>
+      <AppContent />
+    </LanguageProvider>
   );
 }
 
