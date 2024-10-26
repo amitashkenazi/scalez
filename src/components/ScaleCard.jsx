@@ -1,9 +1,12 @@
+// src/components/ScaleCard.jsx
 import React from 'react';
 import { LineChart, Line, ResponsiveContainer } from 'recharts';
 import { getStatusColor } from '../utils/thresholdUtils';
+import { useLanguage } from '../contexts/LanguageContext';
+import { translations } from '../translations/translations';
+import customersData from '../data/customersData.json';
 
 const MiniGraph = ({ data }) => {
-  // Sort data by timestamp to ensure correct display
   const sortedData = [...data].sort((a, b) => 
     new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
   );
@@ -27,6 +30,22 @@ const MiniGraph = ({ data }) => {
 };
 
 const ScaleCard = ({ scale, onCardClick }) => {
+  const { language } = useLanguage();
+  const t = translations[language];
+  const isRTL = language === 'he';
+  
+  // Find customer for this scale
+  const customer = customersData.customers.find(
+    cust => cust.scaleIds.includes(scale.id)
+  );
+  
+  // Get customer name in correct format based on language
+  const getCustomerName = () => {
+    if (!customer) return t.unknownCustomer;
+    const [hebrewName, englishName] = customer.name.split(" - ");
+    return language === 'he' ? hebrewName : englishName;
+  };
+
   // Get the latest measurement
   const sortedHistory = [...scale.history].sort((a, b) => 
     new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
@@ -42,24 +61,30 @@ const ScaleCard = ({ scale, onCardClick }) => {
     <div 
       className="bg-white rounded-lg p-6 shadow hover:shadow-lg transition-shadow cursor-pointer"
       onClick={() => onCardClick(scale)}
+      dir={isRTL ? 'rtl' : 'ltr'}
     >
-      <h3 className="text-2xl font-bold mb-4">{scale.productName}</h3>
-      <div className="space-y-4">
-        <div>
-          <span className="block text-sm text-gray-500 mb-1">Latest Weight</span>
-          {currentWeight !== null ? (
-            <span className={`font-bold ${statusColor}`}>
-              {currentWeight} kg
-            </span>
-          ) : (
-            <span className="text-gray-400">No data available</span>
-          )}
+      <div className={`flex justify-between items-start mb-4 ${isRTL ? 'flex-row-reverse' : 'flex-row'}`}>
+        <div className={isRTL ? 'text-right' : 'text-left'}>
+          <h3 className="text-2xl font-bold">{scale.productName}</h3>
+          <p className="text-sm text-gray-500">{getCustomerName()}</p>
         </div>
+        <div className={`px-3 py-1 rounded-full ${statusColor === 'text-green-600' ? 'bg-green-100' : statusColor === 'text-orange-500' ? 'bg-orange-100' : 'bg-red-100'}`}>
+          <span className={`text-sm font-medium ${statusColor}`}>
+            {currentWeight !== null ? `${currentWeight} ${scale.unit}` : t.noData}
+          </span>
+        </div>
+      </div>
+
+      <div className={`space-y-4 ${isRTL ? 'text-right' : 'text-left'}`}>
         <div>
-          <span className="block text-sm text-gray-500 mb-1">Thresholds</span>
+          <span className="block text-sm text-gray-500 mb-1">{t.thresholds}</span>
           <div className="text-sm">
-            <div className="text-green-600">Upper: {scale.thresholds.upper} kg</div>
-            <div className="text-red-600">Lower: {scale.thresholds.lower} kg</div>
+            <div className="text-green-600">
+              {t.upperThreshold}: {scale.thresholds.upper} {scale.unit}
+            </div>
+            <div className="text-red-600">
+              {t.lowerThreshold}: {scale.thresholds.lower} {scale.unit}
+            </div>
           </div>
         </div>
         <div className="mt-4">

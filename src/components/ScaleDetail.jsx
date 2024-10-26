@@ -1,14 +1,62 @@
 import React, { useState, useMemo } from 'react';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine } from 'recharts';
-import { getStatusColor } from '../utils/thresholdUtils';
+import { 
+  LineChart, 
+  Line, 
+  XAxis, 
+  YAxis, 
+  CartesianGrid, 
+  Tooltip, 
+  ResponsiveContainer, 
+  ReferenceLine 
+} from 'recharts';
+import { getStatusColor, getGraphColor } from '../utils/thresholdUtils';
 import { filterDataByDateRange } from '../utils/dateFilterUtils';
 import DateRangeSelector from './DateRangeSelector';
 import ThresholdSettings from './ThresholdSettings';
+import { useLanguage } from '../contexts/LanguageContext';
+import { translations } from '../translations/translations';
+import customersData from '../data/customersData.json';
 
 const ScaleDetail = ({ scale, onClose, dateRange, onStartDateChange, onEndDateChange, onSave }) => {
-  // Get latest measurement using useMemo to avoid recalculation
+  const { language } = useLanguage();
+  const t = translations[language];
+  const isRTL = language === 'he';
+
+  // Helper function to format dates
+  const formatDate = (timestamp) => {
+    const date = new Date(timestamp);
+    const formatOptions = {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: false
+    };
+    
+    return new Intl.DateTimeFormat(language === 'he' ? 'he-IL' : 'en-US', formatOptions).format(date);
+  };
+
+  // Helper function to format axis dates (shorter format)
+  const formatAxisDate = (timestamp) => {
+    const date = new Date(timestamp);
+    return `${date.getDate()}/${date.getMonth() + 1} ${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`;
+  };
+
+  // Find customer for this scale
+  const customer = customersData.customers.find(
+    cust => cust.scaleIds.includes(scale.id)
+  );
+
+  // Get customer name in correct format based on language
+  const getCustomerName = () => {
+    if (!customer) return t.unknownCustomer;
+    const [hebrewName, englishName] = customer.name.split(" - ");
+    return language === 'he' ? hebrewName : englishName;
+  };
+
+  // Get latest measurement using useMemo
   const { sortedHistory, currentWeight, statusColor } = useMemo(() => {
-    // Sort data from newest to oldest for getting current weight
     const sorted = [...scale.history].sort((a, b) => 
       new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
     );
@@ -39,33 +87,6 @@ const ScaleDetail = ({ scale, onClose, dateRange, onStartDateChange, onEndDateCh
 
   const [isSaving, setIsSaving] = useState(false);
 
-  // Function to check if two dates are consecutive (within 24 hours)
-  const areConsecutiveDates = (date1, date2) => {
-    const diffInHours = Math.abs(new Date(date2) - new Date(date1)) / (1000 * 60 * 60);
-    return diffInHours <= 24;
-  };
-
-  // Add null values between non-consecutive dates
-  const prepareChartData = (data) => {
-    // First, sort data from earliest to latest for the chart
-    const sortedData = [...data].sort((a, b) => 
-      new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
-    );
-    
-    const result = [];
-    for (let i = 0; i < sortedData.length; i++) {
-      result.push(sortedData[i]);
-      
-      if (i < sortedData.length - 1 && !areConsecutiveDates(sortedData[i].timestamp, sortedData[i + 1].timestamp)) {
-        result.push({
-          timestamp: new Date(new Date(sortedData[i].timestamp).getTime() + 24 * 60 * 60 * 1000).toISOString(),
-          weight: null
-        });
-      }
-    }
-    return result;
-  };
-
   const handleSave = async () => {
     try {
       setIsSaving(true);
@@ -83,81 +104,104 @@ const ScaleDetail = ({ scale, onClose, dateRange, onStartDateChange, onEndDateCh
   };
 
   // Filter and prepare chart data
-  const filteredData = filterDataByDateRange(scale.history, dateRange.startDate, dateRange.endDate);
-  const chartData = prepareChartData(filteredData);
+  const filteredData = useMemo(() => {
+    return filterDataByDateRange(scale.history, dateRange.startDate, dateRange.endDate);
+  }, [scale.history, dateRange]);
 
-  const formatXAxis = (timestamp) => {
-    const date = new Date(timestamp);
-    return date.toLocaleDateString('en-US', {
-      month: 'short',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
-      hour12: false
-    });
+  // Custom tooltip content
+  const CustomTooltip = ({ active, payload, label }) => {
+    if (!active || !payload || !payload[0]) return null;
+
+    const weight = payload[0].value;
+    const color = getGraphColor(weight, thresholds.upper, thresholds.lower);
+
+    return (
+      <div className={`bg-white p-3 shadow-lg rounded-lg border ${isRTL ? 'text-right' : 'text-left'}`}>
+        <p className="text-gray-500 text-sm">{formatDate(label)}</p>
+        <p className="font-bold" style={{ color }}>
+          {weight} {scale.unit}
+        </p>
+      </div>
+    );
   };
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
-      <div className="bg-white rounded-lg p-6 w-full max-w-4xl max-h-[90vh] overflow-y-auto">
-        <div className="flex justify-between items-center mb-4">
-          <h2 className="text-2xl font-bold">{scale.productName}</h2>
-          <div className="space-x-2">
+      <div 
+        className="bg-white rounded-lg p-6 w-full max-w-4xl max-h-[90vh] overflow-y-auto"
+        dir={isRTL ? 'rtl' : 'ltr'}
+      >
+        {/* Header */}
+        <div className={`flex justify-between items-start mb-6 ${isRTL ? 'flex-row-reverse' : 'flex-row'}`}>
+          <div className={isRTL ? 'text-right' : 'text-left'}>
+            <h2 className="text-2xl font-bold">{scale.productName}</h2>
+            <p className="text-gray-500">{getCustomerName()}</p>
+          </div>
+          <div className={`space-x-2 flex items-center ${isRTL ? 'flex-row-reverse space-x-reverse' : ''}`}>
             <button 
               onClick={handleSave}
               disabled={isSaving}
               className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:bg-gray-400"
             >
-              {isSaving ? 'Saving...' : 'Save Changes'}
+              {isSaving ? t.saving : t.saveChanges}
             </button>
             <button 
               className="px-4 py-2 text-gray-700 border rounded hover:bg-gray-100"
               onClick={onClose}
             >
-              Close
+              {t.close}
             </button>
           </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {/* Status Cards */}
+        <div className={`grid grid-cols-1 md:grid-cols-2 gap-4 mb-6 ${isRTL ? 'text-right' : 'text-left'}`}>
           <div className="bg-white rounded-lg p-6 shadow">
-            <h3 className="text-lg font-bold mb-4">Current Status</h3>
+            <h3 className="text-lg font-bold mb-4">{t.currentStatus}</h3>
             <div className={`text-2xl font-bold ${statusColor}`}>
-              {currentWeight !== null ? `${currentWeight} kg` : 'No data'}
+              {currentWeight !== null ? `${currentWeight} ${scale.unit}` : t.noData}
             </div>
+            {currentWeight !== null && (
+              <p className="text-sm text-gray-500 mt-2">
+                {t.lastUpdated}: {formatDate(sortedHistory[0].timestamp)}
+              </p>
+            )}
           </div>
 
           <div className="bg-white rounded-lg p-6 shadow">
-            <h3 className="text-lg font-bold mb-4">Thresholds</h3>
+            <h3 className="text-lg font-bold mb-4">{t.thresholds}</h3>
             <div className="space-y-4">
               <div>
-                <span className="block text-sm text-gray-500">Upper Threshold</span>
-                <span className="text-green-600 font-bold">{thresholds.upper} kg</span>
+                <span className="block text-sm text-gray-500">{t.upperThreshold}</span>
+                <span className="text-green-600 font-bold">{thresholds.upper} {scale.unit}</span>
               </div>
               <div>
-                <span className="block text-sm text-gray-500">Lower Threshold</span>
-                <span className="text-red-600 font-bold">{thresholds.lower} kg</span>
+                <span className="block text-sm text-gray-500">{t.lowerThreshold}</span>
+                <span className="text-red-600 font-bold">{thresholds.lower} {scale.unit}</span>
               </div>
             </div>
           </div>
         </div>
 
+        {/* Date Range Selector */}
         <DateRangeSelector
           startDate={dateRange.startDate}
           endDate={dateRange.endDate}
           onStartDateChange={onStartDateChange}
           onEndDateChange={onEndDateChange}
+          isRTL={isRTL}
         />
 
+        {/* Weight History Graph */}
         <div className="mt-4 bg-white rounded-lg p-6 shadow">
-          <h3 className="text-lg font-bold mb-4">Weight History</h3>
+          <h3 className="text-lg font-bold mb-4">{t.weightHistory}</h3>
           <div className="h-64">
             <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={chartData}>
+              <LineChart data={filteredData}>
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis 
                   dataKey="timestamp" 
-                  tickFormatter={formatXAxis}
+                  tickFormatter={formatAxisDate}
                   angle={-45}
                   textAnchor="end"
                   height={80}
@@ -170,20 +214,18 @@ const ScaleDetail = ({ scale, onClose, dateRange, onStartDateChange, onEndDateCh
                     (dataMax) => Math.ceil(Math.max(dataMax, thresholds.upper) * 1.1)
                   ]}
                   width={60}
+                  orientation={isRTL ? 'right' : 'left'}
                 />
-                <Tooltip 
-                  labelFormatter={formatXAxis}
-                  formatter={(value) => value ? [`${value} kg`, 'Weight'] : ['No data', 'Weight']}
-                />
+                <Tooltip content={<CustomTooltip />} />
                 <ReferenceLine 
                   y={thresholds.upper} 
                   stroke="#22c55e"
                   strokeDasharray="3 3"
                   label={{ 
-                    value: `Upper Threshold (${thresholds.upper}kg)`,
+                    value: `${t.upperThreshold} (${thresholds.upper}${scale.unit})`,
                     fill: '#22c55e',
                     fontSize: 12,
-                    position: 'left'
+                    position: isRTL ? 'right' : 'left'
                   }} 
                 />
                 <ReferenceLine 
@@ -191,10 +233,10 @@ const ScaleDetail = ({ scale, onClose, dateRange, onStartDateChange, onEndDateCh
                   stroke="#dc2626"
                   strokeDasharray="3 3"
                   label={{ 
-                    value: `Lower Threshold (${thresholds.lower}kg)`,
+                    value: `${t.lowerThreshold} (${thresholds.lower}${scale.unit})`,
                     fill: '#dc2626',
                     fontSize: 12,
-                    position: 'left'
+                    position: isRTL ? 'right' : 'left'
                   }} 
                 />
                 <Line 
@@ -210,11 +252,15 @@ const ScaleDetail = ({ scale, onClose, dateRange, onStartDateChange, onEndDateCh
           </div>
         </div>
 
+        {/* Threshold Settings */}
         <ThresholdSettings 
           thresholds={thresholds}
           onThresholdsChange={setThresholds}
           notifications={notifications}
           onNotificationsChange={setNotifications}
+          isRTL={isRTL}
+          translations={t}
+          unit={scale.unit}
         />
       </div>
     </div>
