@@ -1,7 +1,16 @@
 import React from 'react';
-import { Bell, Users, LayoutDashboard, Database, Home, Languages } from 'lucide-react';
+import { 
+  Bell, 
+  Users, 
+  LayoutDashboard, 
+  Database, 
+  Home, 
+  Languages,
+  List as ListIcon
+} from 'lucide-react';
 import { useLanguage } from '../contexts/LanguageContext';
 import { translations } from '../translations/translations';
+
 
 const MenuItem = ({ icon: Icon, label, isActive, onClick, language }) => {
   const isRTL = language === 'he';
@@ -45,6 +54,12 @@ const SideMenu = ({ activeView, onViewChange }) => {
       label: t.customers,
       view: "customers",
       description: t.customersDesc
+    },
+    {
+      icon: ListIcon,  // Import this from lucide-react
+      label: t.customersTable,
+      view: "customersTable",
+      description: t.customersTableDesc
     },
     {
       icon: Bell,

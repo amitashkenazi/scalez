@@ -1,7 +1,9 @@
+// src/App.js
 import React, { useState, useRef, useCallback } from 'react';
 import Dashboard from './components/Dashboard';
 import CustomerDashboard from './components/CustomerDashboard';
 import NotificationsView from './components/NotificationsView';
+import { CustomersTableView } from './components/customers';
 import SideMenu from './components/SideMenu';
 import LandingPage from './components/LandingPage';
 import { LanguageProvider, useLanguage } from './contexts/LanguageContext';
@@ -9,7 +11,6 @@ import useScaleData from './hooks/useScaleData';
 import { Menu as MenuIcon } from 'lucide-react';
 import { translations } from './translations/translations';
 
-// Create an inner App component that uses the language context
 function AppContent() {
   const [selectedScaleIds, setSelectedScaleIds] = useState(null);
   const [activeView, setActiveView] = useState('landing');
@@ -18,7 +19,7 @@ function AppContent() {
   const { language } = useLanguage();
   const t = translations[language];
   
-  // Touch handling
+  // Touch handling for mobile
   const touchStartX = useRef(null);
   const touchEndX = useRef(null);
   const menuRef = useRef(null);
@@ -31,7 +32,6 @@ function AppContent() {
 
   const handleTouchMove = (e) => {
     touchEndX.current = e.touches[0].clientX;
-    
     if (touchStartX.current < 50 || isMenuOpen) {
       e.preventDefault();
     }
@@ -85,7 +85,7 @@ function AppContent() {
     setIsMenuOpen(!isMenuOpen);
   };
 
-  // Determine RTL-aware styles
+  // RTL-aware styles
   const getMenuStyles = () => {
     const baseStyles = 'fixed top-0 h-full bg-gray-800 transition-all duration-300 ease-in-out w-64 z-40';
     if (language === 'he') {
@@ -102,7 +102,6 @@ function AppContent() {
     return `${baseStyles} ${isMenuOpen ? 'md:ml-64' : 'ml-0'}`;
   };
 
-  // Get RTL-aware position for menu button
   const getMenuButtonPosition = () => {
     const baseStyles = 'fixed top-4 z-50 p-2 rounded-lg bg-gray-800 text-white hover:bg-gray-700 md:hidden';
     return language === 'he' ? `${baseStyles} right-4` : `${baseStyles} left-4`;
@@ -132,7 +131,7 @@ function AppContent() {
         />
       </div>
 
-      {/* Overlay */}
+      {/* Mobile Overlay */}
       {isMenuOpen && (
         <div
           className="fixed inset-0 bg-black bg-opacity-50 z-30 md:hidden"
@@ -143,9 +142,11 @@ function AppContent() {
       {/* Main Content */}
       <main className={getMainContentStyles()}>
         <div className="p-6">
-          {activeView === 'landing' ? (
+          {activeView === 'landing' && (
             <LandingPage onViewChange={handleViewChange} />
-          ) : activeView === 'customers' ? (
+          )}
+          
+          {activeView === 'customers' && (
             selectedScaleIds ? (
               <>
                 <button
@@ -154,7 +155,7 @@ function AppContent() {
                     ${language === 'he' ? 'flex-row-reverse' : ''}`}
                 >
                   <span className={language === 'he' ? 'mr-2' : 'ml-2'}>
-                    {language === 'he' ? 'חזרה ללקוחות' : 'Back to Customers'}
+                    {t.backToCustomers}
                   </span>
                   {language === 'he' ? '→' : '←'}
                 </button>
@@ -163,18 +164,25 @@ function AppContent() {
             ) : (
               <CustomerDashboard onCustomerSelect={handleCustomerSelect} />
             )
-          ) : activeView === 'notifications' ? (
+          )}
+          
+          {activeView === 'notifications' && (
             <NotificationsView scales={scales} />
-          ) : activeView === 'dashboard' || activeView === 'allScales' ? (
+          )}
+          
+          {(activeView === 'dashboard' || activeView === 'allScales') && (
             <Dashboard selectedScaleIds={null} />
-          ) : null}
+          )}
+
+          {activeView === 'customersTable' && (
+            <CustomersTableView />
+          )}
         </div>
       </main>
     </div>
   );
 }
 
-// Wrapper component that provides the LanguageProvider
 function App() {
   return (
     <LanguageProvider>

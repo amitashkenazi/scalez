@@ -52,24 +52,14 @@ export const translations = {
         // Menu
         menuTitle: "Scale Monitor",
         menuSubtitle: "Inventory Management System",
-        home: "Home",
-        dashboard: "Dashboard",
-        customers: "Customers",
-        notifications: "Notifications",
-        allScales: "All Scales",
         version: "Version",
         copyright: "© 2024 Scale Monitor",
         
         // Menu Descriptions
         homeDesc: "Return to home page",
-        dashboardDesc: "View main dashboard",
-        customersDesc: "Manage customers",
-        notificationsDesc: "View alerts",
-        allScalesDesc: "View all scales",
         // Landing Page
         userName: "User",
         welcomeMessage: "{time}, {name}",
-        welcomeSubtitle: "Here's what's happening with your scales today",
         
         timeGreetings: {
         morning: "Good Morning",
@@ -95,33 +85,15 @@ export const translations = {
         ]
         },
         
-        // Menu Cards
-        dashboard: "Dashboard",
-        customers: "Customers",
-        notifications: "Notifications",
-        allScales: "All Scales",
-        
-        dashboardDesc: "View all scales and their current status in a comprehensive dashboard",
-        customersDesc: "Manage and monitor customer scales, products, and inventory levels",
-        notificationsDesc: "Check alerts and notifications for low inventory levels",
-        allScalesDesc: "Monitor and manage all scales across all customers in a single view",
-        // Scale Components
     unknownCustomer: "Unknown Customer",
-    noData: "No data available",
     saving: "Saving...",
     saveChanges: "Save Changes",
-    close: "Close",
-    currentStatus: "Current Status",
-    thresholds: "Thresholds",
-    upperThreshold: "Upper Threshold",
-    lowerThreshold: "Lower Threshold",
     weight: "Weight",
     lastUpdated: "Last Updated",
     customer: "Customer",
     productName: "Product Name",
     
     // Graph
-    weightHistory: "Weight History",
     time: "Time",
     
     // Notifications
@@ -129,7 +101,15 @@ export const translations = {
     phoneNumber: "Phone Number",
     message: "Message",
     upperThresholdNotification: "Upper Threshold Notification",
-    lowerThresholdNotification: "Lower Threshold Notification"
+    lowerThresholdNotification: "Lower Threshold Notification",
+    customerName: "Customer Name",
+    searchCustomers: "Search customers...",
+    refresh: "Refresh",
+    addCustomer: "Add Customer",
+    noCustomers: "No customers found",
+    noSearchResults: "No customers match your search",
+    customersTableDesc: "Manage and view all customer information",
+    customersTable: "Customers Table",
     },
     he: {
       // General
@@ -184,25 +164,13 @@ export const translations = {
       // Menu
     menuTitle: "ניטור משקל",
     menuSubtitle: "מערכת ניהול מלאי",
-    home: "בית",
-    dashboard: "לוח בקרה",
-    customers: "לקוחות",
-    notifications: "התראות",
-    allScales: "כל המשקלים",
     version: "גרסה",
     copyright: "© 2024 ניטור משקל",
     
     // Menu Descriptions
     homeDesc: "חזרה לדף הבית",
-    dashboardDesc: "צפה בלוח הבקרה הראשי",
-    customersDesc: "ניהול לקוחות",
-    notificationsDesc: "צפה בהתראות",
-    allScalesDesc: "צפה בכל המשקלים",
-    // Landing Page
     userName: "משתמש",
     welcomeMessage: "{time}, {name}",
-    welcomeSubtitle: "הנה מה שקורה עם המשקלים שלך היום",
-    
     timeGreetings: {
       morning: "בוקר טוב",
       afternoon: "צהריים טובים",
@@ -228,32 +196,15 @@ export const translations = {
     },
     
     // Menu Cards
-    dashboard: "לוח בקרה",
-    customers: "לקוחות",
-    notifications: "התראות",
-    allScales: "כל המשקלים",
-    
-    dashboardDesc: "צפה בכל המשקלים והסטטוס הנוכחי שלהם בלוח בקרה מקיף",
-    customersDesc: "נהל ועקוב אחר משקלי הלקוחות, המוצרים ורמות המלאי",
-    notificationsDesc: "בדוק התראות והודעות על רמות מלאי נמוכות",
-    allScalesDesc: "נטר ונהל את כל המשקלים בכל הלקוחות בתצוגה אחת",
-    // Scale Components
-    unknownCustomer: "לקוח לא ידוע",
-    noData: "אין נתונים זמינים",
     saving: "...שומר",
     saveChanges: "שמור שינויים",
-    close: "סגור",
-    currentStatus: "סטטוס נוכחי",
-    thresholds: "ספים",
-    upperThreshold: "סף עליון",
-    lowerThreshold: "סף תחתון",
     weight: "משקל",
     lastUpdated: "עדכון אחרון",
     customer: "לקוח",
     productName: "שם מוצר",
+    customersTable: "טבלת לקוחות",
     
     // Graph
-    weightHistory: "היסטוריית משקל",
     time: "זמן",
     
     // Notifications
@@ -261,6 +212,13 @@ export const translations = {
     phoneNumber: "מספר טלפון",
     message: "הודעה",
     upperThresholdNotification: "התראת סף עליון",
-    lowerThresholdNotification: "התראת סף תחתון"
+    lowerThresholdNotification: "התראת סף תחתון",
+    customerName: "שם לקוח",
+    searchCustomers: "חיפוש לקוחות...",
+    refresh: "רענון",
+    addCustomer: "הוסף לקוח",
+    noCustomers: "לא נמצאו לקוחות",
+    noSearchResults: "לא נמצאו לקוחות התואמים את החיפוש",
+    customersTableDesc: "ניהול וצפייה במידע של כל הלקוחות",
     }
   };
