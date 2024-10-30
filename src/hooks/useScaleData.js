@@ -1,47 +1,86 @@
+// src/hooks/useScaleData.js
+
 import { useState, useEffect } from 'react';
-import scalesData from '../data/scalesData.json';
+import apiService from '../services/api';
 
 const useScaleData = () => {
   const [scales, setScales] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+
+  const fetchScales = async (isRefresh = false) => {
+    try {
+      if (!isRefresh) {
+        setIsLoading(true);
+      }
+      setError(null);
+      
+      const response = await apiService.getScales();
+      console.log('response:', response);
+      
+      // Transform the data to match the expected format
+      const transformedScales = response.map(scale => ({
+        ...scale,
+        notifications: scale.notifications || {
+          upper: { phoneNumber: '', message: '' },
+          lower: { phoneNumber: '', message: '' }
+        },
+        // Ensure history is sorted by timestamp
+        history: (scale.history || []).sort((a, b) => 
+          new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
+        )
+      }));
+
+      setScales(transformedScales);
+    } catch (err) {
+      console.error('Error fetching scales:', err);
+      setError(err.message || 'Failed to fetch scales data. Please try again later.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   useEffect(() => {
-    // Load initial data
-    const loadedScales = scalesData.scales.map(scale => ({
-      ...scale,
-      notifications: scale.notifications || {
-        upper: { phoneNumber: '', message: '' },
-        lower: { phoneNumber: '', message: '' }
-      }
-    }));
-    setScales(loadedScales);
+    fetchScales();
   }, []);
 
   const updateScale = async (updatedScale) => {
     try {
-      // In a real application, you would make an API call here
-      // For now, we'll just update the local state
-      setScales(currentScales => 
-        currentScales.map(scale => 
+      setIsRefreshing(true);
+      
+      // Make the API call to update the scale
+      await apiService.updateScale(updatedScale.id, updatedScale);
+
+      // Update local state
+      setScales(currentScales =>
+        currentScales.map(scale =>
           scale.id === updatedScale.id ? updatedScale : scale
         )
       );
 
-      // Simulate API delay
-      await new Promise(resolve => setTimeout(resolve, 500));
-
-      // You could save to localStorage here if needed
-      // localStorage.setItem('scalesData', JSON.stringify({ scales }));
-      
       return true;
     } catch (error) {
       console.error('Error updating scale:', error);
-      throw error;
+      throw new Error('Failed to update scale. Please try again later.');
+    } finally {
+      setIsRefreshing(false);
     }
+  };
+
+  const refreshScales = async () => {
+    setIsRefreshing(true);
+    await fetchScales(true);
+    setIsRefreshing(false);
   };
 
   return {
     scales,
+    isLoading,
+    isRefreshing,
+    error,
     updateScale,
+    refreshScales,
     setScales,
   };
 };

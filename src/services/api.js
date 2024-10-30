@@ -2,189 +2,194 @@
 
 class ApiService {
     constructor() {
-        // Remove any trailing slashes
-        const baseUrl = process.env.REACT_APP_API_URL || 'http://localhost:5100';
-        this.baseUrl = baseUrl.replace(/\/+$/, '');
-        console.log('API Service initialized with base URL:', this.baseUrl);
-        }
-
+      // Remove any trailing slashes
+      this.baseUrl = process.env.REACT_APP_API_URL || 'http://localhost:5100';
+      this.retryCount = 1;
+      this.retryDelay = 1000;
+    }
+  
     getHeaders() {
-        const headers = {
+      const headers = {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+      };
+  
+      if (this.token) {
+        headers['Authorization'] = `Bearer ${this.token}`;
+      }
+  
+      return headers;
+    }
+  
+    normalizePath(path) {
+        // Remove leading/trailing slashes and normalize multiple slashes
+        const cleanPath = path.replace(/^\/+|\/+$/g, '').replace(/\/+/g, '/');
+        return cleanPath ? `/${cleanPath}` : '';
+      }
+    
+  
+    // Token Management
+    setToken(token) {
+      this.token = token;
+    }
+  
+    clearToken() {
+      this.token = null;
+    }
+  
+    sleep(ms) {
+      return new Promise(resolve => setTimeout(resolve, ms));
+    }
+    debug(message, ...args) {
+        console.log(`[API Debug] ${message}`, ...args);
+        }
+  
+    // Generic request handler
+    async request(endpoint, options = {}, retryCount = this.retryCount) {
+        const url = `${this.baseUrl}/api/${endpoint.replace(/^\/+/, '')}`;
+        this.debug('Making request:', {
+          url,
+          method: options.method || 'GET',
+          headers: options.headers,
+          body: options.body,
+        });
+    
+        const defaultOptions = {
+          mode: 'cors',
+          credentials: 'include',
+          headers: {
             'Content-Type': 'application/json',
-            'Accept': 'application/json'
+            'Accept': 'application/json',
+          }
         };
-
-        if (this.token) {
-            headers['Authorization'] = `Bearer ${this.token}`;
+    
+        const finalOptions = {
+          ...defaultOptions,
+          ...options,
+          headers: {
+            ...defaultOptions.headers,
+            ...options.headers,
+          },
+        };
+    
+        this.debug('Final request options:', finalOptions);
+    
+        try {
+          this.debug('Sending fetch request...');
+          const response = await fetch(url, finalOptions);
+          
+          this.debug('Response received:', {
+            status: response.status,
+            statusText: response.statusText,
+            headers: Array.from(response.headers.entries()),
+            ok: response.ok,
+            type: response.type,
+          });
+    
+          if (response.ok) {
+            const contentType = response.headers.get('content-type');
+            let data;
+            if (contentType?.includes('application/json')) {
+              data = await response.json();
+              this.debug('Parsed JSON response:', data);
+            } else {
+              data = await response.text();
+              this.debug('Received text response:', data);
+            }
+            return data;
+          } else {
+            this.debug('Response not OK:', response.status, response.statusText);
+            throw new Error(`HTTP error! status: ${response.status}`);
+          }
+        } catch (error) {
+          this.debug('Request failed:', {
+            error,
+            name: error.name,
+            message: error.message,
+            stack: error.stack
+          });
+    
+          if (error.name === 'TypeError' && retryCount > 0) {
+            this.debug(`Retrying request, ${retryCount} attempts remaining`);
+            await new Promise(resolve => setTimeout(resolve, this.retryDelay));
+            return this.request(endpoint, options, retryCount - 1);
+          }
+          throw error;
         }
-
-        return headers;
-        }
-
-        normalizePath(path) {
-        // Remove multiple slashes and ensure single leading slash
-        return '/' + path.replace(/^\/+|\/+$/g, '').replace(/\/+/g, '/');
-        }
-  // Token Management
-  setToken(token) {
-    this.token = token;
-  }
-
-  clearToken() {
-    this.token = null;
-  }
-
-  // Generic request handler
-  async request(endpoint, options = {}) {
-    try {
-      const normalizedEndpoint = this.normalizePath(`api/${endpoint}`);
-      const url = `${this.baseUrl}${normalizedEndpoint}`;
-      
-      console.log('Making request to:', url);
-
-      const response = await fetch(url, {
-        ...options,
-        headers: this.getHeaders(),
-        // Include credentials if needed
-        credentials: 'same-origin'
-      });
-
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
       }
-
-      const data = await response.json();
-      return data;
-    } catch (error) {
-      console.error('Request failed:', error);
-      throw error;
+  
+    // Scale APIs
+    async getScales() {
+      return this.request('scales', {
+        method: 'GET'
+      });
     }
-  }
-  // Customer APIs
-  async getCustomers() {
-    return this.request('customers');
-  }
-
-  async getCustomer(customerId) {
-    return this.request(`customers/${customerId}`);
-  }
-
-  async createCustomer(customerData) {
-    return this.request('customers', {
-      method: 'POST',
-      body: JSON.stringify(customerData)
-    });
-  }
-
-  async updateCustomer(customerId, customerData) {
-    return this.request(`/customers/${customerId}`, {
-      method: 'PUT',
-      body: JSON.stringify(customerData)
-    });
-  }
-
-  // Vendor APIs
-  async getVendors() {
-    return this.request('/vendors');
-  }
-
-  async getVendor(vendorId) {
-    return this.request(`/vendors/${vendorId}`);
-  }
-
-  async createVendor(vendorData) {
-    return this.request('/vendors', {
-      method: 'POST',
-      body: JSON.stringify(vendorData)
-    });
-  }
-
-  async linkCustomerVendor(linkData) {
-    return this.request('/vendors/link', {
-      method: 'POST',
-      body: JSON.stringify(linkData)
-    });
-  }
-
-  // Scale APIs
-  async getScales() {
-    return this.request('/scales');
-  }
-
-  async getScale(scaleId) {
-    return this.request(`/scales/${scaleId}`);
-  }
-
-  async createScale(scaleData) {
-    return this.request('/scales', {
-      method: 'POST',
-      body: JSON.stringify(scaleData)
-    });
-  }
-
-  async linkScaleProduct(linkData) {
-    return this.request('/scales/link-product', {
-      method: 'POST',
-      body: JSON.stringify(linkData)
-    });
-  }
-
-  // Measurement APIs
-  async getMeasurements(customerId) {
-    return this.request(`/measurements/customer/${customerId}`);
-  }
-
-  async getScaleMeasurements(scaleId) {
-    return this.request(`/measurements/scale/${scaleId}`);
-  }
-
-  async createMeasurement(measurementData) {
-    return this.request('/measurements', {
-      method: 'POST',
-      body: JSON.stringify(measurementData)
-    });
-  }
-
-  // Authentication APIs (for future Cognito integration)
-  async login(credentials) {
-    try {
-      // This is a placeholder for Cognito authentication
-      const response = await this.request('/auth/login', {
+  
+    async getScale(scaleId) {
+      return this.request(`scales/${scaleId}`, {
+        method: 'GET'
+      });
+    }
+  
+    async updateScale(scaleId, scaleData) {
+      return this.request(`scales/${scaleId}`, {
+        method: 'PUT',
+        body: JSON.stringify(scaleData)
+      });
+    }
+  
+    async createScale(scaleData) {
+      return this.request('scales', {
         method: 'POST',
-        body: JSON.stringify(credentials)
+        body: JSON.stringify(scaleData)
       });
-
-      if (response?.token) {
-        this.setToken(response.token);
-      }
-
-      return response;
-    } catch (error) {
-      this.clearToken();
-      throw error;
+    }
+  
+    async deleteScale(scaleId) {
+      return this.request(`scales/${scaleId}`, {
+        method: 'DELETE'
+      });
+    }
+  
+    // Measurement APIs
+    async getScaleMeasurements(scaleId, startDate, endDate) {
+      const queryParams = new URLSearchParams();
+      if (startDate) queryParams.append('start_date', startDate);
+      if (endDate) queryParams.append('end_date', endDate);
+      
+      return this.request(`measurements/scale/${scaleId}?${queryParams}`, {
+        method: 'GET'
+      });
+    }
+  
+    // Customer APIs
+    async getCustomers() {
+      return this.request('customers', {
+        method: 'GET'
+      });
+    }
+  
+    async getCustomer(customerId) {
+      return this.request(`customers/${customerId}`, {
+        method: 'GET'
+      });
+    }
+  
+    async createCustomer(customerData) {
+      return this.request('customers', {
+        method: 'POST',
+        body: JSON.stringify(customerData)
+      });
+    }
+  
+    async updateCustomer(customerId, customerData) {
+      return this.request(`customers/${customerId}`, {
+        method: 'PUT',
+        body: JSON.stringify(customerData)
+      });
     }
   }
-
-  async logout() {
-    try {
-      await this.request('/auth/logout', {
-        method: 'POST'
-      });
-    } finally {
-      this.clearToken();
-    }
-  }
-
-  // Cognito specific methods (to be implemented)
-  async refreshToken(refreshToken) {
-    // Implement Cognito token refresh logic
-  }
-
-  async validateToken() {
-    // Implement Cognito token validation logic
-  }
-}
-
-// Create a singleton instance
-const apiService = new ApiService();
-export default apiService;
+  
+  // Create a singleton instance
+  const apiService = new ApiService();
+  export default apiService;

@@ -110,6 +110,12 @@ export const translations = {
     noSearchResults: "No customers match your search",
     customersTableDesc: "Manage and view all customer information",
     customersTable: "Customers Table",
+    refresh: "Refresh",
+    loading: "Loading scales...",
+    tryAgain: "Try Again",
+    noData: "No scales available",
+    errorFetchingScales: "Failed to fetch scales data. Please try again later.",
+    errorUpdatingScale: "Failed to update scale. Please try again later."
     },
     he: {
       // General
@@ -220,5 +226,11 @@ export const translations = {
     noCustomers: "לא נמצאו לקוחות",
     noSearchResults: "לא נמצאו לקוחות התואמים את החיפוש",
     customersTableDesc: "ניהול וצפייה במידע של כל הלקוחות",
+    refresh: "רענן",
+    loading: "...טוען משקלים",
+    tryAgain: "נסה שוב",
+    noData: "אין משקלים זמינים",
+    errorFetchingScales: "שגיאה בטעינת נתוני המשקלים. אנא נסה שוב מאוחר יותר.",
+    errorUpdatingScale: "שגיאה בעדכון המשקל. אנא נסה שוב מאוחר יותר.",
     }
   };
