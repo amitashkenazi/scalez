@@ -4,6 +4,7 @@ import Dashboard from './components/Dashboard';
 import CustomerDashboard from './components/CustomerDashboard';
 import NotificationsView from './components/NotificationsView';
 import { CustomersTableView } from './components/customers';
+import ScalesManagement from './components/ScalesManagement';
 import SideMenu from './components/SideMenu';
 import LandingPage from './components/LandingPage';
 import { LanguageProvider, useLanguage } from './contexts/LanguageContext';
@@ -176,6 +177,10 @@ function AppContent() {
 
           {activeView === 'customersTable' && (
             <CustomersTableView />
+          )}
+
+          {activeView === 'scalesManagement' && (
+            <ScalesManagement />
           )}
         </div>
       </main>

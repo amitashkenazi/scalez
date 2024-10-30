@@ -5,6 +5,7 @@ import {
   LayoutDashboard, 
   Database, 
   Home, 
+  Scale,
   Languages,
   List as ListIcon
 } from 'lucide-react';
@@ -67,6 +68,13 @@ const SideMenu = ({ activeView, onViewChange }) => {
       view: "notifications",
       description: t.notificationsDesc
     },
+    // In SideMenu.jsx, add to your menuItems array:
+  {
+    icon: Scale, // Import Scale from lucide-react
+    label: 'Scales Management',
+    view: 'scalesManagement',
+    description: 'Manage and monitor all scales in the system'
+  },
     {
       icon: Database,
       label: t.allScales,
