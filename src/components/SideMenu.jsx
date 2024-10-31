@@ -6,6 +6,7 @@ import {
   Database, 
   Home, 
   Scale,
+  Package,
   Languages,
   List as ListIcon
 } from 'lucide-react';
@@ -52,7 +53,7 @@ const SideMenu = ({ activeView, onViewChange }) => {
     },
     {
       icon: Users,
-      label: t.customers,
+      label: t.customersDashboard,
       view: "customers",
       description: t.customersDesc
     },
@@ -74,6 +75,12 @@ const SideMenu = ({ activeView, onViewChange }) => {
     label: 'Scales Management',
     view: 'scalesManagement',
     description: 'Manage and monitor all scales in the system'
+  },
+  {
+    icon: Package, // Import Package from lucide-react
+    label: t.productsManagement,
+    view: "products",
+    description: t.productsDesc
   },
     {
       icon: Database,

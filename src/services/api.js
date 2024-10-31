@@ -7,7 +7,55 @@ class ApiService {
       this.retryCount = 1;
       this.retryDelay = 1000;
     }
-  
+    
+    async getProducts() {
+        try {
+          // Mock data for testing - replace with actual API call
+          return [
+            {
+              id: 'prod_001',
+              name: 'Ethiopia Sidamo',
+              customerId: 'cust-001'
+            },
+            {
+              id: 'prod_002',
+              name: 'Guatemala Antigua',
+              customerId: 'cust-002'
+            },
+            {
+              id: 'prod_003',
+              name: 'Colombia Supremo',
+              customerId: 'cust-003'
+            }
+          ];
+        } catch (error) {
+          console.error('Error fetching products:', error);
+          throw error;
+        }
+      }
+      
+      async createProduct(productData) {
+        try {
+          // Mock API call
+          console.log('Creating product:', productData);
+          return {
+            id: productData.id,
+            name: productData.name,
+            customerId: productData.customerId
+          };
+        } catch (error) {
+          console.error('Error creating product:', error);
+          throw error;
+        }
+      }
+      
+      async updateProduct(productId, productData) {
+        return this.request(`products/${productId}`, {
+          method: 'PUT',
+          body: JSON.stringify(productData)
+        });
+      }
+
     getHeaders() {
       const headers = {
         'Content-Type': 'application/json',

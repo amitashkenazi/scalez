@@ -3,6 +3,7 @@ export const translations = {
       // General
       dashboard: "Dashboard",
       customers: "Customers",
+      customersDashboard: "Customers Dashboard",
       notifications: "Notifications",
       allScales: "All Scales",
       home: "Home",
@@ -115,12 +116,21 @@ export const translations = {
     tryAgain: "Try Again",
     noData: "No scales available",
     errorFetchingScales: "Failed to fetch scales data. Please try again later.",
-    errorUpdatingScale: "Failed to update scale. Please try again later."
+    errorUpdatingScale: "Failed to update scale. Please try again later.",
+    productsManagement: "Products Management",
+    addProduct: "Add Product",
+    productName: "Product Name",
+    selectCustomer: "Select Customer",
+    updateProduct: "Update Product",
+    linkedScales: "Linked Scales",
+    unassigned: "Unassigned",
+
     },
     he: {
       // General
       dashboard: "לוח בקרה",
       customers: "לקוחות",
+      customersDashboard: "לוח בקרת לקוחות",
       notifications: "התראות",
       allScales: "כל המשקלים",
       home: "בית",
@@ -232,5 +242,12 @@ export const translations = {
     noData: "אין משקלים זמינים",
     errorFetchingScales: "שגיאה בטעינת נתוני המשקלים. אנא נסה שוב מאוחר יותר.",
     errorUpdatingScale: "שגיאה בעדכון המשקל. אנא נסה שוב מאוחר יותר.",
+    productsManagement: "ניהול מוצרים",
+    addProduct: "הוסף מוצר",
+    productName: "שם המוצר",
+    selectCustomer: "בחר לקוח",
+    updateProduct: "עדכן מוצר",
+    linkedScales: "משקלים מקושרים",
+    unassigned: "לא משויך",
     }
   };

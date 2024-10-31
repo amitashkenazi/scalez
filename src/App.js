@@ -7,6 +7,7 @@ import { CustomersTableView } from './components/customers';
 import ScalesManagement from './components/ScalesManagement';
 import SideMenu from './components/SideMenu';
 import LandingPage from './components/LandingPage';
+import ProductsView from './components/ProductsView';
 import { LanguageProvider, useLanguage } from './contexts/LanguageContext';
 import useScaleData from './hooks/useScaleData';
 import { Menu as MenuIcon } from 'lucide-react';
@@ -181,6 +182,9 @@ function AppContent() {
 
           {activeView === 'scalesManagement' && (
             <ScalesManagement />
+          )}
+          {activeView === 'products' && (
+            <ProductsView />
           )}
         </div>
       </main>
