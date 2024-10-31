@@ -7,7 +7,79 @@ class ApiService {
       this.retryCount = 1;
       this.retryDelay = 1000;
     }
+    // Add these methods to your existing ApiService class
+
+async getCustomers() {
+    return this.request('customers', {
+      method: 'GET'
+    });
+  }
+  
+  async getCustomer(customerId) {
+    return this.request(`customers/${customerId}`, {
+      method: 'GET'
+    });
+  }
+  
+  async createCustomer(customerData) {
+    return this.request('customers', {
+      method: 'POST',
+      body: JSON.stringify(customerData)
+    });
+  }
+  
+  async updateCustomer(customerId, customerData) {
+    console.log('Updating customer:', customerId, customerData);
+    return this.request(`customers/${customerId}`, {
+      method: 'PUT',
+      body: JSON.stringify(customerData)
+    });
+  }
+  
+  async deleteCustomer(customerId) {
+    return this.request(`customers/${customerId}`, {
+      method: 'DELETE'
+    });
+  }
+
+async getCustomers() {
+  return this.request('customers', {
+    method: 'GET'
+  });
+}
+
+async getCustomer(customerId) {
+  return this.request(`customers/${customerId}`, {
+    method: 'GET'
+  });
+}
+
+async createCustomer(customerData) {
+  return this.request('customers', {
+    method: 'POST',
+    body: JSON.stringify(customerData)
+  });
+}
+
+async updateCustomer(customerId, customerData) {
+  return this.request(`customers/${customerId}`, {
+    method: 'PUT',
+    body: JSON.stringify(customerData)
+  });
+}
+
+async deleteCustomer(customerId) {
+  return this.request(`customers/${customerId}`, {
+    method: 'DELETE'
+  });
+}
     
+      async deleteCustomer(customerId) {
+        return this.request(`customers/${customerId}`, {
+          method: 'DELETE'
+        });
+      }
+
     async getProducts() {
         try {
           // Mock data for testing - replace with actual API call
@@ -48,7 +120,7 @@ class ApiService {
           throw error;
         }
       }
-      
+
       async updateProduct(productId, productData) {
         return this.request(`products/${productId}`, {
           method: 'PUT',

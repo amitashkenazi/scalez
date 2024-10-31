@@ -2,7 +2,9 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { translations } from '../../translations/translations';
 import apiService from '../../services/api';
-import { Search, SortAsc, SortDesc, RefreshCw, PlusCircle } from 'lucide-react';
+import { Search, SortAsc, SortDesc, RefreshCw, PlusCircle, Trash2, Pencil, AlertCircle, Loader2 } from 'lucide-react';
+import CustomerModal from '../CustomerModal';
+import DeleteConfirmationModal from '../modals/DeleteConfirmationModal';
 
 const CustomersTableView = () => {
   const [customers, setCustomers] = useState([]);
@@ -12,22 +14,27 @@ const CustomersTableView = () => {
   const [sortConfig, setSortConfig] = useState({ key: 'name', direction: 'asc' });
   const [isRefreshing, setIsRefreshing] = useState(false);
   
+  // Modal states
+  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [selectedCustomer, setSelectedCustomer] = useState(null);
+  const [successMessage, setSuccessMessage] = useState('');
+  
   const { language } = useLanguage();
   const t = translations[language];
   const isRTL = language === 'he';
-  const Card = ({ children, className = '' }) => (
-    <div className={`bg-white rounded-lg shadow ${className}`}>
-      {children}
-    </div>
-  );
+
   const fetchCustomers = async () => {
     try {
       setIsLoading(true);
-      const data = await apiService.getCustomers();
-      setCustomers(data);
       setError(null);
+      const data = await apiService.getCustomers();
+      console.log('Customers data:', JSON.stringify(data, null, 2));
+      setCustomers(data);
     } catch (err) {
-      setError(err.message);
+      setError(t.errorFetchingCustomers);
+      console.error('Error fetching customers:', err);
     } finally {
       setIsLoading(false);
     }
@@ -43,6 +50,11 @@ const CustomersTableView = () => {
     setIsRefreshing(false);
   };
 
+  const showSuccessMessage = (message) => {
+    setSuccessMessage(message);
+    setTimeout(() => setSuccessMessage(''), 3000);
+  };
+
   const handleSort = (key) => {
     setSortConfig(prevSort => ({
       key,
@@ -50,10 +62,71 @@ const CustomersTableView = () => {
     }));
   };
 
+  const handleAddCustomer = async (customerData) => {
+    try {
+      setError(null);
+      const newCustomer = await apiService.createCustomer(customerData);
+      setCustomers(prev => [...prev, newCustomer]);
+      setIsAddModalOpen(false);
+      showSuccessMessage(t.customerAdded);
+    } catch (err) {
+      setError(t.errorAddingCustomer);
+      console.error('Error adding customer:', err);
+    }
+  };
+
+  const handleEditCustomer = async (customerData) => {
+    console.log('selectedCustomer:', selectedCustomer);
+    if (!selectedCustomer?.customer_id) {
+      setError(t.invalidCustomer);
+      return;
+    }
+
+    try {
+      setError(null);
+      const updatedCustomer = await apiService.updateCustomer(selectedCustomer.customer_id, customerData);
+      setCustomers(prev => prev.map(c => 
+        c.customer_id === selectedCustomer.customer_id ? updatedCustomer : c
+      ));
+      setIsEditModalOpen(false);
+      setSelectedCustomer(null);
+      showSuccessMessage(t.customerUpdated);
+    } catch (err) {
+      setError(t.errorUpdatingCustomer);
+      console.error('Error updating customer:', err);
+    }
+  };
+
+  const handleDeleteCustomer = async () => {
+    if (!selectedCustomer?.customer_id) {
+        console.log('selectedCustomer:', selectedCustomer);
+      setError(t.invalidCustomer);
+      return;
+    }
+
+    try {
+      setError(null);
+      // Send the customer ID to the server when deleting
+      await apiService.deleteCustomer(selectedCustomer.customer_id);
+      setCustomers(prev => prev.filter(c => c.id !== selectedCustomer.customer_id));
+      setIsDeleteModalOpen(false);
+      setSelectedCustomer(null);
+      showSuccessMessage(t.customerDeleted);
+    } catch (err) {
+      setError(t.errorDeletingCustomer);
+      console.error('Error deleting customer:', err);
+    }
+    handleRefresh();
+  };
+
+  const openDeleteModal = (customer) => {
+    setSelectedCustomer(customer);
+    setIsDeleteModalOpen(true);
+  };
+
   const filteredAndSortedCustomers = useMemo(() => {
     let result = [...customers];
     
-    // Apply search filter
     if (searchTerm) {
       const lowerSearchTerm = searchTerm.toLowerCase();
       result = result.filter(customer => 
@@ -64,7 +137,6 @@ const CustomersTableView = () => {
       );
     }
     
-    // Apply sorting
     result.sort((a, b) => {
       let aVal = a[sortConfig.key] || '';
       let bVal = b[sortConfig.key] || '';
@@ -80,6 +152,30 @@ const CustomersTableView = () => {
     return result;
   }, [customers, searchTerm, sortConfig]);
 
+  // Table headers configuration with customer ID
+  const headers = [
+    { key: 'id', label: 'ID' },
+    { key: 'name', label: t.customerName },
+    { key: 'email', label: t.email },
+    { key: 'phone', label: t.phone },
+    { key: 'address', label: t.address },
+    { key: 'actions', label: '' }
+  ];
+
+  const TableHeader = ({ header }) => (
+    <th 
+      className={`px-6 py-3 text-left text-sm font-medium text-gray-500 
+        ${header.key === 'actions' ? 'w-24' : 'cursor-pointer hover:bg-gray-50'}
+        ${isRTL && header.key !== 'id' ? 'text-right' : 'text-left'}`}
+      onClick={() => header.key !== 'actions' && handleSort(header.key)}
+    >
+      <div className="flex items-center gap-1">
+        {header.label}
+        {header.key !== 'actions' && <SortIcon columnKey={header.key} />}
+      </div>
+    </th>
+  );
+
   const SortIcon = ({ columnKey }) => {
     if (sortConfig.key !== columnKey) return null;
     return sortConfig.direction === 'asc' ? 
@@ -87,49 +183,25 @@ const CustomersTableView = () => {
       <SortDesc className="w-4 h-4 inline-block ml-1" />;
   };
 
-  // Table headers configuration
-  const headers = [
-    { key: 'name', label: t.customerName },
-    { key: 'email', label: t.email },
-    { key: 'phone', label: t.phone },
-    { key: 'address', label: t.address }
-  ];
-
-  if (isLoading && !isRefreshing) {
+  // Loading state
+  if (isLoading) {
     return (
       <div className="flex justify-center items-center h-64">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
+        <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
+        <span className="ml-2 text-gray-600">{t.loading}</span>
       </div>
     );
   }
 
-  const TableHeader = ({ header }) => (
-    <th 
-      className={`px-6 py-3 text-sm font-medium text-gray-500 cursor-pointer hover:bg-gray-50
-        ${isRTL ? 'text-right' : 'text-left'}`}
-      onClick={() => handleSort(header.key)}
-    >
-      <span className="flex items-center gap-1">
-        {header.label}
-        <SortIcon columnKey={header.key} />
-      </span>
-    </th>
-  );
-
   return (
-    <div 
-      className="p-6 max-w-7xl mx-auto"
-      dir={isRTL ? 'rtl' : 'ltr'}
-    >
-      {/* Header Section */}
+    <div className="p-6 max-w-7xl mx-auto" dir={isRTL ? 'rtl' : 'ltr'}>
+      {/* Header and controls remain the same */}
       <div className="mb-6">
-        <h2 className="text-2xl font-bold">{t.customers}</h2>
+        <h2 className="text-2xl font-bold">{t.customersTable}</h2>
         <p className="text-gray-600 mt-1">{t.customersTableDesc}</p>
       </div>
 
-      {/* Controls Section */}
       <div className="mb-6 flex flex-col sm:flex-row gap-4 justify-between items-center">
-        {/* Search */}
         <div className="relative w-full sm:w-96">
           <input
             type="text"
@@ -141,7 +213,6 @@ const CustomersTableView = () => {
           <Search className="absolute left-3 top-2.5 h-5 w-5 text-gray-400" />
         </div>
 
-        {/* Actions */}
         <div className="flex gap-2">
           <button
             onClick={handleRefresh}
@@ -153,6 +224,7 @@ const CustomersTableView = () => {
           </button>
 
           <button
+            onClick={() => setIsAddModalOpen(true)}
             className="flex items-center gap-2 px-4 py-2 text-white bg-blue-600 rounded-lg hover:bg-blue-700"
           >
             <PlusCircle className="h-5 w-5" />
@@ -161,79 +233,143 @@ const CustomersTableView = () => {
         </div>
       </div>
 
-      {error ? (
-        <Card className="p-6 bg-red-50 border-red-100">
-          <div className="text-red-700">{error}</div>
-        </Card>
-      ) : (
-        <>
-          {/* Desktop Table */}
-          <div className="hidden md:block overflow-x-auto bg-white rounded-lg shadow">
-            <table className="min-w-full">
-              <thead className="bg-gray-50">
-                <tr>
-                  {headers.map(header => (
-                    <TableHeader key={header.key} header={header} />
-                  ))}
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-200">
-                {filteredAndSortedCustomers.map((customer) => (
-                  <tr 
-                    key={customer.customer_id} 
-                    className="hover:bg-gray-50 transition-colors"
-                  >
-                    <td className="px-6 py-4">{customer.name}</td>
-                    <td className="px-6 py-4">{customer.email}</td>
-                    <td className="px-6 py-4">{customer.phone}</td>
-                    <td className="px-6 py-4">{customer.address}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-
-            {filteredAndSortedCustomers.length === 0 && (
-              <div className="text-center py-8 text-gray-500">
-                {searchTerm ? t.noSearchResults : t.noCustomers}
-              </div>
-            )}
-          </div>
-
-          {/* Mobile Cards */}
-          <div className="md:hidden space-y-4">
-            {filteredAndSortedCustomers.map((customer) => (
-              <Card 
-                key={customer.customer_id} 
-                className="p-4 hover:shadow-md transition-shadow"
-              >
-                <div className="space-y-2">
-                  <div className="font-medium text-lg">{customer.name}</div>
-                  <div className="text-sm space-y-1">
-                    <div className="flex items-center gap-2 text-gray-600">
-                      <span className="font-medium">{t.email}:</span>
-                      {customer.email}
-                    </div>
-                    <div className="flex items-center gap-2 text-gray-600">
-                      <span className="font-medium">{t.phone}:</span>
-                      {customer.phone}
-                    </div>
-                    <div className="flex items-center gap-2 text-gray-600">
-                      <span className="font-medium">{t.address}:</span>
-                      {customer.address}
-                    </div>
-                  </div>
-                </div>
-              </Card>
-            ))}
-
-            {filteredAndSortedCustomers.length === 0 && (
-              <div className="text-center py-8 text-gray-500">
-                {searchTerm ? t.noSearchResults : t.noCustomers}
-              </div>
-            )}
-          </div>
-        </>
+      {/* Messages */}
+      {successMessage && (
+        <div className="mb-6 bg-green-50 border border-green-400 rounded-lg p-4">
+          <p className="text-green-700">{successMessage}</p>
+        </div>
       )}
+
+      {error && (
+        <div className="mb-6 bg-red-50 border border-red-400 rounded-lg p-4 flex items-center">
+          <AlertCircle className="h-5 w-5 text-red-600 mr-2" />
+          <p className="text-red-700">{error}</p>
+        </div>
+      )}
+
+      {/* Desktop Table with Customer ID */}
+      <div className="hidden md:block overflow-x-auto bg-white rounded-lg shadow">
+        <table className="min-w-full">
+          <thead className="bg-gray-50">
+            <tr>
+              {headers.map(header => (
+                <TableHeader key={header.key} header={header} />
+              ))}
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-gray-200">
+            {filteredAndSortedCustomers.map((customer) => (
+              <tr 
+                key={customer.customer_id} 
+                className="hover:bg-gray-50 transition-colors"
+              >
+                <td className="px-6 py-4 text-sm text-gray-500">{customer.customer_id}</td>
+                <td className="px-6 py-4">{customer.name}</td>
+                <td className="px-6 py-4">{customer.email}</td>
+                <td className="px-6 py-4">{customer.phone}</td>
+                <td className="px-6 py-4">{customer.address}</td>
+                <td className="px-6 py-4">
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => {
+                        setSelectedCustomer(customer);
+                        setIsEditModalOpen(true);
+                      }}
+                      className="text-blue-600 hover:text-blue-800"
+                    >
+                      <Pencil className="h-5 w-5" />
+                    </button>
+                    <button
+                      onClick={() => openDeleteModal(customer)}
+                      className="text-red-600 hover:text-red-800"
+                    >
+                      <Trash2 className="h-5 w-5" />
+                    </button>
+                  </div>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+
+        {filteredAndSortedCustomers.length === 0 && (
+          <div className="text-center py-8 text-gray-500">
+            {searchTerm ? t.noSearchResults : t.noCustomers}
+          </div>
+        )}
+      </div>
+
+      {/* Mobile Cards with Customer ID */}
+      <div className="md:hidden space-y-4">
+        {filteredAndSortedCustomers.map((customer) => (
+          <div 
+            key={customer.customer_id} 
+            className="bg-white rounded-lg p-4 shadow hover:shadow-md transition-shadow"
+          >
+            <div className="flex justify-between items-start">
+              <div className="space-y-2">
+                <div className="text-sm text-gray-500">ID: {customer.customer_id}</div>
+                <div className="font-medium text-lg">{customer.name}</div>
+                <div className="text-sm space-y-1">
+                  <div className="text-gray-600">{customer.email}</div>
+                  <div className="text-gray-600">{customer.phone}</div>
+                  <div className="text-gray-600">{customer.address}</div>
+                </div>
+              </div>
+              <div className="flex flex-col gap-2">
+                <button
+                  onClick={() => {
+                    setSelectedCustomer(customer);
+                    setIsEditModalOpen(true);
+                  }}
+                  className="text-blue-600 hover:text-blue-800"
+                >
+                  <Pencil className="h-5 w-5" />
+                </button>
+                <button
+                  onClick={() => openDeleteModal(customer)}
+                  className="text-red-600 hover:text-red-800"
+                >
+                  <Trash2 className="h-5 w-5" />
+                </button>
+              </div>
+            </div>
+          </div>
+        ))}
+
+        {filteredAndSortedCustomers.length === 0 && (
+          <div className="text-center py-8 text-gray-500">
+            {searchTerm ? t.noSearchResults : t.noCustomers}
+          </div>
+        )}
+      </div>
+
+      {/* Modals */}
+      <CustomerModal
+        isOpen={isAddModalOpen}
+        onClose={() => setIsAddModalOpen(false)}
+        onSubmit={handleAddCustomer}
+      />
+
+      <CustomerModal
+        isOpen={isEditModalOpen}
+        onClose={() => {
+          setIsEditModalOpen(false);
+          setSelectedCustomer(null);
+        }}
+        onSubmit={handleEditCustomer}
+        initialData={selectedCustomer}
+      />
+
+      <DeleteConfirmationModal
+        isOpen={isDeleteModalOpen}
+        onClose={() => {
+          setIsDeleteModalOpen(false);
+          setSelectedCustomer(null);
+        }}
+        onConfirm={handleDeleteCustomer}
+        customerName={selectedCustomer?.name}
+      />
     </div>
   );
 };
