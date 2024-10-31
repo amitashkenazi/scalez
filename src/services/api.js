@@ -81,50 +81,41 @@ class ApiService {
     }
 
     async getProducts() {
-        try {
-            // Mock data for testing - replace with actual API call
-            return [
-                {
-                    id: 'prod_001',
-                    name: 'Ethiopia Sidamo',
-                    customerId: 'cust-001'
-                },
-                {
-                    id: 'prod_002',
-                    name: 'Guatemala Antigua',
-                    customerId: 'cust-002'
-                },
-                {
-                    id: 'prod_003',
-                    name: 'Colombia Supremo',
-                    customerId: 'cust-003'
-                }
-            ];
-        } catch (error) {
-            console.error('Error fetching products:', error);
-            throw error;
-        }
+        return this.request('products', {
+            method: 'GET'
+        });
+    }
+
+    async getProduct(productId) {
+        return this.request(`products/${productId}`, {
+            method: 'GET'
+        });
     }
 
     async createProduct(productData) {
-        try {
-            // Mock API call
-            console.log('Creating product:', productData);
-            return {
-                id: productData.id,
-                name: productData.name,
-                customerId: productData.customerId
-            };
-        } catch (error) {
-            console.error('Error creating product:', error);
-            throw error;
-        }
+        console.log('Creating product:', productData);
+        return this.request('products', {
+            method: 'POST',
+            body: JSON.stringify(productData)
+        });
     }
 
     async updateProduct(productId, productData) {
         return this.request(`products/${productId}`, {
             method: 'PUT',
             body: JSON.stringify(productData)
+        });
+    }
+
+    async deleteProduct(productId) {
+        return this.request(`products/${productId}`, {
+            method: 'DELETE'
+        });
+    }
+
+    async getProductsByCustomer(customerId) {
+        return this.request(`products/customer/${customerId}`, {
+            method: 'GET'
         });
     }
 

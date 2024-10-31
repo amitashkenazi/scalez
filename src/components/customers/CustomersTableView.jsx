@@ -27,16 +27,16 @@ const CustomersTableView = () => {
 
   const fetchCustomers = async () => {
     try {
-      setIsLoading(true);
-      setError(null);
-      const data = await apiService.getCustomers();
-      console.log('Customers data:', JSON.stringify(data, null, 2));
-      setCustomers(data);
+      const response = await apiService.getCustomers();
+      // Make sure each customer has a customer_id property
+      const formattedCustomers = response.map(customer => ({
+        ...customer,
+        customer_id: customer.customer_id || customer.id // Fallback to id if customer_id is not present
+      }));
+      setCustomers(formattedCustomers);
     } catch (err) {
-      setError(t.errorFetchingCustomers);
       console.error('Error fetching customers:', err);
-    } finally {
-      setIsLoading(false);
+      setError('Failed to fetch customers');
     }
   };
 
