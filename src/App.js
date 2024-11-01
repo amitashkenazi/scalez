@@ -153,7 +153,7 @@ function AppContent() {
           {activeView === 'vendors' && (
               <VendorsView />
           )}
-          {activeView === 'customers' && (
+          {/* {activeView === 'customers' && (
             selectedScaleIds ? (
               <>
                 <button
@@ -171,17 +171,17 @@ function AppContent() {
             ) : (
               <CustomerDashboard onCustomerSelect={handleCustomerSelect} />
             )
-          )}
+          )} */}
           {activeView === 'products' && (
             <ProductsView />
           )}
-          {activeView === 'notifications' && (
+          {/* {activeView === 'notifications' && (
             <NotificationsView scales={scales} />
-          )}
+          )} */}
           
-          {(activeView === 'dashboard' || activeView === 'allScales') && (
+          {/* {(activeView === 'dashboard' || activeView === 'allScales') && (
             <Dashboard selectedScaleIds={null} />
-          )}
+          )} */}
 
           {activeView === 'customersTable' && (
             <CustomersTableView />
