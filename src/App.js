@@ -11,6 +11,7 @@ import { Menu as MenuIcon } from 'lucide-react';
 import { translations } from './translations/translations';
 import VendorsView from './components/vendors/VendorsView';
 import ProductsView from './components/products/ProductsView';
+import { AuthProvider } from './contexts/AuthContext';
 
 
 function AppContent() {
@@ -198,9 +199,11 @@ function AppContent() {
 
 function App() {
   return (
-    <LanguageProvider>
-      <AppContent />
-    </LanguageProvider>
+    <AuthProvider>
+      <LanguageProvider>
+        <AppContent />
+      </LanguageProvider>
+    </AuthProvider>
   );
 }
 

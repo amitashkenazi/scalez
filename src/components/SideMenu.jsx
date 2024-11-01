@@ -1,37 +1,25 @@
-import React from 'react';
-import {
-  Home,
-  Scale,
-  Package,
-  Truck,
+// src/components/SideMenu.jsx
+import React, { useState } from 'react';
+import { 
+  LogOut, 
+  LogIn, 
+  User, 
   Languages,
+  Home,
+  Package,
+  Scale,
+  Truck,
   List as ListIcon
 } from 'lucide-react';
 import { useLanguage } from '../contexts/LanguageContext';
 import { translations } from '../translations/translations';
-
-
-const MenuItem = ({ icon: Icon, label, isActive, onClick, language }) => {
-  const isRTL = language === 'he';
-
-  return (
-    <button
-      onClick={onClick}
-      className={`
-        w-full px-3 py-2.5 rounded-lg transition-colors
-        flex items-center gap-3
-        ${isActive ? 'bg-blue-600 text-white' : 'text-gray-300 hover:bg-gray-700 hover:text-white'}
-        ${isRTL ? 'flex-row-reverse justify-end text-right' : 'flex-row justify-start text-left'}
-      `}
-    >
-      <Icon size={20} />
-      <span className="font-medium">{label}</span>
-    </button>
-  );
-};
+import AuthModal from './auth/AuthModal';
+import { useAuth } from '../contexts/AuthContext'; // Make sure this exists
 
 const SideMenu = ({ activeView, onViewChange }) => {
+  const { user, signOut } = useAuth();
   const { language, toggleLanguage } = useLanguage();
+  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const t = translations[language];
   const isRTL = language === 'he';
 
@@ -49,89 +37,149 @@ const SideMenu = ({ activeView, onViewChange }) => {
       description: t.productsDashboardDesc
     },
     {
-      icon: Truck, // Import Truck from lucide-react
+      icon: Truck,
       label: t.vendors.title,
       view: "vendors",
       description: t.vendors.description
     },
     {
-      icon: ListIcon,  // Import this from lucide-react
+      icon: ListIcon,
       label: t.customersTable,
       view: "customersTable",
       description: t.customersTableDesc
     },
-
-    // In SideMenu.jsx, add to your menuItems array:
     {
-      icon: Scale, // Import Scale from lucide-react
+      icon: Scale,
       label: 'Scales Management',
       view: 'scalesManagement',
       description: 'Manage and monitor all scales in the system'
     },
     {
-      icon: Package, // Import Package from lucide-react
+      icon: Package,
       label: t.productsManagement,
       view: "productsMng",
       description: t.productsDesc
     },
   ];
 
+  // Rest of your return statement remains the same...
   return (
-    <div
-      className="h-full flex flex-col bg-gray-800"
-      dir={isRTL ? 'rtl' : 'ltr'}
-    >
-      {/* Header */}
-      <div className="p-6">
-        <h2 className={`text-xl font-bold text-white mb-2 ${isRTL ? 'text-right' : 'text-left'}`}>
-          {t.menuTitle}
-        </h2>
-        <p className={`text-sm text-gray-400 ${isRTL ? 'text-right' : 'text-left'}`}>
-          {t.menuSubtitle}
-        </p>
-      </div>
-
-      {/* Navigation Items */}
-      <nav className="flex-1 px-4">
-        <div className="space-y-1">
-          {menuItems.map((item) => (
-            <MenuItem
-              key={item.view}
-              icon={item.icon}
-              label={item.label}
-              isActive={activeView === item.view}
-              onClick={() => onViewChange(item.view)}
-              language={language}
-            />
-          ))}
+    <>
+      <div className="h-full flex flex-col bg-gray-800">
+        {/* User Profile Section */}
+        {user ? (
+          <div className="p-4 border-b border-gray-700">
+            <div className={`flex items-center gap-3 ${isRTL ? 'flex-row-reverse' : ''}`}>
+              <div className="w-10 h-10 rounded-full bg-gray-600 flex items-center justify-center">
+                <User className="w-6 h-6 text-gray-300" />
+              </div>
+              <div className={isRTL ? 'text-right' : 'text-left'}>
+                <div className="text-white font-medium">
+                  {user.name || user.email}
+                </div>
+                <div className="text-sm text-gray-400">{user.email}</div>
+              </div>
+            </div>
+          </div>
+        ) : (
+          <div className="p-4 border-b border-gray-700">
+            <button
+              onClick={() => setIsAuthModalOpen(true)}
+              className="w-full px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+            >
+              {t.signIn}
+            </button>
+          </div>
+        )}
+        {/* Title Section */}
+        <div className="p-6">
+          <h2 className={`text-xl font-bold text-white mb-2 ${isRTL ? 'text-right' : 'text-left'}`}>
+            {t.menuTitle}
+          </h2>
+          <p className={`text-sm text-gray-400 ${isRTL ? 'text-right' : 'text-left'}`}>
+            {t.menuSubtitle}
+          </p>
         </div>
-      </nav>
 
-      {/* Language Toggle */}
-      <div className="px-4 py-3 border-t border-gray-700">
-        <button
-          onClick={toggleLanguage}
-          className={`
-            w-full px-3 py-2.5 rounded-lg
-            flex items-center gap-3 text-gray-300 hover:bg-gray-700 hover:text-white
-            ${isRTL ? 'flex-row-reverse justify-end text-right' : 'flex-row justify-start text-left'}
-          `}
-        >
-          <Languages size={20} />
-          <span className="font-medium">
-            {language === 'en' ? 'עברית' : 'English'}
-          </span>
-        </button>
-      </div>
+        {/* Navigation Items */}
+        <nav className="flex-1 px-4">
+          <div className="space-y-1">
+            {menuItems.map((item) => (
+              <button
+                key={item.view}
+                onClick={() => onViewChange(item.view)}
+                className={`
+                  w-full px-3 py-2.5 rounded-lg transition-colors
+                  flex items-center gap-3
+                  ${activeView === item.view ? 'bg-blue-600 text-white' : 'text-gray-300 hover:bg-gray-700 hover:text-white'}
+                  ${isRTL ? 'flex-row-reverse justify-end text-right' : 'flex-row justify-start text-left'}
+                `}
+              >
+                <item.icon size={20} />
+                <span className="font-medium">{item.label}</span>
+              </button>
+            ))}
+          </div>
+        </nav>
 
-      {/* Footer */}
-      <div className="p-6 border-t border-gray-700">
-        <div className={`text-sm text-gray-400 ${isRTL ? 'text-right' : 'text-left'}`}>
-          <p>{t.version}: 1.0.0</p>
-          <p>{t.copyright}</p>
+        {/* Authentication Button */}
+        <div className="px-4 py-3 border-t border-gray-700">
+          {user ? (
+            <button
+              onClick={signOut}
+              className={`
+                w-full px-3 py-2 rounded-lg text-red-400 hover:bg-gray-700 hover:text-red-300
+                flex items-center gap-2 ${isRTL ? 'flex-row-reverse' : ''}
+              `}
+            >
+              <LogOut size={20} />
+              <span>{t.signOut}</span>
+            </button>
+          ) : (
+            <button
+              onClick={() => setIsAuthModalOpen(true)}
+              className={`
+                w-full px-3 py-2 rounded-lg text-blue-400 hover:bg-gray-700 hover:text-blue-300
+                flex items-center gap-2 ${isRTL ? 'flex-row-reverse' : ''}
+              `}
+            >
+              <LogIn size={20} />
+              <span>{t.signIn}</span>
+            </button>
+          )}
+        </div>
+
+        {/* Language Toggle */}
+        <div className="px-4 py-3 border-t border-gray-700">
+          <button
+            onClick={toggleLanguage}
+            className={`
+              w-full px-3 py-2 rounded-lg text-gray-300 hover:bg-gray-700 hover:text-white
+              flex items-center gap-2 ${isRTL ? 'flex-row-reverse' : ''}
+            `}
+          >
+            <Languages size={20} />
+            <span className="font-medium">
+              {language === 'en' ? 'עברית' : 'English'}
+            </span>
+          </button>
+        </div>
+
+        {/* Footer */}
+        <div className="p-6 border-t border-gray-700">
+          <div className={`text-sm text-gray-400 ${isRTL ? 'text-right' : 'text-left'}`}>
+            <p>{t.version}: 1.0.0</p>
+            <p>{t.copyright}</p>
+          </div>
         </div>
       </div>
-    </div>
+
+      {/* Auth Modal */}
+      <AuthModal 
+        isOpen={isAuthModalOpen} 
+        onClose={() => setIsAuthModalOpen(false)} 
+      />
+    </>
   );
 };
 

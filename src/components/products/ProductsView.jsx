@@ -1,10 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { translations } from '../../translations/translations';
-import { AlertCircle, Loader2, RefreshCw, Scale, Package, MessageSquare } from 'lucide-react';
+import { Package, AlertCircle, Loader2, RefreshCw, Scale, MessageSquare } from 'lucide-react';
 import apiService from '../../services/api';
+import ProductDetailModal from './ProductDetailModal';
+
 
 const ProductCard = ({ product, scale, customers, latestMeasurement }) => {
+  const [isModalOpen, setIsModalOpen] = useState(false);
   const { language } = useLanguage();
   const t = translations[language];
   const isRTL = language === 'he';
@@ -17,63 +20,23 @@ const ProductCard = ({ product, scale, customers, latestMeasurement }) => {
     const [hebrewName, englishName] = (customer.name || '').split(' - ');
     return {
       name: language === 'he' ? hebrewName : englishName,
-      phone: customer.phone
+      phone: customer.phone,
+      fullData: customer
     };
-  };
-
-  // Generate WhatsApp message
-  const getWhatsAppLink = () => {
-    const { phone } = getCustomerData();
-    if (!phone) return null;
-
-    const message = encodeURIComponent(
-      `${t.runningLowMessage} ${product.name}\n${t.productLeft}: ${latestMeasurement?.weight}kg\n${t.pleaseResupply}`
-    );
-    
-    // Remove any non-numeric characters from phone and ensure it starts with a country code
-    const cleanPhone = phone.replace(/\D/g, '');
-    const formattedPhone = cleanPhone.startsWith('972') ? cleanPhone :
-                          cleanPhone.startsWith('0') ? `972${cleanPhone.slice(1)}` : 
-                          `972${cleanPhone}`;
-    
-    return `https://wa.me/${formattedPhone}?text=${message}`;
-  };
-
-  // Format date
-  const formatDate = (timestamp) => {
-    if (!timestamp) return 'N/A';
-    return new Date(timestamp).toLocaleString(language === 'he' ? 'he-IL' : 'en-US', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
-      hour12: false
-    });
   };
 
   // Get status color based on thresholds
   const getStatusColor = (weight) => {
-    if (!weight || !product.thresholds) {
-        console.log('No weight or thresholds provided');
-        return 'text-gray-400';
-    }
+    if (!weight || !product.thresholds) return 'text-gray-400';
     
     const upper = parseFloat(product.thresholds.upper);
     const lower = parseFloat(product.thresholds.lower);
     const weightFloat = parseFloat(weight);
     
-    if (weightFloat >= upper) {
-        console.log(`Weight ${weightFloat} is above or equal to upper threshold ${upper}`);
-        return 'text-green-600';
-    }
-    if (weightFloat >= lower && weightFloat < upper) {
-        console.log(`Weight ${weightFloat} is between lower threshold ${lower} and upper threshold ${upper}`);
-        return 'text-orange-500';
-    }
-    console.log(`Weight ${weightFloat} is below lower threshold ${lower}`);
+    if (weightFloat >= upper) return 'text-green-600';
+    if (weightFloat >= lower) return 'text-orange-500';
     return 'text-red-600';
-};
+  };
 
   const getBgColor = (statusColor) => {
     const colorMap = {
@@ -86,87 +49,71 @@ const ProductCard = ({ product, scale, customers, latestMeasurement }) => {
   };
 
   const statusColor = getStatusColor(latestMeasurement?.weight);
-  const { name: customerName } = getCustomerData();
-  const whatsappLink = getWhatsAppLink();
-
-  // Get status text
-  const getStatusText = (weight) => {
-    if (!weight || !product.thresholds) return 'No data';
-    return `${weight} kg`;
-  };
+  const { name: customerName, fullData: customerData } = getCustomerData();
 
   return (
-    <div className={`bg-white rounded-lg shadow-lg p-6 ${getBgColor(statusColor)}`}>
-      <div className="flex justify-between items-start mb-4">
-        <div className="space-y-1">
-          <h3 className="text-xl font-bold">{product.name}</h3>
-          {customerName && (
-            <p className="text-gray-600">{customerName}</p>
-          )}
-          <div className="flex items-center gap-1 text-gray-400">
-            <Scale size={14} />
-            <span className="text-xs">{scale?.scale_id || product.scale_id}</span>
+    <>
+      <div 
+        className={`bg-white rounded-lg shadow-lg p-6 hover:shadow-xl transition-shadow cursor-pointer ${getBgColor(statusColor)}`}
+        onClick={() => setIsModalOpen(true)}
+      >
+        {/* Card content remains the same */}
+        <div className="flex justify-between items-start mb-4">
+          <div className="space-y-1">
+            <h3 className="text-xl font-bold">{product.name}</h3>
+            {customerName && (
+              <p className="text-gray-600">{customerName}</p>
+            )}
+            <div className="flex items-center gap-1 text-gray-400">
+              <Scale size={14} />
+              <span className="text-xs">{scale?.scale_id || product.scale_id}</span>
+            </div>
           </div>
-        </div>
-        <div className="flex items-start gap-2">
           <div className={`px-4 py-2 rounded-lg ${getBgColor(statusColor)}`}>
             <span className={`text-lg font-bold ${statusColor}`}>
-              {latestMeasurement?.weight ? 
-                getStatusText(latestMeasurement.weight) : 
-                'No data'
-              }
+              {latestMeasurement?.weight ? `${latestMeasurement.weight} kg` : 'No data'}
             </span>
           </div>
-          {whatsappLink && (
-            <a
-              href={whatsappLink}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center justify-center w-10 h-10 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors"
-              title="Send WhatsApp message"
-            >
-              <MessageSquare size={20} />
-            </a>
-          )}
+        </div>
+
+        <div className="space-y-2">
+          <div className="flex justify-between items-center text-sm">
+            <span className="text-gray-600">{t.upperThreshold}:</span>
+            <span className="font-medium text-green-600">{product.thresholds?.upper} kg</span>
+          </div>
+          <div className="flex justify-between items-center text-sm">
+            <span className="text-gray-600">{t.lowerThreshold}:</span>
+            <span className="font-medium text-red-600">{product.thresholds?.lower} kg</span>
+          </div>
+        </div>
+
+        <div className="mt-4 h-2 bg-gray-200 rounded-full overflow-hidden">
+          <div 
+            className={`h-full ${
+              statusColor === 'text-green-600' ? 'bg-green-600' :
+              statusColor === 'text-orange-500' ? 'bg-orange-500' :
+              statusColor === 'text-red-600' ? 'bg-red-600' : 'bg-gray-400'
+            }`}
+            style={{
+              width: latestMeasurement?.weight ? 
+                `${Math.min(100, (latestMeasurement.weight / product.thresholds?.upper) * 100)}%` : 
+                '0%'
+            }}
+          />
         </div>
       </div>
 
-      <div className="space-y-2">
-        <div className="flex justify-between items-center text-sm">
-          <span className="text-gray-600">{t.upperThreshold}:</span>
-          <span className="font-medium text-green-600">{product.thresholds?.upper} kg</span>
-        </div>
-        <div className="flex justify-between items-center text-sm">
-          <span className="text-gray-600">{t.lowerThreshold}:</span>
-          <span className="font-medium text-red-600">{product.thresholds?.lower} kg</span>
-        </div>
-      </div>
-
-      {/* Status indicator bar */}
-      <div className="mt-4 h-2 bg-gray-200 rounded-full overflow-hidden">
-        <div 
-          className={`h-full ${
-            statusColor === 'text-green-600' ? 'bg-green-600' :
-            statusColor === 'text-orange-500' ? 'bg-orange-500' :
-            statusColor === 'text-red-600' ? 'bg-red-600' : 'bg-gray-400'
-          }`}
-          style={{
-            width: latestMeasurement?.weight ? 
-              `${Math.min(100, (latestMeasurement.weight / product.thresholds?.upper) * 100)}%` : 
-              '0%'
-          }}
-        />
-      </div>
-
-      <div className="mt-4 pt-4 border-t">
-        <div className="text-sm text-gray-600">
-          {t.lastUpdated}: {formatDate(latestMeasurement?.timestamp)}
-        </div>
-      </div>
-    </div>
+      <ProductDetailModal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        product={product}
+        scale={scale}
+        latestMeasurement={latestMeasurement}
+        customer={customerData}
+      />
+    </>
   );
 };
-
 
 const ProductsView = () => {
   const [products, setProducts] = useState([]);
