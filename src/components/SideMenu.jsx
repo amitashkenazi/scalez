@@ -1,10 +1,10 @@
 import React from 'react';
-import { 
-  Bell, 
-  Users, 
-  LayoutDashboard, 
-  Database, 
-  Home, 
+import {
+  Bell,
+  Users,
+  LayoutDashboard,
+  Database,
+  Home,
   Scale,
   Package,
   Truck,
@@ -17,7 +17,7 @@ import { translations } from '../translations/translations';
 
 const MenuItem = ({ icon: Icon, label, isActive, onClick, language }) => {
   const isRTL = language === 'he';
-  
+
   return (
     <button
       onClick={onClick}
@@ -52,12 +52,7 @@ const SideMenu = ({ activeView, onViewChange }) => {
       view: "dashboard",
       description: t.dashboardDesc
     },
-    {
-      icon: Truck, // Import Truck from lucide-react
-      label: t.vendors.title,
-      view: "vendors",
-      description: t.vendors.description
-    },
+
     {
       icon: Users,
       label: t.customersDashboard,
@@ -65,40 +60,46 @@ const SideMenu = ({ activeView, onViewChange }) => {
       description: t.customersDesc
     },
     {
+      icon: Truck, // Import Truck from lucide-react
+      label: t.vendors.title,
+      view: "vendors",
+      description: t.vendors.description
+    },
+    {
       icon: ListIcon,  // Import this from lucide-react
       label: t.customersTable,
       view: "customersTable",
       description: t.customersTableDesc
     },
-    {
-      icon: Bell,
-      label: t.notifications,
-      view: "notifications",
-      description: t.notificationsDesc
-    },
+
     // In SideMenu.jsx, add to your menuItems array:
-  {
-    icon: Scale, // Import Scale from lucide-react
-    label: 'Scales Management',
-    view: 'scalesManagement',
-    description: 'Manage and monitor all scales in the system'
-  },
-  {
-    icon: Package, // Import Package from lucide-react
-    label: t.productsManagement,
-    view: "products",
-    description: t.productsDesc
-  },
+    {
+      icon: Scale, // Import Scale from lucide-react
+      label: 'Scales Management',
+      view: 'scalesManagement',
+      description: 'Manage and monitor all scales in the system'
+    },
+    {
+      icon: Package, // Import Package from lucide-react
+      label: t.productsManagement,
+      view: "products",
+      description: t.productsDesc
+    },
     {
       icon: Database,
       label: t.allScales,
       view: "allScales",
       description: t.allScalesDesc
-    }
+    }, {
+      icon: Bell,
+      label: t.notifications,
+      view: "notifications",
+      description: t.notificationsDesc
+    },
   ];
 
   return (
-    <div 
+    <div
       className="h-full flex flex-col bg-gray-800"
       dir={isRTL ? 'rtl' : 'ltr'}
     >

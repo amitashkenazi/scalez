@@ -6,6 +6,24 @@ import { Search, SortAsc, SortDesc, RefreshCw, PlusCircle, Trash2, Pencil, Alert
 import CustomerModal from '../CustomerModal';
 import DeleteConfirmationModal from '../modals/DeleteConfirmationModal';
 
+const TableHeader = ({ header, sortConfig, handleSort, isRTL }) => (
+  <th
+    className={`px-6 py-3 text-left text-xs font-medium text-gray-500 tracking-wider
+      ${header.key === 'actions' ? 'w-24' : 'cursor-pointer hover:bg-gray-50'}
+      ${isRTL && header.key !== 'id' ? 'text-right' : 'text-left'}`}
+    onClick={() => header.key !== 'actions' && handleSort(header.key)}
+  >
+    <div className="flex items-center gap-1">
+      {header.label}
+      {header.key !== 'actions' && sortConfig.key === header.key && (
+        sortConfig.direction === 'asc' ?
+          <SortAsc className="w-4 h-4" /> :
+          <SortDesc className="w-4 h-4" />
+      )}
+    </div>
+  </th>
+);
+
 const CustomersTableView = () => {
   const [customers, setCustomers] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -13,30 +31,36 @@ const CustomersTableView = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [sortConfig, setSortConfig] = useState({ key: 'name', direction: 'asc' });
   const [isRefreshing, setIsRefreshing] = useState(false);
-  
+
   // Modal states
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [selectedCustomer, setSelectedCustomer] = useState(null);
   const [successMessage, setSuccessMessage] = useState('');
-  
+
   const { language } = useLanguage();
   const t = translations[language];
   const isRTL = language === 'he';
 
   const fetchCustomers = async () => {
     try {
+      setError(null);
       const response = await apiService.getCustomers();
+      console.log('Fetched customers:', response);
+
       // Make sure each customer has a customer_id property
       const formattedCustomers = response.map(customer => ({
         ...customer,
-        customer_id: customer.customer_id || customer.id // Fallback to id if customer_id is not present
+        customer_id: customer.customer_id || customer.id
       }));
+
       setCustomers(formattedCustomers);
     } catch (err) {
       console.error('Error fetching customers:', err);
-      setError('Failed to fetch customers');
+      setError(t.errorFetchingCustomers || 'Failed to fetch customers');
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -46,8 +70,13 @@ const CustomersTableView = () => {
 
   const handleRefresh = async () => {
     setIsRefreshing(true);
-    await fetchCustomers();
-    setIsRefreshing(false);
+    setIsLoading(true);
+    try {
+      await fetchCustomers();
+    } finally {
+      setIsRefreshing(false);
+      setIsLoading(false);
+    }
   };
 
   const showSuccessMessage = (message) => {
@@ -76,7 +105,6 @@ const CustomersTableView = () => {
   };
 
   const handleEditCustomer = async (customerData) => {
-    console.log('selectedCustomer:', selectedCustomer);
     if (!selectedCustomer?.customer_id) {
       setError(t.invalidCustomer);
       return;
@@ -84,8 +112,11 @@ const CustomersTableView = () => {
 
     try {
       setError(null);
-      const updatedCustomer = await apiService.updateCustomer(selectedCustomer.customer_id, customerData);
-      setCustomers(prev => prev.map(c => 
+      const updatedCustomer = await apiService.updateCustomer(
+        selectedCustomer.customer_id,
+        customerData
+      );
+      setCustomers(prev => prev.map(c =>
         c.customer_id === selectedCustomer.customer_id ? updatedCustomer : c
       ));
       setIsEditModalOpen(false);
@@ -99,16 +130,14 @@ const CustomersTableView = () => {
 
   const handleDeleteCustomer = async () => {
     if (!selectedCustomer?.customer_id) {
-        console.log('selectedCustomer:', selectedCustomer);
       setError(t.invalidCustomer);
       return;
     }
 
     try {
       setError(null);
-      // Send the customer ID to the server when deleting
       await apiService.deleteCustomer(selectedCustomer.customer_id);
-      setCustomers(prev => prev.filter(c => c.id !== selectedCustomer.customer_id));
+      setCustomers(prev => prev.filter(c => c.customer_id !== selectedCustomer.customer_id));
       setIsDeleteModalOpen(false);
       setSelectedCustomer(null);
       showSuccessMessage(t.customerDeleted);
@@ -116,45 +145,38 @@ const CustomersTableView = () => {
       setError(t.errorDeletingCustomer);
       console.error('Error deleting customer:', err);
     }
-    handleRefresh();
-  };
-
-  const openDeleteModal = (customer) => {
-    setSelectedCustomer(customer);
-    setIsDeleteModalOpen(true);
   };
 
   const filteredAndSortedCustomers = useMemo(() => {
     let result = [...customers];
-    
+
     if (searchTerm) {
       const lowerSearchTerm = searchTerm.toLowerCase();
-      result = result.filter(customer => 
+      result = result.filter(customer =>
         customer.name?.toLowerCase().includes(lowerSearchTerm) ||
         customer.email?.toLowerCase().includes(lowerSearchTerm) ||
         customer.phone?.toLowerCase().includes(lowerSearchTerm) ||
         customer.address?.toLowerCase().includes(lowerSearchTerm)
       );
     }
-    
+
     result.sort((a, b) => {
       let aVal = a[sortConfig.key] || '';
       let bVal = b[sortConfig.key] || '';
-      
+
       if (typeof aVal === 'string') aVal = aVal.toLowerCase();
       if (typeof bVal === 'string') bVal = bVal.toLowerCase();
-      
+
       if (aVal < bVal) return sortConfig.direction === 'asc' ? -1 : 1;
       if (aVal > bVal) return sortConfig.direction === 'asc' ? 1 : -1;
       return 0;
     });
-    
+
     return result;
   }, [customers, searchTerm, sortConfig]);
 
-  // Table headers configuration with customer ID
   const headers = [
-    { key: 'id', label: 'ID' },
+    { key: 'customer_id', label: 'ID' },
     { key: 'name', label: t.customerName },
     { key: 'email', label: t.email },
     { key: 'phone', label: t.phone },
@@ -162,28 +184,6 @@ const CustomersTableView = () => {
     { key: 'actions', label: '' }
   ];
 
-  const TableHeader = ({ header }) => (
-    <th 
-      className={`px-6 py-3 text-left text-sm font-medium text-gray-500 
-        ${header.key === 'actions' ? 'w-24' : 'cursor-pointer hover:bg-gray-50'}
-        ${isRTL && header.key !== 'id' ? 'text-right' : 'text-left'}`}
-      onClick={() => header.key !== 'actions' && handleSort(header.key)}
-    >
-      <div className="flex items-center gap-1">
-        {header.label}
-        {header.key !== 'actions' && <SortIcon columnKey={header.key} />}
-      </div>
-    </th>
-  );
-
-  const SortIcon = ({ columnKey }) => {
-    if (sortConfig.key !== columnKey) return null;
-    return sortConfig.direction === 'asc' ? 
-      <SortAsc className="w-4 h-4 inline-block ml-1" /> : 
-      <SortDesc className="w-4 h-4 inline-block ml-1" />;
-  };
-
-  // Loading state
   if (isLoading) {
     return (
       <div className="flex justify-center items-center h-64">
@@ -195,7 +195,6 @@ const CustomersTableView = () => {
 
   return (
     <div className="p-6 max-w-7xl mx-auto" dir={isRTL ? 'rtl' : 'ltr'}>
-      {/* Header and controls remain the same */}
       <div className="mb-6">
         <h2 className="text-2xl font-bold">{t.customersTable}</h2>
         <p className="text-gray-600 mt-1">{t.customersTableDesc}</p>
@@ -216,7 +215,7 @@ const CustomersTableView = () => {
         <div className="flex gap-2">
           <button
             onClick={handleRefresh}
-            className="flex items-center gap-2 px-4 py-2 text-gray-600 bg-white border rounded-lg hover:bg-gray-50"
+            className="flex items-center gap-2 px-4 py-2 text-gray-600 hover:text-gray-800"
             disabled={isRefreshing}
           >
             <RefreshCw className={`h-5 w-5 ${isRefreshing ? 'animate-spin' : ''}`} />
@@ -225,7 +224,7 @@ const CustomersTableView = () => {
 
           <button
             onClick={() => setIsAddModalOpen(true)}
-            className="flex items-center gap-2 px-4 py-2 text-white bg-blue-600 rounded-lg hover:bg-blue-700"
+            className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
           >
             <PlusCircle className="h-5 w-5" />
             {t.addCustomer}
@@ -233,7 +232,6 @@ const CustomersTableView = () => {
         </div>
       </div>
 
-      {/* Messages */}
       {successMessage && (
         <div className="mb-6 bg-green-50 border border-green-400 rounded-lg p-4">
           <p className="text-green-700">{successMessage}</p>
@@ -247,27 +245,43 @@ const CustomersTableView = () => {
         </div>
       )}
 
-      {/* Desktop Table with Customer ID */}
+      {/* Desktop Table */}
       <div className="hidden md:block overflow-x-auto bg-white rounded-lg shadow">
         <table className="min-w-full">
           <thead className="bg-gray-50">
             <tr>
               {headers.map(header => (
-                <TableHeader key={header.key} header={header} />
+                <TableHeader
+                  key={header.key}
+                  header={header}
+                  sortConfig={sortConfig}
+                  handleSort={handleSort}
+                  isRTL={isRTL}
+                />
               ))}
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-200">
             {filteredAndSortedCustomers.map((customer) => (
-              <tr 
-                key={customer.customer_id} 
+              <tr
+                key={customer.customer_id}
                 className="hover:bg-gray-50 transition-colors"
               >
-                <td className="px-6 py-4 text-sm text-gray-500">{customer.customer_id}</td>
-                <td className="px-6 py-4">{customer.name}</td>
-                <td className="px-6 py-4">{customer.email}</td>
-                <td className="px-6 py-4">{customer.phone}</td>
-                <td className="px-6 py-4">{customer.address}</td>
+                <td className="px-6 py-4 text-sm text-gray-500">
+                  {customer.customer_id}
+                </td>
+                <td className="px-6 py-4">
+                  {customer.name}
+                </td>
+                <td className="px-6 py-4">
+                  {customer.email}
+                </td>
+                <td className="px-6 py-4">
+                  {customer.phone}
+                </td>
+                <td className="px-6 py-4">
+                  {customer.address}
+                </td>
                 <td className="px-6 py-4">
                   <div className="flex items-center gap-2">
                     <button
@@ -280,7 +294,10 @@ const CustomersTableView = () => {
                       <Pencil className="h-5 w-5" />
                     </button>
                     <button
-                      onClick={() => openDeleteModal(customer)}
+                      onClick={() => {
+                        setSelectedCustomer(customer);
+                        setIsDeleteModalOpen(true);
+                      }}
                       className="text-red-600 hover:text-red-800"
                     >
                       <Trash2 className="h-5 w-5" />
@@ -299,11 +316,11 @@ const CustomersTableView = () => {
         )}
       </div>
 
-      {/* Mobile Cards with Customer ID */}
+      {/* Mobile Cards */}
       <div className="md:hidden space-y-4">
         {filteredAndSortedCustomers.map((customer) => (
-          <div 
-            key={customer.customer_id} 
+          <div
+            key={customer.customer_id}
             className="bg-white rounded-lg p-4 shadow hover:shadow-md transition-shadow"
           >
             <div className="flex justify-between items-start">
@@ -327,7 +344,10 @@ const CustomersTableView = () => {
                   <Pencil className="h-5 w-5" />
                 </button>
                 <button
-                  onClick={() => openDeleteModal(customer)}
+                  onClick={() => {
+                    setSelectedCustomer(customer);
+                    setIsDeleteModalOpen(true);
+                  }}
                   className="text-red-600 hover:text-red-800"
                 >
                   <Trash2 className="h-5 w-5" />
@@ -368,7 +388,8 @@ const CustomersTableView = () => {
           setSelectedCustomer(null);
         }}
         onConfirm={handleDeleteCustomer}
-        customerName={selectedCustomer?.name}
+        title={t.deleteCustomer}
+        message={t.deleteConfirmationDesc}
       />
     </div>
   );

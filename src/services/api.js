@@ -101,6 +101,7 @@ class ApiService {
     }
 
     async updateProduct(productId, productData) {
+        console.log('Updating product:', productId, productData);
         return this.request(`products/${productId}`, {
             method: 'PUT',
             body: JSON.stringify(productData)

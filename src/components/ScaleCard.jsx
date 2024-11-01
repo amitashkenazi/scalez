@@ -6,10 +6,16 @@ import { translations } from '../translations/translations';
 import { MessageSquare } from 'lucide-react';
 import customersData from '../data/customersData.json';
 
+const DEFAULT_THRESHOLDS = {
+  upper: 40,
+  lower: 8
+};
+
 const MiniGraph = ({ data }) => {
-  const sortedData = [...data].sort((a, b) => 
-    new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
-  );
+  // Ensure data is valid and sorted
+  const sortedData = Array.isArray(data) 
+    ? [...data].sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime())
+    : [];
 
   return (
     <div className="h-24">
@@ -34,9 +40,27 @@ const ScaleCard = ({ scale, onCardClick }) => {
   const t = translations[language];
   const isRTL = language === 'he';
   
+  // Early return if scale is invalid
+  if (!scale || typeof scale !== 'object') {
+    console.error('Invalid scale object provided to ScaleCard');
+    return null;
+  }
+
+  // Ensure required properties exist with defaults
+  const safeScale = {
+    ...scale,
+    history: Array.isArray(scale.history) ? scale.history : [],
+    thresholds: { ...DEFAULT_THRESHOLDS, ...(scale.thresholds || {}) },
+    unit: scale.unit || 'kg',
+    productName: scale.productName || 'Unknown Product',
+    notifications: scale.notifications || {
+      lower: { phoneNumber: '', message: '' }
+    }
+  };
+  
   // Find customer for this scale
   const customer = customersData.customers.find(
-    cust => cust.scaleIds.includes(scale.id)
+    cust => cust.scaleIds.includes(safeScale.id)
   );
   
   // Get customer name in correct format based on language
@@ -47,22 +71,22 @@ const ScaleCard = ({ scale, onCardClick }) => {
   };
 
   // Get the latest measurement
-  const sortedHistory = [...scale.history].sort((a, b) => 
+  const sortedHistory = [...safeScale.history].sort((a, b) => 
     new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
   );
   
   const latestMeasurement = sortedHistory[0];
   const currentWeight = latestMeasurement ? latestMeasurement.weight : null;
   const statusColor = currentWeight !== null 
-    ? getStatusColor(currentWeight, scale.thresholds.upper, scale.thresholds.lower)
+    ? getStatusColor(currentWeight, safeScale.thresholds.upper, safeScale.thresholds.lower)
     : 'text-gray-400';
 
   // Generate WhatsApp message
   const getWhatsAppLink = () => {
     const message = encodeURIComponent(
-      `${t.runningLowMessage} ${scale.productName}\n${t.productLeft}: ${currentWeight}${scale.unit}. \n${t.pleaseResupply}`
+      `${t.runningLowMessage} ${safeScale.productName}\n${t.productLeft}: ${currentWeight}${safeScale.unit}. \n${t.pleaseResupply}`
     );
-    const number = scale.notifications?.lower?.phoneNumber || '+972545868545'; // Fallback number if not set
+    const number = safeScale.notifications?.lower?.phoneNumber || '+972545868545'; // Fallback number if not set
     return `https://wa.me/${number.replace('+', '')}?text=${message}`;
   };
   
@@ -73,9 +97,9 @@ const ScaleCard = ({ scale, onCardClick }) => {
       >
         <div 
           className={`${isRTL ? 'text-right' : 'text-left'} cursor-pointer`}
-          onClick={() => onCardClick(scale)}
+          onClick={() => onCardClick(safeScale)}
         >
-          <h3 className="text-2xl font-bold">{scale.productName}</h3>
+          <h3 className="text-2xl font-bold">{safeScale.productName}</h3>
           <p className="text-sm text-gray-500">{getCustomerName()}</p>
         </div>
         <div className="flex items-center gap-2">
@@ -84,7 +108,7 @@ const ScaleCard = ({ scale, onCardClick }) => {
             statusColor === 'text-orange-500' ? 'bg-orange-100' : 'bg-red-100'
           }`}>
             <span className={`text-sm font-medium ${statusColor}`}>
-              {currentWeight !== null ? `${currentWeight} ${scale.unit}` : t.noData}
+              {currentWeight !== null ? `${currentWeight} ${safeScale.unit}` : t.noData}
             </span>
           </div>
           <a
@@ -101,21 +125,21 @@ const ScaleCard = ({ scale, onCardClick }) => {
 
       <div 
         className={`space-y-4 ${isRTL ? 'text-right' : 'text-left'} cursor-pointer`}
-        onClick={() => onCardClick(scale)}
+        onClick={() => onCardClick(safeScale)}
       >
         <div>
           <span className="block text-sm text-gray-500 mb-1">{t.thresholds}</span>
           <div className="text-sm">
             <div className="text-green-600">
-              {t.upperThreshold}: {scale.thresholds.upper} {scale.unit}
+              {t.upperThreshold}: {safeScale.thresholds.upper} {safeScale.unit}
             </div>
             <div className="text-red-600">
-              {t.lowerThreshold}: {scale.thresholds.lower} {scale.unit}
+              {t.lowerThreshold}: {safeScale.thresholds.lower} {safeScale.unit}
             </div>
           </div>
         </div>
         <div className="mt-4">
-          <MiniGraph data={scale.history} />
+          <MiniGraph data={safeScale.history} />
         </div>
       </div>
     </div>
