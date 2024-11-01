@@ -1,8 +1,5 @@
 // src/App.js
 import React, { useState, useRef, useCallback } from 'react';
-import Dashboard from './components/Dashboard';
-import CustomerDashboard from './components/CustomerDashboard';
-import NotificationsView from './components/NotificationsView';
 import { CustomersTableView } from './components/customers';
 import ScalesManagement from './components/ScalesManagement';
 import SideMenu from './components/SideMenu';
