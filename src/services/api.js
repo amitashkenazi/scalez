@@ -261,6 +261,37 @@ class ApiService {
             method: 'DELETE'
         });
     }
+    async getVendors() {
+        return this.request('vendors', {
+            method: 'GET'
+        });
+    }
+    
+    async getVendor(vendorId) {
+        return this.request(`vendors/${vendorId}`, {
+            method: 'GET'
+        });
+    }
+    
+    async createVendor(vendorData) {
+        return this.request('vendors', {
+            method: 'POST',
+            body: JSON.stringify(vendorData)
+        });
+    }
+    
+    async updateVendor(vendorId, vendorData) {
+        return this.request(`vendors/${vendorId}`, {
+            method: 'PUT',
+            body: JSON.stringify(vendorData)
+        });
+    }
+    
+    async deleteVendor(vendorId) {
+        return this.request(`vendors/${vendorId}`, {
+            method: 'DELETE'
+        });
+    }
 
     // Measurement APIs
     async getScaleMeasurements(scaleId, startDate, endDate) {

@@ -12,6 +12,8 @@ import { LanguageProvider, useLanguage } from './contexts/LanguageContext';
 import useScaleData from './hooks/useScaleData';
 import { Menu as MenuIcon } from 'lucide-react';
 import { translations } from './translations/translations';
+import VendorsView from './components/vendors/VendorsView';
+
 
 function AppContent() {
   const [selectedScaleIds, setSelectedScaleIds] = useState(null);
@@ -147,7 +149,9 @@ function AppContent() {
           {activeView === 'landing' && (
             <LandingPage onViewChange={handleViewChange} />
           )}
-          
+          {activeView === 'vendors' && (
+              <VendorsView />
+          )}
           {activeView === 'customers' && (
             selectedScaleIds ? (
               <>

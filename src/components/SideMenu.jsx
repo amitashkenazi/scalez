@@ -7,6 +7,7 @@ import {
   Home, 
   Scale,
   Package,
+  Truck,
   Languages,
   List as ListIcon
 } from 'lucide-react';
@@ -50,6 +51,12 @@ const SideMenu = ({ activeView, onViewChange }) => {
       label: t.dashboard,
       view: "dashboard",
       description: t.dashboardDesc
+    },
+    {
+      icon: Truck, // Import Truck from lucide-react
+      label: t.vendors.title,
+      view: "vendors",
+      description: t.vendors.description
     },
     {
       icon: Users,
