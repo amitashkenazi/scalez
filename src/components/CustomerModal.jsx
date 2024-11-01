@@ -61,11 +61,11 @@ const CustomerModal = ({ isOpen, onClose, onSubmit, initialData = null }) => {
       newErrors.email = 'Invalid email format';
     }
     
-    if (!formData.phone.trim()) {
-      newErrors.phone = 'Phone number is required';
-    } else if (!/^\+?[1-9]\d{7,14}$/.test(formData.phone.replace(/[\s-]/g, ''))) {
-      newErrors.phone = 'Invalid phone number format';
-    }
+    // if (!formData.phone.trim()) {
+    //   newErrors.phone = 'Phone number is required';
+    // } else if (!/^\+?[1-9]\d{7,14}$/.test(formData.phone.replace(/[\s-]/g, ''))) {
+    //   newErrors.phone = 'Invalid phone number format';
+    // }
     
     if (!formData.address.trim()) {
       newErrors.address = 'Address is required';

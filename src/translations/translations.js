@@ -14,6 +14,13 @@ export const translations = {
     close: "Close",
     from: "From",
     to: "To",
+    productsDashboard: "Products Dashboard",
+    productStatus: "Product Status",
+    upperThreshold: "Upper Threshold",
+    lowerThreshold: "Lower Threshold",
+    lastUpdated: "Last Updated",
+    noProducts: "No products found",
+    failedToFetchProducts: "Failed to fetch products data",
 
     // Landing Page
     welcomeTitle: "Scale Monitor System",
@@ -336,5 +343,12 @@ export const translations = {
       errorDeletingVendor: "שגיאה במחיקת ספק",
       noVendors: "לא נמצאו ספקים",
     },
+    productsDashboard: "לוח מוצרים",
+    productStatus: "סטטוס מוצר",
+    upperThreshold: "סף עליון",
+    lowerThreshold: "סף תחתון",
+    lastUpdated: "עודכן לאחרונה",
+    noProducts: "לא נמצאו מוצרים",
+    failedToFetchProducts: "נכשל בטעינת נתוני המוצרים",
   }
 };

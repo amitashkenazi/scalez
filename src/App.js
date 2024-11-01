@@ -7,12 +7,13 @@ import { CustomersTableView } from './components/customers';
 import ScalesManagement from './components/ScalesManagement';
 import SideMenu from './components/SideMenu';
 import LandingPage from './components/LandingPage';
-import ProductsView from './components/ProductsView';
+import ProductsManagementView from './components/ProductsMngView';
 import { LanguageProvider, useLanguage } from './contexts/LanguageContext';
 import useScaleData from './hooks/useScaleData';
 import { Menu as MenuIcon } from 'lucide-react';
 import { translations } from './translations/translations';
 import VendorsView from './components/vendors/VendorsView';
+import ProductsView from './components/products/ProductsView';
 
 
 function AppContent() {
@@ -171,7 +172,9 @@ function AppContent() {
               <CustomerDashboard onCustomerSelect={handleCustomerSelect} />
             )
           )}
-          
+          {activeView === 'products' && (
+            <ProductsView />
+          )}
           {activeView === 'notifications' && (
             <NotificationsView scales={scales} />
           )}
@@ -187,8 +190,8 @@ function AppContent() {
           {activeView === 'scalesManagement' && (
             <ScalesManagement />
           )}
-          {activeView === 'products' && (
-            <ProductsView />
+          {activeView === 'productsMng' && (
+            <ProductsManagementView />
           )}
         </div>
       </main>

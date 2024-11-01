@@ -19,7 +19,7 @@ const ProductThreshold = ({ thresholds }) => (
   </div>
 );
 
-export default function ProductsView() {
+export default function ProductsManagementView() {
   const [products, setProducts] = useState([]);
   const [customers, setCustomers] = useState([]);
   const [isLoading, setIsLoading] = useState(true);

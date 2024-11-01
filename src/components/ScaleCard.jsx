@@ -86,7 +86,7 @@ const ScaleCard = ({ scale, onCardClick }) => {
     const message = encodeURIComponent(
       `${t.runningLowMessage} ${safeScale.productName}\n${t.productLeft}: ${currentWeight}${safeScale.unit}. \n${t.pleaseResupply}`
     );
-    const number = safeScale.notifications?.lower?.phoneNumber || '+972545868545'; // Fallback number if not set
+    const number = safeScale.notifications?.lower?.phoneNumber || ''; // Fallback number if not set
     return `https://wa.me/${number.replace('+', '')}?text=${message}`;
   };
   

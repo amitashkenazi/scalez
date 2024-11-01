@@ -1,9 +1,5 @@
 import React from 'react';
 import {
-  Bell,
-  Users,
-  LayoutDashboard,
-  Database,
   Home,
   Scale,
   Package,
@@ -47,17 +43,10 @@ const SideMenu = ({ activeView, onViewChange }) => {
       description: t.homeDesc
     },
     {
-      icon: LayoutDashboard,
-      label: t.dashboard,
-      view: "dashboard",
-      description: t.dashboardDesc
-    },
-
-    {
-      icon: Users,
-      label: t.customersDashboard,
-      view: "customers",
-      description: t.customersDesc
+      icon: Package,
+      label: t.productsDashboard,
+      view: "products",
+      description: t.productsDashboardDesc
     },
     {
       icon: Truck, // Import Truck from lucide-react
@@ -82,19 +71,8 @@ const SideMenu = ({ activeView, onViewChange }) => {
     {
       icon: Package, // Import Package from lucide-react
       label: t.productsManagement,
-      view: "products",
+      view: "productsMng",
       description: t.productsDesc
-    },
-    {
-      icon: Database,
-      label: t.allScales,
-      view: "allScales",
-      description: t.allScalesDesc
-    }, {
-      icon: Bell,
-      label: t.notifications,
-      view: "notifications",
-      description: t.notificationsDesc
     },
   ];
 

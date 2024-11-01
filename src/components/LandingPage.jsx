@@ -1,5 +1,10 @@
 import React from 'react';
-import { Users, Bell, LayoutDashboard, Database } from 'lucide-react';
+import {
+  Scale,
+  Package,
+  Truck,
+  List as ListIcon
+} from 'lucide-react';
 import { useLanguage } from '../contexts/LanguageContext';
 import { translations } from '../translations/translations';
 
@@ -43,6 +48,7 @@ const WelcomeMessage = ({ name, time, t, isRTL }) => {
 
 const LandingPage = ({ onViewChange }) => {
   const { language } = useLanguage();
+  console.log(language);
   const t = translations[language];
   const isRTL = language === 'he';
 
@@ -56,29 +62,35 @@ const LandingPage = ({ onViewChange }) => {
 
   const menuItems = [
     {
-      icon: LayoutDashboard,
-      title: t.dashboard,
-      description: t.dashboardDesc,
-      view: 'dashboard'
+      icon: Package,
+      label: t.productsDashboard,
+      view: "products",
+      description: t.productsDashboardDesc
     },
     {
-      icon: Users,
-      title: t.customers,
-      description: t.customersDesc,
-      view: 'customers'
+      icon: Truck, // Import Truck from lucide-react
+      label: t.vendors.title,
+      view: "vendors",
+      description: t.vendors.description
     },
     {
-      icon: Bell,
-      title: t.notifications,
-      description: t.notificationsDesc,
-      view: 'notifications'
+      icon: ListIcon,  // Import this from lucide-react
+      label: t.customersTable,
+      view: "customersTable",
+      description: t.customersTableDesc
     },
     {
-      icon: Database,
-      title: t.allScales,
-      description: t.allScalesDesc,
-      view: 'allScales'
-    }
+      icon: Scale, // Import Scale from lucide-react
+      label: 'Scales Management',
+      view: 'scalesManagement',
+      description: 'Manage and monitor all scales in the system'
+    },
+    {
+      icon: Package, // Import Package from lucide-react
+      label: t.productsManagement,
+      view: "productsMng",
+      description: t.productsDesc
+    },
   ];
 
   // Example statistics
@@ -115,7 +127,7 @@ const LandingPage = ({ onViewChange }) => {
         />
         
         {/* Statistics */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
+        {/* <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
           {stats.map((stat, index) => (
             <StatsCard
               key={index}
@@ -125,16 +137,17 @@ const LandingPage = ({ onViewChange }) => {
               isRTL={isRTL}
             />
           ))}
-        </div>
+        </div> */}
       </div>
 
       {/* Menu Cards Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
         {menuItems.map((item) => (
+          console.log(item),
           <MenuCard
             key={item.view}
             icon={item.icon}
-            title={item.title}
+            title={item.label}
             description={item.description}
             onClick={() => onViewChange(item.view)}
             isRTL={isRTL}
