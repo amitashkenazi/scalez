@@ -6,21 +6,18 @@ import SideMenu from './components/SideMenu';
 import LandingPage from './components/LandingPage';
 import ProductsManagementView from './components/ProductsMngView';
 import { LanguageProvider, useLanguage } from './contexts/LanguageContext';
-import useScaleData from './hooks/useScaleData';
 import { Menu as MenuIcon } from 'lucide-react';
-import { translations } from './translations/translations';
+// import { translations } from './translations/translations';
 import VendorsView from './components/vendors/VendorsView';
 import ProductsView from './components/products/ProductsView';
 import { AuthProvider } from './contexts/AuthContext';
 
 
 function AppContent() {
-  const [selectedScaleIds, setSelectedScaleIds] = useState(null);
   const [activeView, setActiveView] = useState('landing');
   const [isMenuOpen, setIsMenuOpen] = useState(true);
-  const { scales } = useScaleData();
   const { language } = useLanguage();
-  const t = translations[language];
+  // const t = translations[language];
   
   // Touch handling for mobile
   const touchStartX = useRef(null);
@@ -68,20 +65,11 @@ function AppContent() {
     touchEndX.current = null;
   }, [isMenuOpen, language]);
 
-  const handleCustomerSelect = (scaleIds) => {
-    setSelectedScaleIds(scaleIds);
-    setActiveView('customers');
-  };
-
-  const handleBackToCustomers = () => {
-    setSelectedScaleIds(null);
-  };
-
   const handleViewChange = (view) => {
     setActiveView(view);
-    if (view === 'customers') {
-      setSelectedScaleIds(null);
-    }
+    // if (view === 'customers') {
+    //   setSelectedScaleIds(null);
+    // }
   };
 
   const toggleMenu = () => {

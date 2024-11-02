@@ -49,8 +49,8 @@ export function AuthProvider({ children }) {
 
   const signUp = async (email, password, attributes) => {
     try {
-      const user = await cognitoAuth.signUp(email, password, attributes);
-      return user;
+      const result = await cognitoAuth.signUp(email, password, attributes);
+      return result;
     } catch (err) {
       throw err;
     }
@@ -66,6 +66,25 @@ export function AuthProvider({ children }) {
     }
   };
 
+  // Add these confirmation-related functions
+  const confirmSignUp = async (email, code) => {
+    try {
+      const result = await cognitoAuth.confirmSignUp(email, code);
+      return result;
+    } catch (err) {
+      throw err;
+    }
+  };
+
+  const resendConfirmationCode = async (email) => {
+    try {
+      const result = await cognitoAuth.resendConfirmationCode(email);
+      return result;
+    } catch (err) {
+      throw err;
+    }
+  };
+
   const value = {
     user,
     isLoading,
@@ -73,6 +92,8 @@ export function AuthProvider({ children }) {
     signIn,
     signUp,
     signOut,
+    confirmSignUp, // Add this
+    resendConfirmationCode, // Add this
     refreshUser: checkAuthState,
     isConfigured
   };

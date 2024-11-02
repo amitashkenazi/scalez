@@ -22,7 +22,7 @@ const ProductModal = ({ isOpen, onClose, onSubmit, customers, initialData = null
 
   const { language } = useLanguage();
   const t = translations[language];
-  const isRTL = language === 'he';
+  // const isRTL = language === 'he';
 
   useEffect(() => {
     if (!isLoadingScales && scales) {

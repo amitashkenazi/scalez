@@ -1,11 +1,9 @@
 import React, { useState } from 'react';
 import { X, Loader2 } from 'lucide-react';
 import { useLanguage } from '../contexts/LanguageContext';
-import { translations } from '../translations/translations';
 
 const ScaleModal = ({ isOpen, onClose, onSubmit }) => {
   const { language } = useLanguage();
-  const t = translations[language];
   const isRTL = language === 'he';
 
   const [scaleId, setScaleId] = useState('');

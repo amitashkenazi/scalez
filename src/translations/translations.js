@@ -33,8 +33,6 @@ export const translations = {
     // Dashboard
     scaleMonitorDashboard: "Scale Monitor Dashboard",
     latestWeight: "Latest Weight",
-    upperThreshold: "Upper Threshold",
-    lowerThreshold: "Lower Threshold",
     noData: "No data available",
 
     // Notifications
@@ -123,7 +121,6 @@ export const translations = {
     saving: "Saving...",
     saveChanges: "Save Changes",
     weight: "Weight",
-    lastUpdated: "Last Updated",
     customer: "Customer",
     productName: "Product Name",
 
@@ -144,7 +141,6 @@ export const translations = {
     noSearchResults: "No customers match your search",
     customersTableDesc: "Manage and view all customer information",
     customersTable: "Customers Table",
-    refresh: "Refresh",
     loading: "Loading...",
     tryAgain: "Try Again",
     noData: "No scales available",

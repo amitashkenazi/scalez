@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { useLanguage } from '../contexts/LanguageContext';
-import { translations } from '../translations/translations';
 import { Plus, Trash2, Loader2, RefreshCw, AlertCircle } from 'lucide-react';
 import apiService from '../services/api';
 import ScaleModal from './ScaleModal';
@@ -19,7 +18,6 @@ const ScalesManagement = () => {
   const [selectedScale, setSelectedScale] = useState(null);
 
   const { language } = useLanguage();
-  const t = translations[language];
   const isRTL = language === 'he';
 
   // Fetch initial data

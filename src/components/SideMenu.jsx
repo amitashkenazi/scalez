@@ -3,7 +3,6 @@ import React, { useState } from 'react';
 import { 
   LogOut, 
   LogIn, 
-  User, 
   Languages,
   Home,
   Package,
@@ -67,7 +66,7 @@ const SideMenu = ({ activeView, onViewChange }) => {
     <>
       <div className="h-full flex flex-col bg-gray-800">
         {/* User Profile Section */}
-        {user ? (
+        {/* {user ? (
           <div className="p-4 border-b border-gray-700">
             <div className={`flex items-center gap-3 ${isRTL ? 'flex-row-reverse' : ''}`}>
               <div className="w-10 h-10 rounded-full bg-gray-600 flex items-center justify-center">
@@ -90,7 +89,7 @@ const SideMenu = ({ activeView, onViewChange }) => {
               {t.signIn}
             </button>
           </div>
-        )}
+        )} */}
         {/* Title Section */}
         <div className="p-6">
           <h2 className={`text-xl font-bold text-white mb-2 ${isRTL ? 'text-right' : 'text-left'}`}>

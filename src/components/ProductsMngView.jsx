@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useLanguage } from '../contexts/LanguageContext';
 import { translations } from '../translations/translations';
-import { Plus, Pencil, Trash2, Loader2, RefreshCw, AlertCircle, Link as LinkIcon, Scale } from 'lucide-react';
+import { Plus, Pencil, Trash2, Loader2, RefreshCw, AlertCircle,  Scale } from 'lucide-react';
 import apiService from '../services/api';
 import ProductModal from './ProductModal';
 import DeleteConfirmationModal from './modals/DeleteConfirmationModal';
