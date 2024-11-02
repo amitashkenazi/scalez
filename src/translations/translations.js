@@ -158,6 +158,7 @@ export const translations = {
     deleteCustomer: "Delete Customer",
     customerNameEn: "Customer Name (English)",
     customerNameHe: "Customer Name (Hebrew)",
+    scalesManagement: "Scales Management",
     email: "Email",
     phone: "Phone",
     address: "Address",
@@ -534,6 +535,7 @@ export const translations = {
     // Loading States
     loading: "טוען...",
     processing: "מעבד...",
-    pleaseWait: "נא להמתין..."
+    pleaseWait: "נא להמתין...",
+    scalesManagement: "ניהול משקלים",
   }
 };

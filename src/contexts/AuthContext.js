@@ -1,4 +1,3 @@
-// src/contexts/AuthContext.js
 import React, { createContext, useState, useContext, useEffect } from 'react';
 import { cognitoAuth } from '../utils/cognitoAuth';
 import { authConfig } from '../config/auth';
@@ -21,14 +20,33 @@ export function AuthProvider({ children }) {
 
   const checkAuthState = async () => {
     try {
+      setError(null);
+      // First check localStorage for immediate user data
+      const storedUserData = localStorage.getItem('userData');
+      if (storedUserData) {
+        setUser(JSON.parse(storedUserData));
+      }
+
+      // Then verify with Cognito
       const session = await cognitoAuth.getCurrentSession();
       if (session) {
         const userData = await cognitoAuth.getCurrentUser();
-        setUser(userData);
+        if (userData) {
+          setUser(userData);
+        } else {
+          // If we can't get user data but have a session, clear everything
+          cognitoAuth.signOut();
+          setUser(null);
+        }
+      } else {
+        // No valid session
+        setUser(null);
+        localStorage.removeItem('userData');
       }
     } catch (err) {
       console.error('Auth state check failed:', err);
       setError(err.message);
+      setUser(null);
     } finally {
       setIsLoading(false);
     }
@@ -40,17 +58,9 @@ export function AuthProvider({ children }) {
 
   const signIn = async (email, password) => {
     try {
-      await cognitoAuth.signIn(email, password);
-      await checkAuthState();
-    } catch (err) {
-      throw err;
-    }
-  };
-
-  const signUp = async (email, password, attributes) => {
-    try {
-      const result = await cognitoAuth.signUp(email, password, attributes);
-      return result;
+      const { userData } = await cognitoAuth.signIn(email, password);
+      setUser(userData);
+      return userData;
     } catch (err) {
       throw err;
     }
@@ -66,43 +76,15 @@ export function AuthProvider({ children }) {
     }
   };
 
-  // Add these confirmation-related functions
-  const confirmSignUp = async (email, code) => {
-    try {
-      const result = await cognitoAuth.confirmSignUp(email, code);
-      return result;
-    } catch (err) {
-      throw err;
-    }
-  };
-
-  const resendConfirmationCode = async (email) => {
-    try {
-      const result = await cognitoAuth.resendConfirmationCode(email);
-      return result;
-    } catch (err) {
-      throw err;
-    }
-  };
-
   const value = {
     user,
     isLoading,
     error,
     signIn,
-    signUp,
     signOut,
-    confirmSignUp, // Add this
-    resendConfirmationCode, // Add this
     refreshUser: checkAuthState,
     isConfigured
   };
-
-  if (isLoading) {
-    return <div className="flex justify-center items-center h-64">
-      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600" />
-    </div>;
-  }
 
   return (
     <AuthContext.Provider value={value}>

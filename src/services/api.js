@@ -126,8 +126,10 @@ class ApiService {
             'Accept': 'application/json',
         };
 
-        if (this.token) {
-            headers['Authorization'] = `Bearer ${this.token}`;
+        // Get token from localStorage
+        const token = localStorage.getItem('authToken');
+        if (token) {
+            headers['Authorization'] = `Bearer ${token}`;
         }
 
         return headers;
@@ -159,20 +161,11 @@ class ApiService {
     // Generic request handler
     async request(endpoint, options = {}, retryCount = this.retryCount) {
         const url = `${this.baseUrl}/api/${endpoint.replace(/^\/+/, '')}`;
-        this.debug('Making request:', {
-            url,
-            method: options.method || 'GET',
-            headers: options.headers,
-            body: options.body,
-        });
-
+        
         const defaultOptions = {
             mode: 'cors',
             credentials: 'include',
-            headers: {
-                'Content-Type': 'application/json',
-                'Accept': 'application/json',
-            }
+            headers: this.getHeaders()
         };
 
         const finalOptions = {
@@ -184,45 +177,27 @@ class ApiService {
             },
         };
 
-        this.debug('Final request options:', finalOptions);
-
         try {
-            this.debug('Sending fetch request...');
             const response = await fetch(url, finalOptions);
 
-            this.debug('Response received:', {
-                status: response.status,
-                statusText: response.statusText,
-                headers: Array.from(response.headers.entries()),
-                ok: response.ok,
-                type: response.type,
-            });
+            if (response.status === 401) {
+                // Token expired or invalid
+                localStorage.removeItem('authToken');
+                window.location.href = '/'; // Redirect to home/login
+                throw new Error('Authentication required');
+            }
 
             if (response.ok) {
                 const contentType = response.headers.get('content-type');
-                let data;
                 if (contentType?.includes('application/json')) {
-                    data = await response.json();
-                    this.debug('Parsed JSON response:', data);
-                } else {
-                    data = await response.text();
-                    this.debug('Received text response:', data);
+                    return await response.json();
                 }
-                return data;
-            } else {
-                this.debug('Response not OK:', response.status, response.statusText);
-                throw new Error(`HTTP error! status: ${response.status}`);
+                return await response.text();
             }
-        } catch (error) {
-            this.debug('Request failed:', {
-                error,
-                name: error.name,
-                message: error.message,
-                stack: error.stack
-            });
 
+            throw new Error(`HTTP error! status: ${response.status}`);
+        } catch (error) {
             if (error.name === 'TypeError' && retryCount > 0) {
-                this.debug(`Retrying request, ${retryCount} attempts remaining`);
                 await new Promise(resolve => setTimeout(resolve, this.retryDelay));
                 return this.request(endpoint, options, retryCount - 1);
             }

@@ -70,7 +70,7 @@ const LandingPage = ({ onViewChange }) => {
     },
     {
       icon: Scale,
-      label: 'Scales Management',
+      label: t.scalesManagement,
       view: 'scalesManagement',
       description: 'Manage and monitor all scales in the system'
     },

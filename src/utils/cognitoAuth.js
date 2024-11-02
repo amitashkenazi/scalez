@@ -1,4 +1,3 @@
-// src/utils/cognitoAuth.js
 import {
     CognitoUserPool,
     CognitoUser,
@@ -7,13 +6,10 @@ import {
 } from 'amazon-cognito-identity-js';
 import { authConfig } from '../config/auth';
 
-// Check if required configuration is available
 const isCognitoConfigured = () => {
-    console.log(authConfig);
     return authConfig.USER_POOL_ID && authConfig.USER_POOL_WEB_CLIENT_ID;
 };
 
-// Create user pool only if configuration is available
 const getUserPool = () => {
     if (!isCognitoConfigured()) {
         console.warn('Cognito is not configured. Using mock authentication.');
@@ -138,7 +134,6 @@ export const cognitoAuth = {
     }
     ,
 
-    // Confirm sign up with verification code
     confirmSignUp: async (email, code) => {
         if (!userPool) return mockAuth.confirmSignUp(email, code);
 
@@ -158,7 +153,6 @@ export const cognitoAuth = {
         });
     },
 
-    // Resend verification code
     resendConfirmationCode: async (email) => {
         if (!userPool) return mockAuth.resendConfirmationCode(email);
 
@@ -178,16 +172,8 @@ export const cognitoAuth = {
         });
     },
 
-    // Sign in user
-    // Replace your existing signIn function in cognitoAuth.js with this debug version
     signIn: async (email, password) => {
         if (!userPool) return mockAuth.signIn(email, password);
-
-        console.log('Attempting Cognito signIn:', {
-            email,
-            passwordLength: password.length,
-            passwordChars: Array.from(password).map(c => c.charCodeAt(0))
-        });
 
         return new Promise((resolve, reject) => {
             const authenticationDetails = new AuthenticationDetails({
@@ -195,68 +181,78 @@ export const cognitoAuth = {
                 Password: password,
             });
 
-            console.log('Auth Details created:', {
-                hasUsername: !!authenticationDetails.getUsername(),
-                hasPassword: !!authenticationDetails.getPassword(),
-                rawPasswordLength: password.length,
-                detailsPasswordLength: authenticationDetails.getPassword().length
-            });
-
             const cognitoUser = new CognitoUser({
                 Username: email,
                 Pool: userPool
             });
 
-            console.log('CognitoUser created:', {
-                username: cognitoUser.getUsername(),
-                pool: {
-                    userPoolId: userPool.getUserPoolId(),
-                    clientId: userPool.getClientId()
-                }
-            });
-
             cognitoUser.authenticateUser(authenticationDetails, {
                 onSuccess: (result) => {
-                    console.log('Sign in successful:', {
-                        accessToken: result.getAccessToken().getJwtToken() ? 'Present' : 'Missing',
-                        idToken: result.getIdToken().getJwtToken() ? 'Present' : 'Missing'
+                    // Store the tokens
+                    const accessToken = result.getAccessToken().getJwtToken();
+                    const idToken = result.getIdToken().getJwtToken();
+                    localStorage.setItem('accessToken', accessToken);
+                    localStorage.setItem('idToken', idToken);
+                    
+                    // Get user attributes
+                    cognitoUser.getUserAttributes((err, attributes) => {
+                        if (err) {
+                            console.error('Error getting user attributes:', err);
+                            resolve(result);
+                            return;
+                        }
+
+                        // Create a properly formatted user object
+                        const userData = {
+                            username: cognitoUser.getUsername(),
+                            email: email,
+                            // Map Cognito attributes to user object
+                            ...attributes.reduce((acc, attr) => {
+                                switch(attr.Name) {
+                                    case 'name':
+                                        acc.name = attr.Value;
+                                        break;
+                                    case 'given_name':
+                                        acc.firstName = attr.Value;
+                                        break;
+                                    case 'family_name':
+                                        acc.lastName = attr.Value;
+                                        break;
+                                    case 'custom:displayName':
+                                        acc.displayName = attr.Value;
+                                        break;
+                                    case 'email':
+                                        acc.email = attr.Value;
+                                        break;
+                                    default:
+                                        acc[attr.Name] = attr.Value;
+                                }
+                                return acc;
+                            }, {})
+                        };
+
+                        // Ensure we have a display name
+                        if (!userData.displayName) {
+                            userData.displayName = userData.name || 
+                                                 (userData.firstName && userData.lastName ? 
+                                                  `${userData.firstName} ${userData.lastName}` : 
+                                                  userData.email);
+                        }
+
+                        console.log('Processed user data:', userData); // Debug log
+
+                        localStorage.setItem('userData', JSON.stringify(userData));
+                        resolve({ result, userData });
                     });
-                    resolve(result);
                 },
                 onFailure: (err) => {
-                    console.error('Sign in failed:', {
-                        code: err.code,
-                        name: err.name,
-                        message: err.message,
-                        passwordUsed: {
-                            length: password.length,
-                            chars: Array.from(password).map(c => c.charCodeAt(0))
-                        }
-                    });
-
-                    if (err.code === 'NotAuthorizedException') {
-                        reject(new Error('Please check your credentials and try again'));
-                    } else if (err.code === 'UserNotConfirmedException') {
-                        reject(new Error('Please verify your email before signing in'));
-                    } else {
-                        reject(err);
-                    }
+                    reject(err);
                 }
             });
         });
-    }
-    ,
-    // Sign out user
-    signOut: () => {
-        if (!userPool) return mockAuth.signOut();
-
-        const cognitoUser = userPool.getCurrentUser();
-        if (cognitoUser) {
-            cognitoUser.signOut();
-        }
     },
 
-    // Get current session
+
     getCurrentSession: async () => {
         if (!userPool) return mockAuth.getCurrentSession();
 
@@ -273,37 +269,95 @@ export const cognitoAuth = {
                     reject(err);
                     return;
                 }
-                resolve(session);
+                if (session && session.isValid()) {
+                    resolve(session);
+                } else {
+                    resolve(null);
+                }
+            });
+        });
+    }
+    ,
+    getCurrentUser: async () => {
+        if (!userPool) return mockAuth.getCurrentUser();
+
+        // First try to get from localStorage for immediate response
+        const storedUserData = localStorage.getItem('userData');
+        if (storedUserData) {
+            return JSON.parse(storedUserData);
+        }
+
+        const cognitoUser = userPool.getCurrentUser();
+        if (!cognitoUser) return null;
+
+        return new Promise((resolve, reject) => {
+            cognitoUser.getSession((err, session) => {
+                if (err || !session) {
+                    resolve(null);
+                    return;
+                }
+
+                cognitoUser.getUserAttributes((err, attributes) => {
+                    if (err) {
+                        reject(err);
+                        return;
+                    }
+
+                    // Create a properly formatted user object
+                    const userData = {
+                        username: cognitoUser.getUsername(),
+                        // Map Cognito attributes to user object
+                        ...attributes.reduce((acc, attr) => {
+                            switch(attr.Name) {
+                                case 'name':
+                                    acc.name = attr.Value;
+                                    break;
+                                case 'given_name':
+                                    acc.firstName = attr.Value;
+                                    break;
+                                case 'family_name':
+                                    acc.lastName = attr.Value;
+                                    break;
+                                case 'custom:displayName':
+                                    acc.displayName = attr.Value;
+                                    break;
+                                case 'email':
+                                    acc.email = attr.Value;
+                                    break;
+                                default:
+                                    acc[attr.Name] = attr.Value;
+                            }
+                            return acc;
+                        }, {})
+                    };
+
+                    // Ensure we have a display name
+                    if (!userData.displayName) {
+                        userData.displayName = userData.name || 
+                                             (userData.firstName && userData.lastName ? 
+                                              `${userData.firstName} ${userData.lastName}` : 
+                                              userData.email);
+                    }
+
+                    console.log('Retrieved user data:', userData); // Debug log
+
+                    localStorage.setItem('userData', JSON.stringify(userData));
+                    resolve(userData);
+                });
             });
         });
     },
 
-    // Get current user
-    getCurrentUser: async () => {
-        if (!userPool) return mockAuth.getCurrentUser();
+    signOut: () => {
+        if (!userPool) return mockAuth.signOut();
 
-        const session = await cognitoAuth.getCurrentSession();
-        if (!session) return null;
-
-        return new Promise((resolve, reject) => {
-            const cognitoUser = userPool.getCurrentUser();
-            cognitoUser.getUserAttributes((err, attributes) => {
-                if (err) {
-                    reject(err);
-                    return;
-                }
-
-                const userData = {
-                    ...attributes.reduce((acc, attr) => ({
-                        ...acc,
-                        [attr.Name]: attr.Value
-                    }), {}),
-                    username: cognitoUser.username
-                };
-
-                resolve(userData);
-            });
-        });
+        const cognitoUser = userPool.getCurrentUser();
+        if (cognitoUser) {
+            cognitoUser.signOut();
+            localStorage.removeItem('accessToken');
+            localStorage.removeItem('idToken');
+            localStorage.removeItem('userData');
+        }
     },
 
     // Change password

@@ -1,19 +1,19 @@
-// src/components/SideMenu.jsx
 import React, { useState } from 'react';
 import { 
   LogOut, 
-  LogIn, 
+  PieChart, 
   Languages,
   Home,
   Package,
   Scale,
   Truck,
-  List as ListIcon
+  Users
 } from 'lucide-react';
 import { useLanguage } from '../contexts/LanguageContext';
 import { translations } from '../translations/translations';
 import AuthModal from './auth/AuthModal';
-import { useAuth } from '../contexts/AuthContext'; // Make sure this exists
+import { useAuth } from '../contexts/AuthContext';
+import UserAccountButton from './auth/UserAccountButton';
 
 const SideMenu = ({ activeView, onViewChange }) => {
   const { user, signOut } = useAuth();
@@ -29,12 +29,7 @@ const SideMenu = ({ activeView, onViewChange }) => {
       view: "landing",
       description: t.homeDesc
     },
-    {
-      icon: Package,
-      label: t.productsDashboard,
-      view: "products",
-      description: t.productsDashboardDesc
-    },
+    
     {
       icon: Truck,
       label: t.vendors.title,
@@ -42,14 +37,14 @@ const SideMenu = ({ activeView, onViewChange }) => {
       description: t.vendors.description
     },
     {
-      icon: ListIcon,
+      icon: Users,
       label: t.customersTable,
       view: "customersTable",
       description: t.customersTableDesc
     },
     {
       icon: Scale,
-      label: 'Scales Management',
+      label: t.scalesManagement,
       view: 'scalesManagement',
       description: 'Manage and monitor all scales in the system'
     },
@@ -59,37 +54,31 @@ const SideMenu = ({ activeView, onViewChange }) => {
       view: "productsMng",
       description: t.productsDesc
     },
+    {
+      icon: PieChart,
+      label: t.productsDashboard,
+      view: "products",
+      description: t.productsDashboardDesc
+    },
   ];
 
-  // Rest of your return statement remains the same...
   return (
     <>
       <div className="h-full flex flex-col bg-gray-800">
         {/* User Profile Section */}
-        {/* {user ? (
-          <div className="p-4 border-b border-gray-700">
-            <div className={`flex items-center gap-3 ${isRTL ? 'flex-row-reverse' : ''}`}>
-              <div className="w-10 h-10 rounded-full bg-gray-600 flex items-center justify-center">
-                <User className="w-6 h-6 text-gray-300" />
-              </div>
-              <div className={isRTL ? 'text-right' : 'text-left'}>
-                <div className="text-white font-medium">
-                  {user.name || user.email}
-                </div>
-                <div className="text-sm text-gray-400">{user.email}</div>
-              </div>
-            </div>
-          </div>
-        ) : (
-          <div className="p-4 border-b border-gray-700">
+        <div className="p-4 border-b border-gray-700">
+          {user ? (
+            <UserAccountButton />
+          ) : (
             <button
               onClick={() => setIsAuthModalOpen(true)}
-              className="w-full px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+              className="w-full px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
             >
               {t.signIn}
             </button>
-          </div>
-        )} */}
+          )}
+        </div>
+
         {/* Title Section */}
         <div className="p-6">
           <h2 className={`text-xl font-bold text-white mb-2 ${isRTL ? 'text-right' : 'text-left'}`}>
@@ -120,33 +109,6 @@ const SideMenu = ({ activeView, onViewChange }) => {
             ))}
           </div>
         </nav>
-
-        {/* Authentication Button */}
-        <div className="px-4 py-3 border-t border-gray-700">
-          {user ? (
-            <button
-              onClick={signOut}
-              className={`
-                w-full px-3 py-2 rounded-lg text-red-400 hover:bg-gray-700 hover:text-red-300
-                flex items-center gap-2 ${isRTL ? 'flex-row-reverse' : ''}
-              `}
-            >
-              <LogOut size={20} />
-              <span>{t.signOut}</span>
-            </button>
-          ) : (
-            <button
-              onClick={() => setIsAuthModalOpen(true)}
-              className={`
-                w-full px-3 py-2 rounded-lg text-blue-400 hover:bg-gray-700 hover:text-blue-300
-                flex items-center gap-2 ${isRTL ? 'flex-row-reverse' : ''}
-              `}
-            >
-              <LogIn size={20} />
-              <span>{t.signIn}</span>
-            </button>
-          )}
-        </div>
 
         {/* Language Toggle */}
         <div className="px-4 py-3 border-t border-gray-700">
