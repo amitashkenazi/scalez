@@ -6,99 +6,163 @@ import apiService from '../../services/api';
 import ProductDetailModal from './ProductDetailModal';
 
 
+const getStatusInfo = (weight, thresholds) => {
+  if (!weight || !thresholds) return { 
+    color: 'text-gray-400',
+    bgColor: 'bg-gray-50',
+    status: 'unknown',
+    distance: 0 
+  };
+
+  const value = parseFloat(weight);
+  const upper = parseFloat(thresholds.upper);
+  const lower = parseFloat(thresholds.lower);
+
+  if (value >= upper) {
+    return {
+      color: 'text-green-600',
+      bgColor: 'bg-green-50',
+      status: 'good',
+      distance: value - upper
+    };
+  } else if (value >= lower) {
+    return {
+      color: 'text-orange-500',
+      bgColor: 'bg-orange-50',
+      status: 'warning',
+      distance: value - lower
+    };
+  }
+  return {
+    color: 'text-red-600',
+    bgColor: 'bg-red-50',
+    status: 'critical',
+    distance: lower - value
+  };
+};
+
+const sortProducts = (products, measurements) => {
+  return [...products].sort((a, b) => {
+    const aWeight = measurements[a.scale_id]?.weight;
+    const bWeight = measurements[b.scale_id]?.weight;
+    
+    const aStatus = getStatusInfo(aWeight, a.thresholds);
+    const bStatus = getStatusInfo(bWeight, b.thresholds);
+
+    // Sort by status priority: red (critical) -> orange (warning) -> green (good)
+    const statusPriority = { critical: 0, warning: 1, good: 2, unknown: 3 };
+    
+    if (statusPriority[aStatus.status] !== statusPriority[bStatus.status]) {
+      return statusPriority[aStatus.status] - statusPriority[bStatus.status];
+    }
+
+    // Within the same status, sort by distance
+    return bStatus.distance - aStatus.distance;
+  });
+};
+
+
 const ProductCard = ({ product, scale, customers, latestMeasurement }) => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const { language } = useLanguage();
   const t = translations[language];
   const isRTL = language === 'he';
 
-  // Get customer data
-  const getCustomerData = () => {
+  const statusInfo = getStatusInfo(latestMeasurement?.weight, product.thresholds);
 
+  // Get customer data
+  const getCustomerInfo = () => {
     const customer = customers?.find(c => c.customer_id === product.customer_id);
-    console.log('customers:', customers);
-    console.log('customer:', customer);
-    console.log('product:', product);
-    if (!customer) return { name: null, phone: null };
-    
+    if (!customer) return null;
+
+    // Split customer name into Hebrew and English parts
     const [hebrewName, englishName] = (customer.name || '').split(' - ');
     return {
-      name: language === 'he' ? hebrewName : englishName,
+      displayName: language === 'he' ? hebrewName : englishName,
       phone: customer.phone,
       fullData: customer
     };
   };
 
+  const customerInfo = getCustomerInfo();
+
   // Get WhatsApp link with message
   const getWhatsAppLink = () => {
-    console.log('getWhatsAppLink');
-    const { phone } = getCustomerData();
-    if (!phone) return null;
+    if (!customerInfo?.phone) return null;
 
     const message = encodeURIComponent(
       `${t.runningLowMessage} ${product.name}\n${t.productLeft}: ${latestMeasurement?.weight}kg\n${t.pleaseResupply}`
     );
     
-    const cleanPhone = phone.replace(/\D/g, '');
+    const cleanPhone = customerInfo.phone.replace(/\D/g, '');
     const formattedPhone = cleanPhone.startsWith('972') ? cleanPhone :
                           cleanPhone.startsWith('0') ? `972${cleanPhone.slice(1)}` : 
                           `972${cleanPhone}`;
-    console.log('formattedPhone:', formattedPhone, 'message:', message);  
+    
     return `https://wa.me/${formattedPhone}?text=${message}`;
   };
 
-  const statusColor = getStatusColor(latestMeasurement?.weight);
-  const whatsappLink = getWhatsAppLink();
-  console.log('whatsappLink:', whatsappLink);
-
   return (
     <>
-      <div className="bg-white rounded-lg shadow-lg p-6 hover:shadow-xl transition-shadow">
+      <div className={`bg-white rounded-lg shadow-lg p-6 hover:shadow-xl transition-shadow ${statusInfo.bgColor}`}>
         <div className="flex justify-between items-start mb-4">
           <div className="space-y-1">
             <h3 className="text-2xl font-bold">{product.name}</h3>
+            {customerInfo && (
+              <p className="text-gray-600 flex items-center gap-2">
+                <span className="inline-block">
+                  {customerInfo.displayName}
+                </span>
+              </p>
+            )}
             <div className="flex items-center gap-1 text-gray-400">
               <Scale size={14} />
               <span className="text-sm text-gray-500">
-                {scale?.scale_id || product.id}
+                {scale?.scale_id || product.scale_id}
               </span>
             </div>
           </div>
 
           <div className="flex flex-col items-end gap-3">
-            <div className={`px-4 py-2 rounded-lg ${getWeightBgColor(latestMeasurement?.weight)}`}>
-              <span className={`text-xl font-bold ${getWeightTextColor(latestMeasurement?.weight)}`}>
+            <div className={`px-4 py-2 rounded-lg ${statusInfo.bgColor}`}>
+              <span className={`text-xl font-bold ${statusInfo.color}`}>
                 {latestMeasurement?.weight ? `${latestMeasurement.weight} kg` : 'No data'}
               </span>
             </div>
 
-            <a
-              href={whatsappLink}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center justify-center px-6 py-3 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors gap-2 text-base font-medium"
-              onClick={(e) => e.stopPropagation()}
-            >
-              <MessageSquare size={20} />
-              <span>WhatsApp</span>
-            </a>
+            {getWhatsAppLink() && (
+              <a
+                href={getWhatsAppLink()}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center justify-center px-6 py-3 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors gap-2 text-base font-medium"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <MessageSquare size={20} />
+                <span>WhatsApp</span>
+              </a>
+            )}
           </div>
         </div>
 
         <div className="space-y-2">
           <div className="flex justify-between items-center">
-            <span className="text-gray-600">Upper Threshold:</span>
+            <span className="text-gray-600">{t.upperThreshold}:</span>
             <span className="text-green-600 font-medium">{product.thresholds?.upper} kg</span>
           </div>
           <div className="flex justify-between items-center">
-            <span className="text-gray-600">Lower Threshold:</span>
+            <span className="text-gray-600">{t.lowerThreshold}:</span>
             <span className="text-red-600 font-medium">{product.thresholds?.lower} kg</span>
           </div>
         </div>
 
         <div className="mt-4 h-2 bg-gray-200 rounded-full overflow-hidden">
           <div 
-            className={`h-full ${getProgressBarColor(latestMeasurement?.weight, product.thresholds)}`}
+            className={`h-full ${
+              statusInfo.status === 'good' ? 'bg-green-600' :
+              statusInfo.status === 'warning' ? 'bg-orange-500' :
+              statusInfo.status === 'critical' ? 'bg-red-600' : 'bg-gray-400'
+            }`}
             style={{
               width: latestMeasurement?.weight ? 
                 `${Math.min(100, (latestMeasurement.weight / product.thresholds?.upper) * 100)}%` : 
@@ -114,7 +178,7 @@ const ProductCard = ({ product, scale, customers, latestMeasurement }) => {
         product={product}
         scale={scale}
         latestMeasurement={latestMeasurement}
-        customer={getCustomerData().fullData}
+        customer={customerInfo?.fullData}
       />
     </>
   );
@@ -259,7 +323,7 @@ const ProductsView = () => {
       )}
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {products.map(product => (
+      {sortProducts(products, measurements).map(product => (
           <ProductCard
             key={product.product_id}
             product={product}
