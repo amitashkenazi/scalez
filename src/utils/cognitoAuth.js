@@ -66,20 +66,70 @@ const mockAuth = {
     }
 };
 
+// Add this to your cognitoAuth.js
+
+const buildVerificationUrl = (email, code) => {
+    // Get the base URL from your environment config or window.location
+    const baseUrl = process.env.REACT_APP_VERIFICATION_URL || `${window.location.origin}/verify-email`;
+    
+    // Create URL with parameters
+    const url = new URL(baseUrl);
+    url.searchParams.append('email', email);
+    url.searchParams.append('code', code);
+    
+    return url.toString();
+  };
+  
+  // Modify your signUp function to include the verification URL
+  const signUp = async (email, password, attributes = {}) => {
+    if (!userPool) return mockAuth.signUp(email, password, attributes);
+  
+    return new Promise((resolve, reject) => {
+      const attributeList = Object.entries(attributes).map(([key, value]) =>
+        new CognitoUserAttribute({
+          Name: key,
+          Value: value
+        })
+      );
+  
+      userPool.signUp(
+        email,
+        password,
+        attributeList,
+        null,
+        (err, result) => {
+          if (err) {
+            console.error('Signup error:', err);
+            reject(err);
+            return;
+          }
+  
+          // Generate verification URL
+          const verificationUrl = buildVerificationUrl(email, result.codeDeliveryDetails);
+          
+          console.log('Verification URL:', verificationUrl);
+          resolve({
+            ...result,
+            verificationUrl
+          });
+        }
+      );
+    });
+  };
+
 // Export either real Cognito auth or mock auth
 export const cognitoAuth = {
     // Sign up new user
     // Add this to your cognitoAuth.js
     signUp: async (email, password, attributes = {}) => {
         if (!userPool) return mockAuth.signUp(email, password, attributes);
-
+    
         console.log('Attempting signup with:', {
             email,
             passwordLength: password.length,
-            passwordChars: Array.from(password).map(c => c.charCodeAt(0)),
             attributes
         });
-
+    
         return new Promise((resolve, reject) => {
             const attributeList = Object.entries(attributes).map(([key, value]) =>
                 new CognitoUserAttribute({
@@ -87,7 +137,7 @@ export const cognitoAuth = {
                     Value: value
                 })
             );
-
+    
             userPool.signUp(
                 email,
                 password,
@@ -98,41 +148,32 @@ export const cognitoAuth = {
                         console.error('Signup error:', {
                             code: err.code,
                             message: err.message,
-                            passwordUsed: {
-                                length: password.length,
-                                chars: Array.from(password).map(c => c.charCodeAt(0))
-                            }
                         });
                         reject(err);
                         return;
                     }
-
+    
                     console.log('Signup successful:', {
                         username: result.user.getUsername(),
                         userConfirmed: result.userConfirmed,
-                        userAgent: result.user.getUserAgent()
                     });
-
+    
                     // Store the successful signup details
                     try {
                         localStorage.setItem('cognitoSignupDetails', JSON.stringify({
                             email,
                             timestamp: new Date().toISOString(),
-                            passwordDetails: {
-                                length: password.length,
-                                chars: Array.from(password).map(c => c.charCodeAt(0))
-                            }
+                            attributeList
                         }));
                     } catch (err) {
                         console.error('Error saving signup details:', err);
                     }
-
+    
                     resolve(result);
                 }
             );
         });
-    }
-    ,
+    },
 
     confirmSignUp: async (email, code) => {
         if (!userPool) return mockAuth.confirmSignUp(email, code);

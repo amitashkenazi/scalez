@@ -265,7 +265,20 @@ export const translations = {
     // Loading States
     loading: "Loading...",
     processing: "Processing...",
-    pleaseWait: "Please wait..."
+    pleaseWait: "Please wait...",
+    verifyingEmail: "Verifying your email address...",
+    emailVerified: "Email Verified!",
+    emailVerifiedDesc: "Your email has been successfully verified. You can now sign in to your account.",
+    verificationFailed: "Verification Failed",
+    missingVerificationParams: "Invalid verification link. Missing required parameters.",
+    emailNotFound: "Email address not found in verification link.",
+    requestNewCode: "Request New Code",
+    resendingCode: "Resending Code...",
+    newCodeSent: "New Code Sent!",
+    checkEmailForCode: "A new verification code has been sent to your email address. Please check your inbox.",
+    continueToApp: "Continue to App",
+    verificationLinkExpired: "Verification link has expired. Please request a new one.",
+    invalidVerificationCode: "Invalid verification code. Please try again.",
   },
   he: {
     // General
@@ -537,5 +550,18 @@ export const translations = {
     processing: "מעבד...",
     pleaseWait: "נא להמתין...",
     scalesManagement: "ניהול משקלים",
+    verifyingEmail: "מאמת את כתובת האימייל שלך...",
+    emailVerified: "האימייל אומת!",
+    emailVerifiedDesc: "כתובת האימייל שלך אומתה בהצלחה. כעת תוכל להתחבר לחשבונך.",
+    verificationFailed: "האימות נכשל",
+    missingVerificationParams: "קישור אימות לא חוקי. חסרים פרמטרים נדרשים.",
+    emailNotFound: "כתובת האימייל לא נמצאה בקישור האימות.",
+    requestNewCode: "בקש קוד חדש",
+    resendingCode: "שולח קוד חדש...",
+    newCodeSent: "קוד חדש נשלח!",
+    checkEmailForCode: "קוד אימות חדש נשלח לכתובת האימייל שלך. אנא בדוק את תיבת הדואר הנכנס.",
+    continueToApp: "המשך לאפליקציה",
+    verificationLinkExpired: "קישור האימות פג תוקף. אנא בקש קישור חדש.",
+    invalidVerificationCode: "קוד אימות לא חוקי. אנא נסה שוב.",
   }
 };

@@ -11,12 +11,15 @@ import { Menu as MenuIcon } from 'lucide-react';
 import VendorsView from './components/vendors/VendorsView';
 import ProductsView from './components/products/ProductsView';
 import { AuthProvider } from './contexts/AuthContext';
+import EmailVerificationHandler from './components/auth/EmailVerificationHandler';
+
 
 
 function AppContent() {
   const [activeView, setActiveView] = useState('landing');
   const [isMenuOpen, setIsMenuOpen] = useState(true);
   const { language } = useLanguage();
+  
   // const t = translations[language];
   
   // Touch handling for mobile
@@ -98,42 +101,16 @@ function AppContent() {
     return language === 'he' ? `${baseStyles} right-4` : `${baseStyles} left-4`;
   };
 
-  return (
-    <div 
-      className="flex min-h-screen bg-gray-100"
-      onTouchStart={handleTouchStart}
-      onTouchMove={handleTouchMove}
-      onTouchEnd={handleTouchEnd}
-      dir={language === 'he' ? 'rtl' : 'ltr'}
-    >
-      {/* Toggle Button */}
-      <button
-        onClick={toggleMenu}
-        className={getMenuButtonPosition()}
-      >
-        <MenuIcon size={24} />
-      </button>
+  const renderContent = () => {
+    // Check if we're on the verification path
+    if (window.location.pathname === '/verify-email') {
+      return <EmailVerificationHandler />;
+    }
 
-      {/* Menu */}
-      <div ref={menuRef} className={getMenuStyles()}>
-        <SideMenu 
-          activeView={activeView} 
-          onViewChange={handleViewChange} 
-        />
-      </div>
-
-      {/* Mobile Overlay */}
-      {isMenuOpen && (
-        <div
-          className="fixed inset-0 bg-black bg-opacity-50 z-30 md:hidden"
-          onClick={() => setIsMenuOpen(false)}
-        />
-      )}
-
-      {/* Main Content */}
-      <main className={getMainContentStyles()}>
-        <div className="p-6">
-          {activeView === 'landing' && (
+    // Otherwise render normal content
+    return (
+      <div className="p-6">
+        {activeView === 'landing' && (
             <LandingPage onViewChange={handleViewChange} />
           )}
           {activeView === 'vendors' && (
@@ -179,7 +156,46 @@ function AppContent() {
           {activeView === 'productsMng' && (
             <ProductsManagementView />
           )}
-        </div>
+      </div>
+    );
+  };
+
+  
+  return (
+    <div 
+      className="flex min-h-screen bg-gray-100"
+      onTouchStart={handleTouchStart}
+      onTouchMove={handleTouchMove}
+      onTouchEnd={handleTouchEnd}
+      dir={language === 'he' ? 'rtl' : 'ltr'}
+    >
+      {/* Toggle Button */}
+      <button
+        onClick={toggleMenu}
+        className={getMenuButtonPosition()}
+      >
+        <MenuIcon size={24} />
+      </button>
+
+      {/* Menu */}
+      <div ref={menuRef} className={getMenuStyles()}>
+        <SideMenu 
+          activeView={activeView} 
+          onViewChange={handleViewChange} 
+        />
+      </div>
+
+      {/* Mobile Overlay */}
+      {isMenuOpen && (
+        <div
+          className="fixed inset-0 bg-black bg-opacity-50 z-30 md:hidden"
+          onClick={() => setIsMenuOpen(false)}
+        />
+      )}
+
+      {/* Main Content */}
+      <main className={window.location.pathname === '/verify-email' ? '' : getMainContentStyles()}>
+        {renderContent()}
       </main>
     </div>
   );
