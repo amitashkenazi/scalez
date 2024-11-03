@@ -14,7 +14,11 @@ const ProductCard = ({ product, scale, customers, latestMeasurement }) => {
 
   // Get customer data
   const getCustomerData = () => {
+
     const customer = customers?.find(c => c.customer_id === product.customer_id);
+    console.log('customers:', customers);
+    console.log('customer:', customer);
+    console.log('product:', product);
     if (!customer) return { name: null, phone: null };
     
     const [hebrewName, englishName] = (customer.name || '').split(' - ');
@@ -25,75 +29,76 @@ const ProductCard = ({ product, scale, customers, latestMeasurement }) => {
     };
   };
 
-  // Get status color based on thresholds
-  const getStatusColor = (weight) => {
-    if (!weight || !product.thresholds) return 'text-gray-400';
-    
-    const upper = parseFloat(product.thresholds.upper);
-    const lower = parseFloat(product.thresholds.lower);
-    const weightFloat = parseFloat(weight);
-    
-    if (weightFloat >= upper) return 'text-green-600';
-    if (weightFloat >= lower) return 'text-orange-500';
-    return 'text-red-600';
-  };
+  // Get WhatsApp link with message
+  const getWhatsAppLink = () => {
+    console.log('getWhatsAppLink');
+    const { phone } = getCustomerData();
+    if (!phone) return null;
 
-  const getBgColor = (statusColor) => {
-    const colorMap = {
-      'text-green-600': 'bg-green-50',
-      'text-orange-500': 'bg-orange-50',
-      'text-red-600': 'bg-red-50',
-      'text-gray-400': 'bg-gray-50'
-    };
-    return colorMap[statusColor];
+    const message = encodeURIComponent(
+      `${t.runningLowMessage} ${product.name}\n${t.productLeft}: ${latestMeasurement?.weight}kg\n${t.pleaseResupply}`
+    );
+    
+    const cleanPhone = phone.replace(/\D/g, '');
+    const formattedPhone = cleanPhone.startsWith('972') ? cleanPhone :
+                          cleanPhone.startsWith('0') ? `972${cleanPhone.slice(1)}` : 
+                          `972${cleanPhone}`;
+    console.log('formattedPhone:', formattedPhone, 'message:', message);  
+    return `https://wa.me/${formattedPhone}?text=${message}`;
   };
 
   const statusColor = getStatusColor(latestMeasurement?.weight);
-  const { name: customerName, fullData: customerData } = getCustomerData();
+  const whatsappLink = getWhatsAppLink();
+  console.log('whatsappLink:', whatsappLink);
 
   return (
     <>
-      <div 
-        className={`bg-white rounded-lg shadow-lg p-6 hover:shadow-xl transition-shadow cursor-pointer ${getBgColor(statusColor)}`}
-        onClick={() => setIsModalOpen(true)}
-      >
-        {/* Card content remains the same */}
+      <div className="bg-white rounded-lg shadow-lg p-6 hover:shadow-xl transition-shadow">
         <div className="flex justify-between items-start mb-4">
           <div className="space-y-1">
-            <h3 className="text-xl font-bold">{product.name}</h3>
-            {customerName && (
-              <p className="text-gray-600">{customerName}</p>
-            )}
+            <h3 className="text-2xl font-bold">{product.name}</h3>
             <div className="flex items-center gap-1 text-gray-400">
               <Scale size={14} />
-              <span className="text-xs">{scale?.scale_id || product.scale_id}</span>
+              <span className="text-sm text-gray-500">
+                {scale?.scale_id || product.id}
+              </span>
             </div>
           </div>
-          <div className={`px-4 py-2 rounded-lg ${getBgColor(statusColor)}`}>
-            <span className={`text-lg font-bold ${statusColor}`}>
-              {latestMeasurement?.weight ? `${latestMeasurement.weight} kg` : 'No data'}
-            </span>
+
+          <div className="flex flex-col items-end gap-3">
+            <div className={`px-4 py-2 rounded-lg ${getWeightBgColor(latestMeasurement?.weight)}`}>
+              <span className={`text-xl font-bold ${getWeightTextColor(latestMeasurement?.weight)}`}>
+                {latestMeasurement?.weight ? `${latestMeasurement.weight} kg` : 'No data'}
+              </span>
+            </div>
+
+            <a
+              href={whatsappLink}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center justify-center px-6 py-3 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors gap-2 text-base font-medium"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <MessageSquare size={20} />
+              <span>WhatsApp</span>
+            </a>
           </div>
         </div>
 
         <div className="space-y-2">
-          <div className="flex justify-between items-center text-sm">
-            <span className="text-gray-600">{t.upperThreshold}:</span>
-            <span className="font-medium text-green-600">{product.thresholds?.upper} kg</span>
+          <div className="flex justify-between items-center">
+            <span className="text-gray-600">Upper Threshold:</span>
+            <span className="text-green-600 font-medium">{product.thresholds?.upper} kg</span>
           </div>
-          <div className="flex justify-between items-center text-sm">
-            <span className="text-gray-600">{t.lowerThreshold}:</span>
-            <span className="font-medium text-red-600">{product.thresholds?.lower} kg</span>
+          <div className="flex justify-between items-center">
+            <span className="text-gray-600">Lower Threshold:</span>
+            <span className="text-red-600 font-medium">{product.thresholds?.lower} kg</span>
           </div>
         </div>
 
         <div className="mt-4 h-2 bg-gray-200 rounded-full overflow-hidden">
           <div 
-            className={`h-full ${
-              statusColor === 'text-green-600' ? 'bg-green-600' :
-              statusColor === 'text-orange-500' ? 'bg-orange-500' :
-              statusColor === 'text-red-600' ? 'bg-red-600' : 'bg-gray-400'
-            }`}
+            className={`h-full ${getProgressBarColor(latestMeasurement?.weight, product.thresholds)}`}
             style={{
               width: latestMeasurement?.weight ? 
                 `${Math.min(100, (latestMeasurement.weight / product.thresholds?.upper) * 100)}%` : 
@@ -109,11 +114,40 @@ const ProductCard = ({ product, scale, customers, latestMeasurement }) => {
         product={product}
         scale={scale}
         latestMeasurement={latestMeasurement}
-        customer={customerData}
+        customer={getCustomerData().fullData}
       />
     </>
   );
 };
+
+// Helper functions
+const getWeightTextColor = (weight) => {
+  if (!weight) return 'text-gray-400';
+  return 'text-green-600';
+};
+
+const getWeightBgColor = (weight) => {
+  if (!weight) return 'bg-gray-50';
+  return 'bg-green-50';
+};
+
+const getProgressBarColor = (weight, thresholds) => {
+  if (!weight || !thresholds) return 'bg-gray-400';
+  
+  const value = parseFloat(weight);
+  const upper = parseFloat(thresholds.upper);
+  const lower = parseFloat(thresholds.lower);
+
+  if (value >= upper) return 'bg-green-600';
+  if (value >= lower) return 'bg-orange-500';
+  return 'bg-red-600';
+};
+
+const getStatusColor = (weight) => {
+  if (!weight) return 'text-gray-400';
+  return 'text-green-600';
+};
+
 
 const ProductsView = () => {
   const [products, setProducts] = useState([]);

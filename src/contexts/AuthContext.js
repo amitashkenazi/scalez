@@ -62,6 +62,38 @@ export function AuthProvider({ children }) {
       setUser(userData);
       return userData;
     } catch (err) {
+      console.error('Sign in error:', err);
+      throw err;
+    }
+  };
+
+  const signUp = async (email, password, attributes = {}) => {
+    try {
+      const result = await cognitoAuth.signUp(email, password, attributes);
+      console.log('Sign up successful:', result);
+      return result;
+    } catch (err) {
+      console.error('Sign up error:', err);
+      throw err;
+    }
+  };
+
+  const confirmSignUp = async (email, code) => {
+    try {
+      const result = await cognitoAuth.confirmSignUp(email, code);
+      return result;
+    } catch (err) {
+      console.error('Confirm sign up error:', err);
+      throw err;
+    }
+  };
+
+  const resendConfirmationCode = async (email) => {
+    try {
+      const result = await cognitoAuth.resendConfirmationCode(email);
+      return result;
+    } catch (err) {
+      console.error('Resend confirmation code error:', err);
       throw err;
     }
   };
@@ -70,6 +102,7 @@ export function AuthProvider({ children }) {
     try {
       await cognitoAuth.signOut();
       setUser(null);
+      localStorage.removeItem('userData');
     } catch (err) {
       console.error('Sign out failed:', err);
       throw err;
@@ -81,7 +114,10 @@ export function AuthProvider({ children }) {
     isLoading,
     error,
     signIn,
+    signUp,
     signOut,
+    confirmSignUp,
+    resendConfirmationCode,
     refreshUser: checkAuthState,
     isConfigured
   };

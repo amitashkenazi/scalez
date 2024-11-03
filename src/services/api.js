@@ -42,44 +42,6 @@ class ApiService {
         });
     }
 
-    async getCustomers() {
-        return this.request('customers', {
-            method: 'GET'
-        });
-    }
-
-    async getCustomer(customerId) {
-        return this.request(`customers/${customerId}`, {
-            method: 'GET'
-        });
-    }
-
-    async createCustomer(customerData) {
-        return this.request('customers', {
-            method: 'POST',
-            body: JSON.stringify(customerData)
-        });
-    }
-
-    async updateCustomer(customerId, customerData) {
-        return this.request(`customers/${customerId}`, {
-            method: 'PUT',
-            body: JSON.stringify(customerData)
-        });
-    }
-
-    async deleteCustomer(customerId) {
-        return this.request(`customers/${customerId}`, {
-            method: 'DELETE'
-        });
-    }
-
-    async deleteCustomer(customerId) {
-        return this.request(`customers/${customerId}`, {
-            method: 'DELETE'
-        });
-    }
-
     async getProducts() {
         return this.request('products', {
             method: 'GET'
@@ -280,32 +242,6 @@ class ApiService {
         });
     }
 
-    // Customer APIs
-    async getCustomers() {
-        return this.request('customers', {
-            method: 'GET'
-        });
-    }
-
-    async getCustomer(customerId) {
-        return this.request(`customers/${customerId}`, {
-            method: 'GET'
-        });
-    }
-
-    async createCustomer(customerData) {
-        return this.request('customers', {
-            method: 'POST',
-            body: JSON.stringify(customerData)
-        });
-    }
-
-    async updateCustomer(customerId, customerData) {
-        return this.request(`customers/${customerId}`, {
-            method: 'PUT',
-            body: JSON.stringify(customerData)
-        });
-    }
 }
 
 // Create a singleton instance

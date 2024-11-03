@@ -6,7 +6,7 @@ import { X, Loader2 } from 'lucide-react';
 
 const VendorModal = ({ isOpen, onClose, onSubmit, initialData = null }) => {
   const { language } = useLanguage();
-  const t = translations[language];
+  // const t = translations[language];
   const isRTL = language === 'he';
 
   const [formData, setFormData] = useState({
