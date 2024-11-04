@@ -27,7 +27,7 @@ function AppContent() {
   const touchEndX = useRef(null);
   const menuRef = useRef(null);
   const minSwipeDistance = 50;
-
+  
   const handleTouchStart = (e) => {
     touchStartX.current = e.touches[0].clientX;
     touchEndX.current = null;

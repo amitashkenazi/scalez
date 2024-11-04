@@ -87,13 +87,13 @@ class ApiService {
             'Content-Type': 'application/json',
             'Accept': 'application/json',
         };
-
-        // Get token from localStorage
-        const token = localStorage.getItem('authToken');
-        if (token) {
-            headers['Authorization'] = `Bearer ${token}`;
+    
+        // const accessToken = localStorage.getItem('accessToken');
+        const idToken = localStorage.getItem('idToken');
+        if (idToken) {
+            headers['Authorization'] = `Bearer ${idToken}`;
         }
-
+    
         return headers;
     }
 
@@ -122,11 +122,11 @@ class ApiService {
 
     // Generic request handler
     async request(endpoint, options = {}, retryCount = this.retryCount) {
-        const url = `${this.baseUrl}/api/${endpoint.replace(/^\/+/, '')}`;
+        const url = `${this.baseUrl}/${endpoint.replace(/^\/+/, '')}`;
         
         const defaultOptions = {
             mode: 'cors',
-            credentials: 'include',
+            credentials: 'omit',
             headers: this.getHeaders()
         };
 
@@ -144,7 +144,8 @@ class ApiService {
 
             if (response.status === 401) {
                 // Token expired or invalid
-                localStorage.removeItem('authToken');
+                localStorage.removeItem('accessToken');
+                localStorage.removeItem('idToken');
                 window.location.href = '/'; // Redirect to home/login
                 throw new Error('Authentication required');
             }
