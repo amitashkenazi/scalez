@@ -1,9 +1,8 @@
 {
   "name": "iot-scale-monitor",
   "version": "0.1.0",
-  "proxy": "http://localhost:5100",
   "private": true,
-  "homepage": "https://amitashkenazi.github.io/scalez",
+  "homepage": "/",
   "dependencies": {
     "@testing-library/jest-dom": "^5.17.0",
     "@testing-library/react": "^13.4.0",
@@ -18,12 +17,12 @@
     "web-vitals": "^2.1.4"
   },
   "scripts": {
-    "predeploy": "npm run build",
-    "deploy": "gh-pages -d build",
     "start": "react-scripts start",
     "build": "react-scripts build",
+    "build:prod": "env-cmd -f .env.production react-scripts build",
     "test": "react-scripts test",
-    "eject": "react-scripts eject"
+    "eject": "react-scripts eject",
+    "deploy": "npm run build:prod && python scripts/deploy_react_app.py"
   },
   "eslintConfig": {
     "extends": [
@@ -45,6 +44,6 @@
   },
   "devDependencies": {
     "@babel/plugin-proposal-private-property-in-object": "^7.21.11",
-    "gh-pages": "^6.2.0"
+    "env-cmd": "^10.1.0"
   }
 }

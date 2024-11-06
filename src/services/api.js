@@ -122,6 +122,8 @@ class ApiService {
 
     // Generic request handler
     async request(endpoint, options = {}, retryCount = this.retryCount) {
+        console.log('Request:', endpoint, options);
+        
         const url = `${this.baseUrl}/${endpoint.replace(/^\/+/, '')}`;
         
         const defaultOptions = {
@@ -160,6 +162,8 @@ class ApiService {
 
             throw new Error(`HTTP error! status: ${response.status}`);
         } catch (error) {
+            console.error('API request failed:', error);
+            console.error('stack:', error.stack);
             if (error.name === 'TypeError' && retryCount > 0) {
                 await new Promise(resolve => setTimeout(resolve, this.retryDelay));
                 return this.request(endpoint, options, retryCount - 1);
