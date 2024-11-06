@@ -1,8 +1,10 @@
+import { tokenService } from '../services/tokenService';
 import {
     CognitoUserPool,
     CognitoUser,
     AuthenticationDetails,
-    CognitoUserAttribute
+    CognitoUserAttribute,
+    CognitoRefreshToken
 } from 'amazon-cognito-identity-js';
 import { authConfig } from '../config/auth';
 
@@ -215,85 +217,120 @@ export const cognitoAuth = {
 
     signIn: async (email, password) => {
         if (!userPool) return mockAuth.signIn(email, password);
-
+    
         return new Promise((resolve, reject) => {
-            const authenticationDetails = new AuthenticationDetails({
-                Username: email,
-                Password: password,
-            });
-
-            const cognitoUser = new CognitoUser({
-                Username: email,
-                Pool: userPool
-            });
-
-            cognitoUser.authenticateUser(authenticationDetails, {
-                onSuccess: (result) => {
-                    // Store the tokens
-                    const accessToken = result.getAccessToken().getJwtToken();
-                    const idToken = result.getIdToken().getJwtToken();
-                    localStorage.setItem('accessToken', accessToken);
-                    localStorage.setItem('idToken', idToken);
-                    
-                    // Get user attributes
-                    cognitoUser.getUserAttributes((err, attributes) => {
-                        if (err) {
-                            console.error('Error getting user attributes:', err);
-                            resolve(result);
-                            return;
-                        }
-
-                        // Create a properly formatted user object
-                        const userData = {
-                            username: cognitoUser.getUsername(),
-                            email: email,
-                            // Map Cognito attributes to user object
-                            ...attributes.reduce((acc, attr) => {
-                                switch(attr.Name) {
-                                    case 'name':
-                                        acc.name = attr.Value;
-                                        break;
-                                    case 'given_name':
-                                        acc.firstName = attr.Value;
-                                        break;
-                                    case 'family_name':
-                                        acc.lastName = attr.Value;
-                                        break;
-                                    case 'custom:displayName':
-                                        acc.displayName = attr.Value;
-                                        break;
-                                    case 'email':
-                                        acc.email = attr.Value;
-                                        break;
-                                    default:
-                                        acc[attr.Name] = attr.Value;
-                                }
-                                return acc;
-                            }, {})
-                        };
-
-                        // Ensure we have a display name
-                        if (!userData.displayName) {
-                            userData.displayName = userData.name || 
-                                                 (userData.firstName && userData.lastName ? 
-                                                  `${userData.firstName} ${userData.lastName}` : 
-                                                  userData.email);
-                        }
-
-                        console.log('Processed user data:', userData); // Debug log
-
-                        localStorage.setItem('userData', JSON.stringify(userData));
-                        resolve({ result, userData });
-                    });
-                },
-                onFailure: (err) => {
-                    reject(err);
+          const authenticationDetails = new AuthenticationDetails({
+            Username: email,
+            Password: password,
+          });
+    
+          const cognitoUser = new CognitoUser({
+            Username: email,
+            Pool: userPool
+          });
+    
+          cognitoUser.authenticateUser(authenticationDetails, {
+            onSuccess: (result) => {
+              // Store tokens using token service
+              const accessToken = result.getAccessToken().getJwtToken();
+              const refreshToken = result.getRefreshToken().getToken();
+              const idToken = result.getIdToken().getJwtToken();
+              
+              // Get expiration time from the token
+              const payload = JSON.parse(atob(accessToken.split('.')[1]));
+              const expiresIn = payload.exp - (Date.now() / 1000);
+    
+              tokenService.setTokens({
+                accessToken,
+                refreshToken,
+                expiresIn,
+                idToken
+              });
+    
+              // Get user attributes and resolve
+              cognitoUser.getUserAttributes((err, attributes) => {
+                if (err) {
+                  console.error('Error getting user attributes:', err);
+                  resolve(result);
+                  return;
                 }
-            });
+    
+                const userData = {
+                  username: cognitoUser.getUsername(),
+                  email: email,
+                  ...attributes.reduce((acc, attr) => {
+                    acc[attr.Name] = attr.Value;
+                    return acc;
+                  }, {})
+                };
+    
+                localStorage.setItem('userData', JSON.stringify(userData));
+                resolve({ result, userData });
+              });
+            },
+            onFailure: (err) => {
+              reject(err);
+            }
+          });
+        });
+      },
+    
+      signOut: () => {
+        if (!userPool) return mockAuth.signOut();
+    
+        const cognitoUser = userPool.getCurrentUser();
+        if (cognitoUser) {
+          cognitoUser.signOut();
+          tokenService.clearTokens();
+          localStorage.removeItem('userData');
+        }
+      },
+    
+      // Add refresh token functionality
+      refreshSession: async () => {
+        if (!userPool) return null;
+    
+        return new Promise((resolve, reject) => {
+          const cognitoUser = userPool.getCurrentUser();
+          if (!cognitoUser) {
+            reject(new Error('No current user'));
+            return;
+          }
+    
+          const refreshToken = tokenService.getRefreshToken();
+          if (!refreshToken) {
+            reject(new Error('No refresh token'));
+            return;
+          }
+    
+          cognitoUser.refreshSession(
+            new CognitoRefreshToken({ RefreshToken: refreshToken }), 
+            (err, session) => {
+              if (err) {
+                reject(err);
+                return;
+              }
+    
+              const accessToken = session.getAccessToken().getJwtToken();
+              const newRefreshToken = session.getRefreshToken().getToken();
+              const idToken = session.getIdToken().getJwtToken();
+              
+              // Get expiration time from the token
+              const payload = JSON.parse(atob(accessToken.split('.')[1]));
+              const expiresIn = payload.exp - (Date.now() / 1000);
+    
+              tokenService.setTokens({
+                accessToken,
+                refreshToken: newRefreshToken,
+                expiresIn,
+                idToken
+              });
+    
+              resolve(accessToken);
+            }
+          );
         });
     },
-
-
     getCurrentSession: async () => {
         if (!userPool) return mockAuth.getCurrentSession();
 
@@ -389,18 +426,7 @@ export const cognitoAuth = {
         });
     },
 
-    signOut: () => {
-        if (!userPool) return mockAuth.signOut();
-
-        const cognitoUser = userPool.getCurrentUser();
-        if (cognitoUser) {
-            cognitoUser.signOut();
-            localStorage.removeItem('accessToken');
-            localStorage.removeItem('idToken');
-            localStorage.removeItem('userData');
-        }
-    },
-
+    
     // Change password
     changePassword: async (oldPassword, newPassword) => {
         if (!userPool) return mockAuth.changePassword();

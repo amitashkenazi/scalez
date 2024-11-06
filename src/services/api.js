@@ -1,4 +1,5 @@
 // src/services/api.js
+import { tokenService } from './tokenService';
 
 class ApiService {
     constructor() {
@@ -82,21 +83,25 @@ class ApiService {
         });
     }
 
-    getHeaders() {
-        const headers = {
+    async getHeaders() {
+        try {
+            const accessToken = await tokenService.refreshTokenIfNeeded();
+            return {
             'Content-Type': 'application/json',
             'Accept': 'application/json',
-        };
-    
-        // const accessToken = localStorage.getItem('accessToken');
-        const idToken = localStorage.getItem('idToken');
-        if (idToken) {
-            headers['Authorization'] = `Bearer ${idToken}`;
+            'Authorization': accessToken ? `Bearer ${accessToken}` : '',
+            };
+        } catch (error) {
+            console.error('Error getting headers:', error);
+            // If token refresh fails, clear auth state and return basic headers
+            tokenService.clearTokens();
+            return {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json',
+            };
         }
-    
-        return headers;
     }
-
+        
     normalizePath(path) {
         // Remove leading/trailing slashes and normalize multiple slashes
         const cleanPath = path.replace(/^\/+|\/+$/g, '').replace(/\/+/g, '/');
@@ -122,53 +127,48 @@ class ApiService {
 
     // Generic request handler
     async request(endpoint, options = {}, retryCount = this.retryCount) {
-        console.log('Request:', endpoint, options);
-        
         const url = `${this.baseUrl}/${endpoint.replace(/^\/+/, '')}`;
         
-        const defaultOptions = {
-            mode: 'cors',
-            credentials: 'omit',
-            headers: this.getHeaders()
-        };
-
-        const finalOptions = {
-            ...defaultOptions,
+        try {
+          const headers = await this.getHeaders();
+          const finalOptions = {
             ...options,
             headers: {
-                ...defaultOptions.headers,
-                ...options.headers,
+              ...headers,
+              ...options.headers,
             },
-        };
-
-        try {
-            const response = await fetch(url, finalOptions);
-
-            if (response.status === 401) {
-                // Token expired or invalid
-                localStorage.removeItem('accessToken');
-                localStorage.removeItem('idToken');
-                window.location.href = '/'; // Redirect to home/login
-                throw new Error('Authentication required');
-            }
-
-            if (response.ok) {
-                const contentType = response.headers.get('content-type');
-                if (contentType?.includes('application/json')) {
-                    return await response.json();
-                }
-                return await response.text();
-            }
-
+          };
+    
+          const response = await fetch(url, finalOptions);
+    
+          // Handle different response statuses
+          if (response.status === 401) {
+            // Token is invalid or expired and refresh failed
+            tokenService.clearTokens();
+            // Redirect to login page
+            window.location.href = '/';
+            throw new Error('Authentication required');
+          }
+    
+          if (!response.ok) {
             throw new Error(`HTTP error! status: ${response.status}`);
+          }
+    
+          const contentType = response.headers.get('content-type');
+          if (contentType?.includes('application/json')) {
+            return await response.json();
+          }
+          return await response.text();
         } catch (error) {
-            console.error('API request failed:', error);
-            console.error('stack:', error.stack);
-            if (error.name === 'TypeError' && retryCount > 0) {
-                await new Promise(resolve => setTimeout(resolve, this.retryDelay));
-                return this.request(endpoint, options, retryCount - 1);
-            }
-            throw error;
+          console.error('API request failed:', error);
+          
+          // Retry on network errors
+          if (error.name === 'TypeError' && retryCount > 0) {
+            await new Promise(resolve => setTimeout(resolve, this.retryDelay));
+            return this.request(endpoint, options, retryCount - 1);
+          }
+          
+          throw error;
         }
     }
 
