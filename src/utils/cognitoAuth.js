@@ -243,8 +243,9 @@ export const cognitoAuth = {
               tokenService.setTokens({
                 accessToken,
                 refreshToken,
-                expiresIn,
-                idToken
+                idToken,
+                expiresIn
+
               });
     
               // Get user attributes and resolve
@@ -322,8 +323,8 @@ export const cognitoAuth = {
               tokenService.setTokens({
                 accessToken,
                 refreshToken: newRefreshToken,
-                expiresIn,
-                idToken
+                idToken,
+                expiresIn
               });
     
               resolve(accessToken);

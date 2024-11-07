@@ -17,7 +17,7 @@ const useScaleData = () => {
       setError(null);
       
       const response = await apiService.getScales();
-      console.log('response:', response);
+      console.log('Scales:', response);
       
       // Transform the data to match the expected format
       const transformedScales = response.map(scale => ({

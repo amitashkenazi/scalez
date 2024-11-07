@@ -5,6 +5,11 @@ import apiService from '../services/api';
 import ScaleModal from './ScaleModal';
 import DeleteConfirmationModal from './modals/DeleteConfirmationModal';
 
+const formatDate = (timestamp) => {
+  if (!timestamp) return 'N/A';
+  return new Date(timestamp).toLocaleString();
+};
+
 const ScalesManagement = () => {
   const [registeredScales, setRegisteredScales] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -69,12 +74,14 @@ const ScalesManagement = () => {
     setTimeout(() => setSuccessMessage(''), 3000);
   };
 
-  const handleAddScale = async (scaleId) => {
+  const handleAddScale = async (scaleData) => {
     try {
-      // The vendor ID will be extracted from the auth token on the server side
       await apiService.request('scales/register', {
         method: 'POST',
-        body: JSON.stringify({ id: scaleId })
+        body: JSON.stringify({ 
+          id: scaleData.id,
+          name: scaleData.name 
+        })
       });
       
       await fetchData();
@@ -99,11 +106,6 @@ const ScalesManagement = () => {
     } catch (err) {
       setError(err.message || 'Failed to delete scale');
     }
-  };
-
-  const formatDate = (timestamp) => {
-    if (!timestamp) return 'N/A';
-    return new Date(timestamp).toLocaleString();
   };
 
   if (isLoading) {
@@ -161,6 +163,9 @@ const ScalesManagement = () => {
                 Scale ID
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                Name
+              </th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
                 Last Update
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
@@ -175,6 +180,7 @@ const ScalesManagement = () => {
             {registeredScales.map((scale) => (
               <tr key={scale.scale_id} className="hover:bg-gray-50">
                 <td className="px-6 py-4 text-sm">{scale.scale_id}</td>
+                <td className="px-6 py-4 text-sm font-medium">{scale.scale_name || 'Unnamed Scale'}</td>
                 <td className="px-6 py-4 text-sm">{formatDate(scale.lastMeasurement)}</td>
                 <td className="px-6 py-4">
                   <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full
@@ -215,7 +221,7 @@ const ScalesManagement = () => {
         }}
         onConfirm={handleDeleteScale}
         title="Delete Scale"
-        message={`Are you sure you want to delete scale "${selectedScale?.id}"? This action cannot be undone.`}
+        message={`Are you sure you want to delete scale "${selectedScale?.name || selectedScale?.scale_id}"? This action cannot be undone.`}
       />
     </div>
   );

@@ -1,9 +1,31 @@
 import React, { useState, useEffect } from 'react';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { translations } from '../../translations/translations';
-import { Package, AlertCircle, Loader2, RefreshCw, Scale, MessageSquare } from 'lucide-react';
+import { Package, AlertCircle, Loader2, RefreshCw, Scale, MessageSquare, Clock } from 'lucide-react';
 import apiService from '../../services/api';
 import ProductDetailModal from './ProductDetailModal';
+
+
+
+const sortProducts = (products, measurements) => {
+  return [...products].sort((a, b) => {
+    const aWeight = measurements[a.scale_id]?.weight;
+    const bWeight = measurements[b.scale_id]?.weight;
+    
+    const aStatus = getStatusInfo(aWeight, a.thresholds);
+    const bStatus = getStatusInfo(bWeight, b.thresholds);
+
+    // Sort by status priority: red (critical) -> orange (warning) -> green (good)
+    const statusPriority = { critical: 0, warning: 1, good: 2, unknown: 3 };
+    
+    if (statusPriority[aStatus.status] !== statusPriority[bStatus.status]) {
+      return statusPriority[aStatus.status] - statusPriority[bStatus.status];
+    }
+
+    // Within the same status, sort by distance
+    return bStatus.distance - aStatus.distance;
+  });
+};
 
 
 const getStatusInfo = (weight, thresholds) => {
@@ -41,27 +63,6 @@ const getStatusInfo = (weight, thresholds) => {
   };
 };
 
-const sortProducts = (products, measurements) => {
-  return [...products].sort((a, b) => {
-    const aWeight = measurements[a.scale_id]?.weight;
-    const bWeight = measurements[b.scale_id]?.weight;
-    
-    const aStatus = getStatusInfo(aWeight, a.thresholds);
-    const bStatus = getStatusInfo(bWeight, b.thresholds);
-
-    // Sort by status priority: red (critical) -> orange (warning) -> green (good)
-    const statusPriority = { critical: 0, warning: 1, good: 2, unknown: 3 };
-    
-    if (statusPriority[aStatus.status] !== statusPriority[bStatus.status]) {
-      return statusPriority[aStatus.status] - statusPriority[bStatus.status];
-    }
-
-    // Within the same status, sort by distance
-    return bStatus.distance - aStatus.distance;
-  });
-};
-
-
 const ProductCard = ({ product, scale, customers, latestMeasurement }) => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const { language } = useLanguage();
@@ -69,6 +70,19 @@ const ProductCard = ({ product, scale, customers, latestMeasurement }) => {
   const isRTL = language === 'he';
 
   const statusInfo = getStatusInfo(latestMeasurement?.weight, product.thresholds);
+
+  // Format timestamp
+  const formatDate = (timestamp) => {
+    if (!timestamp) return t.noData;
+    return new Date(timestamp).toLocaleString(language === 'he' ? 'he-IL' : 'en-US', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: false
+    });
+  };
 
   // Get customer data
   const getCustomerInfo = () => {
@@ -104,29 +118,38 @@ const ProductCard = ({ product, scale, customers, latestMeasurement }) => {
 
   return (
     <>
-      <div className={`bg-white rounded-lg shadow-lg p-6 hover:shadow-xl transition-shadow ${statusInfo.bgColor}`}>
+      <div 
+        className={`bg-white rounded-lg shadow-lg p-6 hover:shadow-xl transition-shadow cursor-pointer ${statusInfo.bgColor}`}
+        onClick={() => setIsModalOpen(true)}
+      >
         <div className="flex justify-between items-start mb-4">
           <div className="space-y-1">
             <h3 className="text-2xl font-bold">{product.name}</h3>
             {customerInfo && (
               <p className="text-gray-600 flex items-center gap-2">
-                <span className="inline-block">
-                  {customerInfo.displayName}
-                </span>
+                {customerInfo.displayName}
               </p>
             )}
+            <div className="flex flex-col gap-1 text-sm">
             <div className="flex items-center gap-1 text-gray-400">
               <Scale size={14} />
-              <span className="text-sm text-gray-500">
-                {scale?.scale_id || product.scale_id}
+              <span className="text-gray-500">
+                {scale?.scale_name || `Scale ${scale?.scale_id}` || 'Unknown Scale'}
               </span>
+            </div>
+              <div className="flex items-center gap-1 text-gray-400">
+                <Clock size={14} />
+                <span className="text-gray-500">
+                  {formatDate(latestMeasurement?.timestamp)}
+                </span>
+              </div>
             </div>
           </div>
 
           <div className="flex flex-col items-end gap-3">
             <div className={`px-4 py-2 rounded-lg ${statusInfo.bgColor}`}>
               <span className={`text-xl font-bold ${statusInfo.color}`}>
-                {latestMeasurement?.weight ? `${latestMeasurement.weight} kg` : 'No data'}
+                {latestMeasurement?.weight ? `${latestMeasurement.weight} kg` : t.noData}
               </span>
             </div>
 
@@ -257,7 +280,7 @@ const ProductsView = () => {
         apiService.getScales(),
         apiService.getCustomers()
       ]);
-      
+      console.log('scalesResponse:', scalesResponse);
       setProducts(productsResponse);
       setScales(scalesResponse);
       setCustomers(customersResponse);

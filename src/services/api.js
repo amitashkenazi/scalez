@@ -82,14 +82,17 @@ class ApiService {
             method: 'GET'
         });
     }
+    
 
     async getHeaders() {
         try {
             const accessToken = await tokenService.refreshTokenIfNeeded();
+            const idToken = await tokenService.getIdToken(); // You'll need to add this method to tokenService
+            
             return {
             'Content-Type': 'application/json',
             'Accept': 'application/json',
-            'Authorization': accessToken ? `Bearer ${accessToken}` : '',
+            'Authorization': idToken ? `Bearer ${idToken}` : '',
             };
         } catch (error) {
             console.error('Error getting headers:', error);
@@ -125,50 +128,57 @@ class ApiService {
         console.log(`[API Debug] ${message}`, ...args);
     }
 
-    // Generic request handler
     async request(endpoint, options = {}, retryCount = this.retryCount) {
         const url = `${this.baseUrl}/${endpoint.replace(/^\/+/, '')}`;
         
         try {
-          const headers = await this.getHeaders();
-          const finalOptions = {
-            ...options,
-            headers: {
-              ...headers,
-              ...options.headers,
-            },
-          };
-    
-          const response = await fetch(url, finalOptions);
-    
-          // Handle different response statuses
-          if (response.status === 401) {
-            // Token is invalid or expired and refresh failed
-            tokenService.clearTokens();
-            // Redirect to login page
-            window.location.href = '/';
-            throw new Error('Authentication required');
-          }
-    
-          if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
-          }
-    
-          const contentType = response.headers.get('content-type');
-          if (contentType?.includes('application/json')) {
-            return await response.json();
-          }
-          return await response.text();
+            // Always try to refresh token before making request
+            const idToken = await tokenService.refreshTokenIfNeeded();
+            
+            const headers = {
+                'Content-Type': 'application/json',
+                'Accept': 'application/json',
+                'Authorization': idToken ? `Bearer ${idToken}` : '',
+                ...options.headers,
+            };
+
+            const response = await fetch(url, { ...options, headers });
+
+            if (response.status === 401) {
+                // Try to refresh token one more time if request fails
+                try {
+                    const newIdToken = await tokenService.refreshTokenIfNeeded();
+                    headers.Authorization = `Bearer ${newIdToken}`;
+                    const retryResponse = await fetch(url, { ...options, headers });
+                    
+                    if (!retryResponse.ok) {
+                        throw new Error(`HTTP error! status: ${retryResponse.status}`);
+                    }
+                    
+                    return this.parseResponse(retryResponse);
+                } catch (refreshError) {
+                    // If refresh fails, clear tokens and redirect to login
+                    tokenService.clearTokens();
+                    window.location.href = '/';
+                    throw new Error('Authentication required');
+                }
+            }
+
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+
+            return this.parseResponse(response);
         } catch (error) {
-          console.error('API request failed:', error);
-          
-          // Retry on network errors
-          if (error.name === 'TypeError' && retryCount > 0) {
-            await new Promise(resolve => setTimeout(resolve, this.retryDelay));
-            return this.request(endpoint, options, retryCount - 1);
-          }
-          
-          throw error;
+            console.error('API request failed:', error);
+            
+            // Retry on network errors
+            if (error.name === 'TypeError' && retryCount > 0) {
+                await new Promise(resolve => setTimeout(resolve, this.retryDelay));
+                return this.request(endpoint, options, retryCount - 1);
+            }
+            
+            throw error;
         }
     }
 
@@ -177,6 +187,14 @@ class ApiService {
         return this.request('scales', {
             method: 'GET'
         });
+    }
+
+    async parseResponse(response) {
+        const contentType = response.headers.get('content-type');
+        if (contentType?.includes('application/json')) {
+            return response.json();
+        }
+        return response.text();
     }
 
     async getScale(scaleId) {
