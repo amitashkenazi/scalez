@@ -1,9 +1,8 @@
 import React, { useState } from 'react';
 import { 
   LogOut, 
-  PieChart, 
+  PieChart,
   Languages,
-  Home,
   Package,
   Scale,
   Truck,
@@ -16,25 +15,19 @@ import { useAuth } from '../contexts/AuthContext';
 import UserAccountButton from './auth/UserAccountButton';
 
 const SideMenu = ({ activeView, onViewChange }) => {
-  const { user, signOut } = useAuth();
+  const { user, isAdmin } = useAuth();
   const { language, toggleLanguage } = useLanguage();
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const t = translations[language];
   const isRTL = language === 'he';
 
-  const menuItems = [
-    
+  // Define base menu items
+  const baseMenuItems = [
     {
-      icon: PieChart,
+      icon: Package,
       label: t.productsDashboard,
       view: "products",
       description: t.productsDashboardDesc
-    },
-    {
-      icon: Truck,
-      label: t.vendors.title,
-      view: "vendors",
-      description: t.vendors.description
     },
     {
       icon: Users,
@@ -54,8 +47,18 @@ const SideMenu = ({ activeView, onViewChange }) => {
       view: "productsMng",
       description: t.productsDesc
     },
-    
   ];
+
+  // Add vendors tab only for admin users
+  const menuItems = isAdmin ? [
+    ...baseMenuItems,
+    {
+      icon: Truck,
+      label: t.vendors.title,
+      view: "vendors",
+      description: t.vendors.description
+    }
+  ] : baseMenuItems;
 
   return (
     <>
@@ -74,7 +77,7 @@ const SideMenu = ({ activeView, onViewChange }) => {
           )}
         </div>
 
-        {/* Title Section */}
+        {/* Rest of your menu code... */}
         <div className="p-6">
           <h2 className={`text-xl font-bold text-white mb-2 ${isRTL ? 'text-right' : 'text-left'}`}>
             {t.menuTitle}
@@ -84,7 +87,6 @@ const SideMenu = ({ activeView, onViewChange }) => {
           </p>
         </div>
 
-        {/* Navigation Items */}
         <nav className="flex-1 px-4">
           <div className="space-y-1">
             {menuItems.map((item) => (
@@ -130,7 +132,6 @@ const SideMenu = ({ activeView, onViewChange }) => {
         </div>
       </div>
 
-      {/* Auth Modal */}
       <AuthModal 
         isOpen={isAuthModalOpen} 
         onClose={() => setIsAuthModalOpen(false)} 

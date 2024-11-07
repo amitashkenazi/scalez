@@ -4,7 +4,13 @@ import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { LanguageProvider, useLanguage } from './contexts/LanguageContext';
 import UnauthenticatedView from './components/UnauthenticatedView';
 import ProductsView from './components/products/ProductsView';
+import CustomersTableView from './components/customers/CustomersTableView';
+import ScalesManagement from './components/ScalesManagement';
+import ProductsManagementView from './components/ProductsMngView';
+import VendorsView from './components/vendors/VendorsView';
+import AdminRoute from './components/auth/AdminRoute';
 import SideMenu from './components/SideMenu';
+import LandingPage from './components/LandingPage';
 import { Menu as MenuIcon } from 'lucide-react';
 
 function AppContent() {
@@ -67,7 +73,7 @@ function AppContent() {
   };
 
   const getMainContentStyles = () => {
-    const baseStyles = 'flex-1 transition-all duration-300 ease-in-out';
+    const baseStyles = 'flex-1 transition-all duration-300 ease-in-out min-h-screen bg-gray-100';
     if (language === 'he') {
       return `${baseStyles} ${isMenuOpen ? 'md:mr-64' : 'mr-0'}`;
     }
@@ -117,7 +123,16 @@ function AppContent() {
 
       {/* Main Content */}
       <main className={getMainContentStyles()}>
-        <ProductsView />
+        {activeView === 'home' && <LandingPage onViewChange={setActiveView} />}
+        {activeView === 'products' && <ProductsView />}
+        {activeView === 'customersTable' && <CustomersTableView />}
+        {activeView === 'scalesManagement' && <ScalesManagement />}
+        {activeView === 'productsMng' && <ProductsManagementView />}
+        {activeView === 'vendors' && (
+          <AdminRoute>
+            <VendorsView />
+          </AdminRoute>
+        )}
       </main>
     </div>
   );

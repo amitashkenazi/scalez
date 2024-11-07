@@ -1,3 +1,5 @@
+// src/contexts/AuthContext.js
+
 import React, { createContext, useState, useContext, useEffect } from 'react';
 import { cognitoAuth } from '../utils/cognitoAuth';
 import { authConfig } from '../config/auth';
@@ -14,39 +16,78 @@ export function useAuth() {
 
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
+  const [userRole, setUserRole] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
   const [isConfigured] = useState(!!authConfig.USER_POOL_ID && !!authConfig.USER_POOL_WEB_CLIENT_ID);
 
+  const decodeToken = (token) => {
+    try {
+      const base64Url = token.split('.')[1];
+      const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+      const jsonPayload = decodeURIComponent(atob(base64).split('').map(function(c) {
+        return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+      }).join(''));
+      return JSON.parse(jsonPayload);
+    } catch (err) {
+      console.error('Error decoding token:', err);
+      return null;
+    }
+  };
+
+  const extractUserRole = (idToken) => {
+    try {
+      const decodedToken = decodeToken(idToken);
+      if (!decodedToken) return 'user';
+
+      // Check for role in custom:role or cognito:groups or your specific attribute
+      const role = decodedToken['custom:role'] || 
+                  (decodedToken['cognito:groups'] && 
+                   decodedToken['cognito:groups'].includes('admin') ? 'admin' : 'user');
+      
+      return role;
+    } catch (err) {
+      console.error('Error extracting user role:', err);
+      return 'user'; // Default to regular user role
+    }
+  };
+
   const checkAuthState = async () => {
     try {
       setError(null);
-      // First check localStorage for immediate user data
       const storedUserData = localStorage.getItem('userData');
       if (storedUserData) {
-        setUser(JSON.parse(storedUserData));
+        const parsedUserData = JSON.parse(storedUserData);
+        setUser(parsedUserData);
+        setUserRole(parsedUserData.role);
       }
 
-      // Then verify with Cognito
       const session = await cognitoAuth.getCurrentSession();
       if (session) {
+        const idToken = session.getIdToken().getJwtToken();
+        const role = extractUserRole(idToken);
+        setUserRole(role);
+        
         const userData = await cognitoAuth.getCurrentUser();
         if (userData) {
-          setUser(userData);
+          const userWithRole = { ...userData, role };
+          setUser(userWithRole);
+          localStorage.setItem('userData', JSON.stringify(userWithRole));
         } else {
-          // If we can't get user data but have a session, clear everything
           cognitoAuth.signOut();
           setUser(null);
+          setUserRole(null);
         }
       } else {
-        // No valid session
         setUser(null);
+        setUserRole(null);
         localStorage.removeItem('userData');
       }
     } catch (err) {
       console.error('Auth state check failed:', err);
       setError(err.message);
       setUser(null);
+      setUserRole(null);
     } finally {
       setIsLoading(false);
     }
@@ -58,42 +99,15 @@ export function AuthProvider({ children }) {
 
   const signIn = async (email, password) => {
     try {
-      const { userData } = await cognitoAuth.signIn(email, password);
-      setUser(userData);
-      return userData;
+      const { result, userData } = await cognitoAuth.signIn(email, password);
+      const idToken = result.getIdToken().getJwtToken();
+      const role = extractUserRole(idToken);
+      const userWithRole = { ...userData, role };
+      setUser(userWithRole);
+      setUserRole(role);
+      return userWithRole;
     } catch (err) {
       console.error('Sign in error:', err);
-      throw err;
-    }
-  };
-
-  const signUp = async (email, password, attributes = {}) => {
-    try {
-      const result = await cognitoAuth.signUp(email, password, attributes);
-      console.log('Sign up successful:', result);
-      return result;
-    } catch (err) {
-      console.error('Sign up error:', err);
-      throw err;
-    }
-  };
-
-  const confirmSignUp = async (email, code) => {
-    try {
-      const result = await cognitoAuth.confirmSignUp(email, code);
-      return result;
-    } catch (err) {
-      console.error('Confirm sign up error:', err);
-      throw err;
-    }
-  };
-
-  const resendConfirmationCode = async (email) => {
-    try {
-      const result = await cognitoAuth.resendConfirmationCode(email);
-      return result;
-    } catch (err) {
-      console.error('Resend confirmation code error:', err);
       throw err;
     }
   };
@@ -102,6 +116,7 @@ export function AuthProvider({ children }) {
     try {
       await cognitoAuth.signOut();
       setUser(null);
+      setUserRole(null);
       localStorage.removeItem('userData');
     } catch (err) {
       console.error('Sign out failed:', err);
@@ -111,15 +126,17 @@ export function AuthProvider({ children }) {
 
   const value = {
     user,
+    userRole,
     isLoading,
     error,
     signIn,
-    signUp,
+    signUp: cognitoAuth.signUp,
     signOut,
-    confirmSignUp,
-    resendConfirmationCode,
+    confirmSignUp: cognitoAuth.confirmSignUp,
+    resendConfirmationCode: cognitoAuth.resendConfirmationCode,
     refreshUser: checkAuthState,
-    isConfigured
+    isConfigured,
+    isAdmin: userRole === 'admin'
   };
 
   return (
