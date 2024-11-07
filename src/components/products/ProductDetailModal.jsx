@@ -24,35 +24,51 @@ const ProductDetailModal = ({
   const [isLoadingMeasurements, setIsLoadingMeasurements] = useState(false);
   const [error, setError] = useState(null);
   
-  // State for date range
-  const [dateRange, setDateRange] = useState(getDefaultDateRange([]));
+  // State for date range - initialize with last 7 days
+  const [dateRange, setDateRange] = useState(() => {
+    const end = new Date();
+    const start = new Date();
+    start.setDate(start.getDate() - 7);
+    return {
+      startDate: start.toISOString().slice(0, 16),
+      endDate: end.toISOString().slice(0, 16)
+    };
+  });
 
   // Fetch measurements when modal opens or date range changes
   useEffect(() => {
     const fetchMeasurements = async () => {
-      if (!isOpen || !product?.scale_id) return;
+      if (!isOpen || !scale?.scale_id) return;
 
       setIsLoadingMeasurements(true);
       setError(null);
 
       try {
-        // Construct query parameters for date range
-        const params = new URLSearchParams({
-          start_date: dateRange.startDate,
-          end_date: dateRange.endDate
-        });
+        // Format dates for API request
+        const start = new Date(dateRange.startDate).toISOString();
+        const end = new Date(dateRange.endDate).toISOString();
 
         // Fetch measurements from API
         const response = await apiService.request(
-          `measurements/scale/${product.scale_id}?${params}`,
-          { method: 'GET' }
+          `measurements/scale/${scale.scale_id}`, 
+          { 
+            method: 'GET',
+            params: {
+              start_date: start,
+              end_date: end
+            }
+          }
         );
 
+        console.log('Raw measurements:', response); // Debug log
+
         // Transform the data to match the expected format
-        const transformedData = response.map(measurement => ({
+        const transformedData = Array.isArray(response) ? response.map(measurement => ({
           timestamp: measurement.timestamp,
-          weight: measurement.weight
-        }));
+          weight: parseFloat(measurement.weight)
+        })).sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp)) : [];
+
+        console.log('Transformed measurements:', transformedData); // Debug log
 
         setMeasurements(transformedData);
       } catch (err) {
@@ -64,7 +80,7 @@ const ProductDetailModal = ({
     };
 
     fetchMeasurements();
-  }, [isOpen, product?.scale_id, dateRange, t]);
+  }, [isOpen, scale?.scale_id, dateRange, t]);
 
   // Format timestamp
   const formatDate = (timestamp) => {
@@ -79,28 +95,12 @@ const ProductDetailModal = ({
     });
   };
 
-  // Generate WhatsApp message
-  const getWhatsAppLink = () => {
-    if (!customer?.phone) return null;
-
-    const message = encodeURIComponent(
-      `${t.runningLowMessage} ${product.name}\n${t.productLeft}: ${latestMeasurement?.weight}kg\n${t.pleaseResupply}`
-    );
-    
-    const cleanPhone = customer.phone.replace(/\D/g, '');
-    const formattedPhone = cleanPhone.startsWith('972') ? cleanPhone :
-                          cleanPhone.startsWith('0') ? `972${cleanPhone.slice(1)}` : 
-                          `972${cleanPhone}`;
-    
-    return `https://wa.me/${formattedPhone}?text=${message}`;
-  };
-
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4 overflow-y-auto">
       <div 
-        className="bg-white rounded-lg p-6 w-full max-w-4xl max-h-[90vh] overflow-y-auto m-4"
+        className="bg-white rounded-lg p-6 w-full max-w-4xl max-h-[90vh] overflow-y-auto relative"
         dir={isRTL ? 'rtl' : 'ltr'}
       >
         {/* Header */}
@@ -115,31 +115,19 @@ const ProductDetailModal = ({
               </p>
             )}
           </div>
-          <div className="flex items-center gap-2">
-            {getWhatsAppLink() && (
-              <a
-                href={getWhatsAppLink()}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center justify-center p-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors"
-              >
-                <MessageSquare size={20} />
-              </a>
-            )}
-            <button 
-              onClick={onClose}
-              className="p-2 text-gray-500 hover:text-gray-700 transition-colors"
-            >
-              <X size={24} />
-            </button>
-          </div>
+          <button 
+            onClick={onClose}
+            className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+          >
+            <X size={24} className="text-gray-500" />
+          </button>
         </div>
 
         {/* Scale Info */}
         <div className="bg-gray-50 rounded-lg p-4 mb-6">
           <div className="flex items-center gap-2 text-gray-600 mb-2">
             <Scale size={16} />
-            <span>Scale ID: {scale?.scale_id || product.scale_id}</span>
+            <span>Scale ID: {scale?.scale_id}</span>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
@@ -162,11 +150,13 @@ const ProductDetailModal = ({
         />
 
         {/* Weight History Graph */}
-        <div className="bg-white rounded-lg shadow p-4">
+        <div className="bg-white rounded-lg shadow-lg p-4 mt-4">
+          <h3 className="text-lg font-bold mb-4">{t.weightHistory}</h3>
+          
           {isLoadingMeasurements ? (
             <div className="flex justify-center items-center h-64">
-              <Loader2 className="h-8 w-8 animate-spin text-blue-600 mr-2" />
-              <span className="text-gray-600">{t.loading}</span>
+              <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
+              <span className="ml-2 text-gray-600">{t.loading}</span>
             </div>
           ) : error ? (
             <div className="flex justify-center items-center h-64 text-red-600">
@@ -180,7 +170,7 @@ const ProductDetailModal = ({
             />
           ) : (
             <div className="flex justify-center items-center h-64 text-gray-500">
-              {t.noData || 'No measurement data available'}
+              {t.noData || 'No measurement data available for the selected period'}
             </div>
           )}
         </div>

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { translations } from '../../translations/translations';
-import { Package, AlertCircle, Loader2, RefreshCw, Scale, MessageSquare, Clock } from 'lucide-react';
+import { Package, AlertCircle, Loader2, RefreshCw, Scale, MessageSquare, Clock, ChevronRight, ChartLine } from 'lucide-react';
 import apiService from '../../services/api';
 import ProductDetailModal from './ProductDetailModal';
 
@@ -61,7 +61,7 @@ const getStatusInfo = (weight, thresholds) => {
   };
 };
 
-// Product Card Component
+
 const ProductCard = ({ product, scale, customers, latestMeasurement }) => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const { language } = useLanguage();
@@ -117,16 +117,21 @@ const ProductCard = ({ product, scale, customers, latestMeasurement }) => {
   return (
     <>
       <div 
-        className={`bg-white rounded-lg shadow-lg p-6 hover:shadow-xl transition-shadow cursor-pointer ${statusInfo.bgColor}`}
+        className={`bg-white rounded-lg shadow-lg p-6 hover:shadow-xl transition-all duration-300 
+          cursor-pointer group ${statusInfo.bgColor} relative overflow-hidden`}
         onClick={() => setIsModalOpen(true)}
       >
+        {/* New hover overlay with history button */}
+        <div className="absolute inset-0 bg-black/0 group-hover:bg-black/5 transition-all duration-300 
+          flex items-center justify-center opacity-0 group-hover:opacity-100">
+          
+        </div>
+
         <div className="flex justify-between items-start mb-4">
           <div className="space-y-1">
             <h3 className="text-2xl font-bold">{product.name}</h3>
             {customerInfo && (
-              <p className="text-gray-600 flex items-center gap-2">
-                {customerInfo.displayName}
-              </p>
+              <p className="text-gray-600">{customerInfo.displayName}</p>
             )}
             <div className="flex flex-col gap-1 text-sm">
               <div className="flex items-center gap-1 text-gray-400">
@@ -145,7 +150,8 @@ const ProductCard = ({ product, scale, customers, latestMeasurement }) => {
           </div>
 
           <div className="flex flex-col items-end gap-3">
-            <div className={`px-4 py-2 rounded-lg ${statusInfo.bgColor}`}>
+            <div className={`px-4 py-2 rounded-lg ${statusInfo.bgColor} transform transition-transform 
+              group-hover:scale-105`}>
               <span className={`text-xl font-bold ${statusInfo.color}`}>
                 {latestMeasurement?.weight ? `${latestMeasurement.weight} kg` : t.noData}
               </span>
@@ -156,7 +162,9 @@ const ProductCard = ({ product, scale, customers, latestMeasurement }) => {
                 href={getWhatsAppLink()}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex items-center justify-center px-6 py-3 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors gap-2 text-base font-medium"
+                className="inline-flex items-center justify-center px-6 py-3 bg-green-500 text-white 
+                  rounded-lg hover:bg-green-600 transition-colors gap-2 text-base font-medium 
+                  transform hover:scale-105"
                 onClick={(e) => e.stopPropagation()}
               >
                 <MessageSquare size={20} />
@@ -183,7 +191,7 @@ const ProductCard = ({ product, scale, customers, latestMeasurement }) => {
               statusInfo.status === 'good' ? 'bg-green-600' :
               statusInfo.status === 'warning' ? 'bg-orange-500' :
               statusInfo.status === 'critical' ? 'bg-red-600' : 'bg-gray-400'
-            }`}
+            } transition-all duration-300`}
             style={{
               width: latestMeasurement?.weight ? 
                 `${Math.min(100, (latestMeasurement.weight / product.thresholds?.upper) * 100)}%` : 
@@ -204,6 +212,7 @@ const ProductCard = ({ product, scale, customers, latestMeasurement }) => {
     </>
   );
 };
+
 
 // Main ProductsView Component
 const ProductsView = () => {
