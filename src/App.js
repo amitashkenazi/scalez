@@ -1,28 +1,18 @@
 // src/App.js
 import React, { useState, useRef, useCallback } from 'react';
-import { CustomersTableView } from './components/customers';
-import ScalesManagement from './components/ScalesManagement';
-import SideMenu from './components/SideMenu';
-import LandingPage from './components/LandingPage';
-import ProductsManagementView from './components/ProductsMngView';
+import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { LanguageProvider, useLanguage } from './contexts/LanguageContext';
-import { Menu as MenuIcon } from 'lucide-react';
-// import { translations } from './translations/translations';
-import VendorsView from './components/vendors/VendorsView';
+import UnauthenticatedView from './components/UnauthenticatedView';
 import ProductsView from './components/products/ProductsView';
-import { AuthProvider } from './contexts/AuthContext';
-import EmailVerificationHandler from './components/auth/EmailVerificationHandler';
-
-
+import SideMenu from './components/SideMenu';
+import { Menu as MenuIcon } from 'lucide-react';
 
 function AppContent() {
-  const [activeView, setActiveView] = useState('landing');
-  const [isMenuOpen, setIsMenuOpen] = useState(true);
+  const { user } = useAuth();
   const { language } = useLanguage();
+  const [activeView, setActiveView] = useState('products');
+  const [isMenuOpen, setIsMenuOpen] = useState(true);
   
-  // const t = translations[language];
-  
-  // Touch handling for mobile
   const touchStartX = useRef(null);
   const touchEndX = useRef(null);
   const menuRef = useRef(null);
@@ -45,7 +35,6 @@ function AppContent() {
 
     const swipeDistance = touchEndX.current - touchStartX.current;
     
-    // Adjust swipe direction based on language
     if (language === 'he') {
       if (Math.abs(swipeDistance) > minSwipeDistance) {
         if (swipeDistance > 0 && isMenuOpen) {
@@ -67,17 +56,6 @@ function AppContent() {
     touchStartX.current = null;
     touchEndX.current = null;
   }, [isMenuOpen, language]);
-
-  const handleViewChange = (view) => {
-    setActiveView(view);
-    // if (view === 'customers') {
-    //   setSelectedScaleIds(null);
-    // }
-  };
-
-  const toggleMenu = () => {
-    setIsMenuOpen(!isMenuOpen);
-  };
 
   // RTL-aware styles
   const getMenuStyles = () => {
@@ -101,66 +79,10 @@ function AppContent() {
     return language === 'he' ? `${baseStyles} right-4` : `${baseStyles} left-4`;
   };
 
-  const renderContent = () => {
-    // Check if we're on the verification path
-    if (window.location.pathname === '/verify-email') {
-      return <EmailVerificationHandler />;
-    }
+  if (!user) {
+    return <UnauthenticatedView />;
+  }
 
-    // Otherwise render normal content
-    return (
-      <div className="p-6">
-        {activeView === 'landing' && (
-            <LandingPage onViewChange={handleViewChange} />
-          )}
-          {activeView === 'vendors' && (
-              <VendorsView />
-          )}
-          {/* {activeView === 'customers' && (
-            selectedScaleIds ? (
-              <>
-                <button
-                  onClick={handleBackToCustomers}
-                  className={`mb-4 text-blue-600 hover:text-blue-800 font-medium flex items-center
-                    ${language === 'he' ? 'flex-row-reverse' : ''}`}
-                >
-                  <span className={language === 'he' ? 'mr-2' : 'ml-2'}>
-                    {t.backToCustomers}
-                  </span>
-                  {language === 'he' ? '→' : '←'}
-                </button>
-                <Dashboard selectedScaleIds={selectedScaleIds} />
-              </>
-            ) : (
-              <CustomerDashboard onCustomerSelect={handleCustomerSelect} />
-            )
-          )} */}
-          {activeView === 'products' && (
-            <ProductsView />
-          )}
-          {/* {activeView === 'notifications' && (
-            <NotificationsView scales={scales} />
-          )} */}
-          
-          {/* {(activeView === 'dashboard' || activeView === 'allScales') && (
-            <Dashboard selectedScaleIds={null} />
-          )} */}
-
-          {activeView === 'customersTable' && (
-            <CustomersTableView />
-          )}
-
-          {activeView === 'scalesManagement' && (
-            <ScalesManagement />
-          )}
-          {activeView === 'productsMng' && (
-            <ProductsManagementView />
-          )}
-      </div>
-    );
-  };
-
-  
   return (
     <div 
       className="flex min-h-screen bg-gray-100"
@@ -171,7 +93,7 @@ function AppContent() {
     >
       {/* Toggle Button */}
       <button
-        onClick={toggleMenu}
+        onClick={() => setIsMenuOpen(!isMenuOpen)}
         className={getMenuButtonPosition()}
       >
         <MenuIcon size={24} />
@@ -181,7 +103,7 @@ function AppContent() {
       <div ref={menuRef} className={getMenuStyles()}>
         <SideMenu 
           activeView={activeView} 
-          onViewChange={handleViewChange} 
+          onViewChange={setActiveView}
         />
       </div>
 
@@ -194,8 +116,8 @@ function AppContent() {
       )}
 
       {/* Main Content */}
-      <main className={window.location.pathname === '/verify-email' ? '' : getMainContentStyles()}>
-        {renderContent()}
+      <main className={getMainContentStyles()}>
+        <ProductsView />
       </main>
     </div>
   );

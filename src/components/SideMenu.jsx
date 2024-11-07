@@ -23,13 +23,13 @@ const SideMenu = ({ activeView, onViewChange }) => {
   const isRTL = language === 'he';
 
   const menuItems = [
-    {
-      icon: Home,
-      label: t.home,
-      view: "landing",
-      description: t.homeDesc
-    },
     
+    {
+      icon: PieChart,
+      label: t.productsDashboard,
+      view: "products",
+      description: t.productsDashboardDesc
+    },
     {
       icon: Truck,
       label: t.vendors.title,
@@ -54,12 +54,7 @@ const SideMenu = ({ activeView, onViewChange }) => {
       view: "productsMng",
       description: t.productsDesc
     },
-    {
-      icon: PieChart,
-      label: t.productsDashboard,
-      view: "products",
-      description: t.productsDashboardDesc
-    },
+    
   ];
 
   return (

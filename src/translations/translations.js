@@ -77,7 +77,7 @@ export const translations = {
     resetPasswordError: "Failed to reset password",
     passwordResetSuccess: "Password reset successful",
     welcomeBack: "Welcome back",
-    welcome: "Welcome to Scale Monitor",
+    welcome: "Welcome to Scalez",
     // Customer Dashboard
     customerOverview: "Customer Overview",
     backToCustomers: "Back to Customers",
@@ -199,9 +199,9 @@ export const translations = {
     },
     // Registration
     registering: "Registering...",
-    signUpError: "Failed to create account",
+    
     allFieldsRequired: "All fields are required",
-    passwordRequirements: "Password must meet the following requirements:",
+    
     passwordTooShort: "Password must be at least 8 characters",
     passwordNeedsUpper: "Password must contain an uppercase letter",
     passwordNeedsLower: "Password must contain a lowercase letter",
