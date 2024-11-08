@@ -11,6 +11,7 @@ import VendorsView from './components/vendors/VendorsView';
 import AdminRoute from './components/auth/AdminRoute';
 import SideMenu from './components/SideMenu';
 import LandingPage from './components/LandingPage';
+import SharedProductsView from './components/SharedProductsView';
 import { Menu as MenuIcon } from 'lucide-react';
 
 function AppContent() {
@@ -128,6 +129,7 @@ function AppContent() {
         {activeView === 'customersTable' && <CustomersTableView />}
         {activeView === 'scalesManagement' && <ScalesManagement />}
         {activeView === 'productsMng' && <ProductsManagementView />}
+        {activeView === 'sharedProducts' && <SharedProductsView />}
         {activeView === 'vendors' && (
           <AdminRoute>
             <VendorsView />

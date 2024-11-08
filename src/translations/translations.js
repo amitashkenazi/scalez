@@ -263,6 +263,9 @@ export const translations = {
     continueToApp: "Continue to App",
     verificationLinkExpired: "Verification link has expired. Please request a new one.",
     invalidVerificationCode: "Invalid verification code. Please try again.",
+    sharedProducts: "Products from Vendors",
+    sharedProductsDesc: "View products that have been shared with you",
+    noSharedProducts: "No products have been shared with you yet",
   },
   he: {
     // General
@@ -547,5 +550,8 @@ export const translations = {
     continueToApp: "המשך לאפליקציה",
     verificationLinkExpired: "קישור האימות פג תוקף. אנא בקש קישור חדש.",
     invalidVerificationCode: "קוד אימות לא חוקי. אנא נסה שוב.",
+    sharedProducts: "מוצרים מספקים",
+    sharedProductsDesc: "צפה במוצרים ששותפו איתך",
+    noSharedProducts: "טרם שותפו איתך מוצרים",
   }
 };

@@ -130,7 +130,7 @@ class ApiService {
 
     async request(endpoint, options = {}, retryCount = this.retryCount) {
         const url = `${this.baseUrl}/${endpoint.replace(/^\/+/, '')}`;
-        
+        console.log('API request to:', url, options);
         try {
             // Always try to refresh token before making request
             const idToken = await tokenService.refreshTokenIfNeeded();

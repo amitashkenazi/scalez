@@ -1,12 +1,11 @@
 import React, { useState } from 'react';
 import { 
-  LogOut, 
-  PieChart,
   Languages,
   Package,
   Scale,
   Truck,
-  Users
+  Users,
+  Share
 } from 'lucide-react';
 import { useLanguage } from '../contexts/LanguageContext';
 import { translations } from '../translations/translations';
@@ -30,6 +29,12 @@ const SideMenu = ({ activeView, onViewChange }) => {
       description: t.productsDashboardDesc
     },
     {
+      icon: Share, // Import Share from lucide-react
+      label: t.sharedProducts, // Add translation
+      view: "sharedProducts",
+      description: t.sharedProductsDesc
+    },
+    {
       icon: Users,
       label: t.customersTable,
       view: "customersTable",
@@ -47,6 +52,8 @@ const SideMenu = ({ activeView, onViewChange }) => {
       view: "productsMng",
       description: t.productsDesc
     },
+    // Add this to the baseMenuItems array in SideMenu.jsx
+    
   ];
 
   // Add vendors tab only for admin users

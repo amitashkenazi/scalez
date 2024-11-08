@@ -11,10 +11,11 @@ const ProductDetailModal = ({
   isOpen, 
   onClose, 
   product, 
-  scale,
+  scale_id,
   latestMeasurement,
   customer 
 }) => {
+  console.log('init scale_id:', scale_id); // Debug log
   const { language } = useLanguage();
   const t = translations[language];
   const isRTL = language === 'he';
@@ -37,8 +38,12 @@ const ProductDetailModal = ({
 
   // Fetch measurements when modal opens or date range changes
   useEffect(() => {
+    
     const fetchMeasurements = async () => {
-      if (!isOpen || !scale?.scale_id) return;
+      console.log('Fetching measurements...'); // Debug log
+      console.log('isOpen:', isOpen); // Debug log
+      console.log('scale_id:', scale_id); // Debug log
+      if (!isOpen || !scale_id) return;
 
       setIsLoadingMeasurements(true);
       setError(null);
@@ -50,7 +55,7 @@ const ProductDetailModal = ({
 
         // Fetch measurements from API
         const response = await apiService.request(
-          `measurements/scale/${scale.scale_id}`, 
+          `measurements/scale/${scale_id}`, 
           { 
             method: 'GET',
             params: {
@@ -80,7 +85,7 @@ const ProductDetailModal = ({
     };
 
     fetchMeasurements();
-  }, [isOpen, scale?.scale_id, dateRange, t]);
+  }, [isOpen, scale_id, dateRange, t]);
 
   // Format timestamp
   const formatDate = (timestamp) => {
@@ -127,7 +132,7 @@ const ProductDetailModal = ({
         <div className="bg-gray-50 rounded-lg p-4 mb-6">
           <div className="flex items-center gap-2 text-gray-600 mb-2">
             <Scale size={16} />
-            <span>Scale ID: {scale?.scale_id}</span>
+            <span>Scale ID: {scale_id}</span>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>

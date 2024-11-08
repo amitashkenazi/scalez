@@ -67,7 +67,7 @@ const ProductCard = ({ product, scale, customers, latestMeasurement }) => {
   const { language } = useLanguage();
   const t = translations[language];
   const isRTL = language === 'he';
-
+  console.log('ProductCard scale:', scale.scale_id);
   const statusInfo = getStatusInfo(latestMeasurement?.weight, product.thresholds);
 
   // Format timestamp
@@ -205,7 +205,7 @@ const ProductCard = ({ product, scale, customers, latestMeasurement }) => {
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
         product={product}
-        scale={scale}
+        scale_id={scale.scale_id}
         latestMeasurement={latestMeasurement}
         customer={customerInfo?.fullData}
       />

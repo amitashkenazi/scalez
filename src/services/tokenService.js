@@ -1,41 +1,90 @@
+// src/services/tokenService.js
 import { CognitoRefreshToken } from 'amazon-cognito-identity-js';
+import { AuthenticationException } from './exceptions';
+
 class TokenService {
     constructor() {
+        // Initialize with stored tokens
         this.accessToken = localStorage.getItem('accessToken');
         this.idToken = localStorage.getItem('idToken');
         this.refreshToken = localStorage.getItem('refreshToken');
         this.tokenExpirationTime = localStorage.getItem('tokenExpirationTime');
-        this.refreshing = null;
         
-        // Check token validity periodically
+        // Track refresh attempts
+        this.refreshing = null;
+        this.refreshAttempts = 0;
+        this.maxRefreshAttempts = 3;
+        
+        // Configure refresh buffer (refresh 5 minutes before expiration)
+        this.refreshBuffer = 5 * 60 * 1000; // 5 minutes in milliseconds
+        
+        // Start refresh timer
         this.startTokenRefreshTimer();
     }
 
     startTokenRefreshTimer() {
-        // Check token every minute
-        setInterval(() => {
-            if (this.isTokenExpired() && this.refreshToken) {
-                this.refreshTokenIfNeeded();
+        // Clear any existing timer
+        if (this.refreshTimer) {
+            clearInterval(this.refreshTimer);
+        }
+
+        // Check tokens every minute
+        this.refreshTimer = setInterval(() => {
+            if (this.shouldRefreshToken()) {
+                this.refreshTokenIfNeeded()
+                    .catch(error => {
+                        console.error('Token refresh failed in timer:', error);
+                        // If refresh fails, clear tokens and trigger auth flow
+                        if (error instanceof AuthenticationException) {
+                            this.clearTokens();
+                            window.dispatchEvent(new CustomEvent('auth:required'));
+                        }
+                    });
             }
         }, 60000);
     }
 
+    shouldRefreshToken() {
+        if (!this.tokenExpirationTime || !this.refreshToken) {
+            return false;
+        }
+
+        const now = Date.now();
+        const expirationTime = parseInt(this.tokenExpirationTime);
+        
+        return now > (expirationTime - this.refreshBuffer);
+    }
+
     setTokens({ accessToken, refreshToken, idToken, expiresIn }) {
+        // Validate input
+        if (!accessToken || !refreshToken || !idToken || !expiresIn) {
+            throw new Error('Invalid token data provided');
+        }
+
         this.accessToken = accessToken;
         this.refreshToken = refreshToken;
         this.idToken = idToken;
-
+        
         // Calculate expiration time
         const expirationTime = Date.now() + (expiresIn * 1000);
         this.tokenExpirationTime = expirationTime;
 
-        localStorage.setItem('accessToken', accessToken);
-        localStorage.setItem('idToken', idToken);
-        localStorage.setItem('refreshToken', refreshToken);
-        localStorage.setItem('tokenExpirationTime', expirationTime);
-
-        // Reset refresh timer when new tokens are set
-        this.startTokenRefreshTimer();
+        // Store tokens securely
+        try {
+            localStorage.setItem('accessToken', accessToken);
+            localStorage.setItem('idToken', idToken);
+            localStorage.setItem('refreshToken', refreshToken);
+            localStorage.setItem('tokenExpirationTime', expirationTime);
+            
+            // Reset refresh attempts on successful token set
+            this.refreshAttempts = 0;
+            
+            // Restart refresh timer
+            this.startTokenRefreshTimer();
+        } catch (error) {
+            console.error('Failed to store tokens:', error);
+            throw new Error('Failed to store authentication tokens');
+        }
     }
 
     clearTokens() {
@@ -43,23 +92,27 @@ class TokenService {
         this.refreshToken = null;
         this.idToken = null;
         this.tokenExpirationTime = null;
+        this.refreshAttempts = 0;
 
-        localStorage.removeItem('accessToken');
-        localStorage.removeItem('idToken');
-        localStorage.removeItem('refreshToken');
-        localStorage.removeItem('tokenExpirationTime');
-    }
+        try {
+            localStorage.removeItem('accessToken');
+            localStorage.removeItem('idToken');
+            localStorage.removeItem('refreshToken');
+            localStorage.removeItem('tokenExpirationTime');
+        } catch (error) {
+            console.error('Failed to clear tokens:', error);
+        }
 
-    isTokenExpired() {
-        if (!this.tokenExpirationTime) return true;
-        // Add 5-minute buffer to prevent edge cases
-        const bufferTime = 5 * 60 * 1000; // 5 minutes in milliseconds
-        return Date.now() > (this.tokenExpirationTime - bufferTime);
+        // Clear refresh timer
+        if (this.refreshTimer) {
+            clearInterval(this.refreshTimer);
+            this.refreshTimer = null;
+        }
     }
 
     async refreshTokenIfNeeded() {
-        // If token is still valid, return current token
-        if (!this.isTokenExpired()) {
+        // If tokens are still valid, return current token
+        if (!this.shouldRefreshToken()) {
             return this.idToken;
         }
 
@@ -68,14 +121,26 @@ class TokenService {
             return this.refreshing;
         }
 
+        // Check refresh attempts
+        if (this.refreshAttempts >= this.maxRefreshAttempts) {
+            this.clearTokens();
+            throw new AuthenticationException('Maximum refresh attempts exceeded');
+        }
+
         try {
             this.refreshing = this._refreshToken();
             const result = await this.refreshing;
             return result.idToken;
         } catch (error) {
-            this.clearTokens();
-            // Re-throw the error to be handled by the calling function
-            throw new Error('Token refresh failed');
+            this.refreshAttempts++;
+            console.error(`Token refresh failed (attempt ${this.refreshAttempts}):`, error);
+            
+            if (this.refreshAttempts >= this.maxRefreshAttempts) {
+                this.clearTokens();
+                throw new AuthenticationException('Token refresh failed');
+            }
+            
+            throw error;
         } finally {
             this.refreshing = null;
         }
@@ -83,35 +148,34 @@ class TokenService {
 
     async _refreshToken() {
         if (!this.refreshToken) {
-            throw new Error('No refresh token available');
+            throw new AuthenticationException('No refresh token available');
         }
 
         try {
-            const cognitoUser = this.getCognitoUser();
-            if (!cognitoUser) {
-                throw new Error('No user found');
-            }
-
             return new Promise((resolve, reject) => {
                 const refreshToken = new CognitoRefreshToken({
                     RefreshToken: this.refreshToken
                 });
 
-                cognitoUser.refreshSession(refreshToken, (err, session) => {
+                this.getCognitoUser()?.refreshSession(refreshToken, (err, session) => {
                     if (err) {
                         reject(err);
                         return;
                     }
 
-                    const tokens = {
-                        accessToken: session.getAccessToken().getJwtToken(),
-                        idToken: session.getIdToken().getJwtToken(),
-                        refreshToken: session.getRefreshToken().getToken(),
-                        expiresIn: this.getExpirationFromToken(session.getAccessToken().getJwtToken())
-                    };
+                    try {
+                        const tokens = {
+                            accessToken: session.getAccessToken().getJwtToken(),
+                            idToken: session.getIdToken().getJwtToken(),
+                            refreshToken: session.getRefreshToken().getToken(),
+                            expiresIn: this.getExpirationFromToken(session.getAccessToken().getJwtToken())
+                        };
 
-                    this.setTokens(tokens);
-                    resolve(tokens);
+                        this.setTokens(tokens);
+                        resolve(tokens);
+                    } catch (error) {
+                        reject(error);
+                    }
                 });
             });
         } catch (error) {
@@ -125,21 +189,15 @@ class TokenService {
             const payload = JSON.parse(atob(token.split('.')[1]));
             return payload.exp - (Date.now() / 1000);
         } catch (error) {
-            return 3600; // Default to 1 hour if unable to parse
+            console.error('Failed to parse token expiration:', error);
+            return 3600; // Default to 1 hour if parsing fails
         }
     }
 
-    getAccessToken() {
-        return this.accessToken;
-    }
-
-    getIdToken() {
-        return this.idToken;
-    }
-
-    getRefreshToken() {
-        return this.refreshToken;
-    }
+    // Getter methods remain unchanged
+    getAccessToken() { return this.accessToken; }
+    getIdToken() { return this.idToken; }
+    getRefreshToken() { return this.refreshToken; }
 }
 
 export const tokenService = new TokenService();

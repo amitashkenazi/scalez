@@ -1,7 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import { useLanguage } from '../contexts/LanguageContext';
 import { translations } from '../translations/translations';
-import { X, Loader2 } from 'lucide-react';
+import { 
+  X, 
+  Loader2, 
+  UserPlus, 
+  User, 
+  Trash2, 
+  AlertCircle 
+} from 'lucide-react';
+import apiService from '../services/api';
 
 const CustomerModal = ({ isOpen, onClose, onSubmit, initialData = null }) => {
   const { language } = useLanguage();
@@ -16,8 +24,13 @@ const CustomerModal = ({ isOpen, onClose, onSubmit, initialData = null }) => {
     address: ''
   });
 
+  const [users, setUsers] = useState([]);
+  const [isAddingUser, setIsAddingUser] = useState(false);
+  const [newUserEmail, setNewUserEmail] = useState('');
   const [errors, setErrors] = useState({});
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [userError, setUserError] = useState('');
+  const [isLoadingUsers, setIsLoadingUsers] = useState(false);
 
   useEffect(() => {
     if (isOpen) {
@@ -30,8 +43,10 @@ const CustomerModal = ({ isOpen, onClose, onSubmit, initialData = null }) => {
           phone: initialData.phone || '',
           address: initialData.address || ''
         });
+        if (initialData.customer_id) {
+          fetchCustomerUsers(initialData.customer_id);
+        }
       } else {
-        // Reset form when opening for new customer
         setFormData({
           name_en: '',
           name_he: '',
@@ -39,10 +54,78 @@ const CustomerModal = ({ isOpen, onClose, onSubmit, initialData = null }) => {
           phone: '',
           address: ''
         });
+        setUsers([]);
       }
       setErrors({});
     }
   }, [initialData, isOpen]);
+
+  const fetchCustomerUsers = async (customerId) => {
+    try {
+      setIsLoadingUsers(true);
+      setUserError('');
+      
+      const response = await apiService.request(`customers/${customerId}/users`, {
+        method: 'GET'
+      });
+      console.log('Users:', response);
+      
+      if (Array.isArray(response)) {
+        setUsers(response);
+      } else {
+        throw new Error('Invalid response format');
+      }
+    } catch (error) {
+      console.error('Error fetching users:', error);
+      setUserError('Failed to load users. Please try again.');
+    } finally {
+      setIsLoadingUsers(false);
+    }
+  };
+
+  const handleAddUser = async () => {
+    if (!newUserEmail.trim()) {
+      setUserError('Email is required');
+      return;
+    }
+
+    try {
+      setIsAddingUser(true);
+      setUserError('');
+
+      const response = await apiService.request('customers/user', {
+        method: 'POST',
+        body: JSON.stringify({
+          customer_id: initialData?.customer_id,
+          user_email: newUserEmail.trim()
+        })
+      });
+
+      // Update users array with complete user object
+      setUsers(prev => [...prev, {
+        user_email: newUserEmail.trim(), // Add email explicitly
+        ...response // Include any additional fields from response
+      }]);
+      
+      setNewUserEmail('');
+    } catch (error) {
+      setUserError(error.message || 'Failed to add user');
+    } finally {
+      setIsAddingUser(false);
+    }
+};
+
+  const handleRemoveUser = async (user_email) => {
+    try {
+      await apiService.request(`customers/${initialData?.customer_id}/users/email/${user_email}`, {
+        method: 'DELETE'
+      });
+
+      setUsers(prev => prev.filter(user => user.user_email !== user_email));
+    } catch (error) {
+      setUserError('Failed to remove user');
+    }
+  };
 
   const validateForm = () => {
     const newErrors = {};
@@ -60,12 +143,6 @@ const CustomerModal = ({ isOpen, onClose, onSubmit, initialData = null }) => {
     } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
       newErrors.email = 'Invalid email format';
     }
-    
-    // if (!formData.phone.trim()) {
-    //   newErrors.phone = 'Phone number is required';
-    // } else if (!/^\+?[1-9]\d{7,14}$/.test(formData.phone.replace(/[\s-]/g, ''))) {
-    //   newErrors.phone = 'Invalid phone number format';
-    // }
     
     if (!formData.address.trim()) {
       newErrors.address = 'Address is required';
@@ -87,7 +164,7 @@ const CustomerModal = ({ isOpen, onClose, onSubmit, initialData = null }) => {
         email: formData.email,
         phone: formData.phone,
         address: formData.address,
-        id: initialData?.id // Include ID if editing existing customer
+        id: initialData?.id
       };
 
       await onSubmit(formattedData);
@@ -104,7 +181,7 @@ const CustomerModal = ({ isOpen, onClose, onSubmit, initialData = null }) => {
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
       <div 
-        className="bg-white rounded-lg p-6 w-full max-w-md shadow-xl"
+        className="bg-white rounded-lg p-6 w-full max-w-md shadow-xl max-h-[90vh] overflow-y-auto"
         dir={isRTL ? 'rtl' : 'ltr'}
       >
         <div className="flex justify-between items-center mb-6">
@@ -183,9 +260,6 @@ const CustomerModal = ({ isOpen, onClose, onSubmit, initialData = null }) => {
                 ${errors.phone ? 'border-red-500' : 'border-gray-300'}`}
               dir="ltr"
             />
-            {errors.phone && (
-              <p className="text-red-500 text-sm mt-1">{errors.phone}</p>
-            )}
           </div>
 
           <div>
@@ -205,12 +279,88 @@ const CustomerModal = ({ isOpen, onClose, onSubmit, initialData = null }) => {
             )}
           </div>
 
+          {/* Users Section */}
+          {initialData && (
+            <div className="border-t pt-4">
+              <h3 className="text-lg font-semibold mb-4">Users</h3>
+              
+              {/* Add User Form */}
+              <div className="flex gap-2 mb-4">
+                <input
+                  type="email"
+                  value={newUserEmail}
+                  onChange={(e) => setNewUserEmail(e.target.value)}
+                  placeholder="Enter user email"
+                  className="flex-1 p-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
+                />
+                <button
+                  type="button"
+                  onClick={handleAddUser}
+                  disabled={isAddingUser}
+                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 
+                    disabled:bg-blue-400 flex items-center gap-2"
+                >
+                  {isAddingUser ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <UserPlus size={20} />
+                  )}
+                  Add
+                </button>
+              </div>
+
+              {/* Error Message */}
+              {userError && (
+                <div className="bg-red-50 border border-red-400 rounded-lg p-3 mb-4">
+                  <div className="flex items-center gap-2">
+                    <AlertCircle className="h-5 w-5 text-red-600" />
+                    <p className="text-red-700 text-sm">{userError}</p>
+                  </div>
+                </div>
+              )}
+
+              {/* Users List with Loading State */}
+              {isLoadingUsers ? (
+                <div className="flex justify-center py-4">
+                  <Loader2 className="h-6 w-6 animate-spin text-blue-600" />
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  {users.map(user => (
+                    <div 
+                      key={user.user_email} 
+                      className="flex items-center justify-between p-2 bg-gray-50 rounded-lg"
+                    >
+                      <div className="flex items-center gap-2">
+                        <User size={20} className="text-gray-500" />
+                        <span className="text-sm font-medium">{user.user_email}</span>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => handleRemoveUser(user.user_email)}
+                        className="text-red-600 hover:text-red-800 p-1"
+                      >
+                        <Trash2 size={16} />
+                      </button>
+                    </div>
+                  ))}
+                  {users.length === 0 && !userError && (
+                    <div className="text-center py-4 text-gray-500">
+                      No users found. Add users using the form above.
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
+
           {errors.submit && (
             <div className="bg-red-50 border border-red-400 rounded-lg p-3">
               <p className="text-red-700">{errors.submit}</p>
             </div>
           )}
 
+          {/* Submit Buttons */}
           <div className={`flex justify-end gap-3 ${isRTL ? 'flex-row-reverse' : ''}`}>
             <button
               type="button"
@@ -222,7 +372,8 @@ const CustomerModal = ({ isOpen, onClose, onSubmit, initialData = null }) => {
             </button>
             <button
               type="submit"
-              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2 disabled:bg-blue-400"
+              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 
+                transition-colors flex items-center gap-2 disabled:bg-blue-400"
               disabled={isSubmitting}
             >
               {isSubmitting && <Loader2 className="h-4 w-4 animate-spin" />}
