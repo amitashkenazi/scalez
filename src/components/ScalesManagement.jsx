@@ -4,6 +4,7 @@ import { Plus, Trash2, Loader2, RefreshCw, AlertCircle } from 'lucide-react';
 import apiService from '../services/api';
 import ScaleModal from './ScaleModal';
 import DeleteConfirmationModal from './modals/DeleteConfirmationModal';
+import { translations } from '../translations/translations';
 
 const formatDate = (timestamp) => {
   if (!timestamp) return 'N/A';
@@ -23,6 +24,7 @@ const ScalesManagement = () => {
   const [selectedScale, setSelectedScale] = useState(null);
 
   const { language } = useLanguage();
+  const t = translations[language];
   const isRTL = language === 'he';
 
   // Fetch initial data
@@ -31,9 +33,7 @@ const ScalesManagement = () => {
       setError(null);
       
       // Get all scales
-      const scalesResponse = await apiService.request('scales', { 
-        method: 'GET' 
-      });
+      const scalesResponse = await apiService.getScales();
 
       // Get latest measurements
       const measurementsResponse = await apiService.request('measurements', {
@@ -76,12 +76,9 @@ const ScalesManagement = () => {
 
   const handleAddScale = async (scaleData) => {
     try {
-      await apiService.request('scales/register', {
-        method: 'POST',
-        body: JSON.stringify({ 
-          id: scaleData.id,
-          name: scaleData.name 
-        })
+      await apiService.createScale({ 
+        id: scaleData.id,
+        name: scaleData.name 
       });
       
       await fetchData();
@@ -95,10 +92,8 @@ const ScalesManagement = () => {
     if (!selectedScale?.scale_id) return;
 
     try {
-      await apiService.request(`scales/${selectedScale.scale_id}`, {
-        method: 'DELETE'
-      });
-      
+      setError(null);
+      await apiService.deleteScale(selectedScale.scale_id);
       setRegisteredScales(prev => prev.filter(s => s.scale_id !== selectedScale.scale_id));
       setIsDeleteModalOpen(false);
       setSelectedScale(null);

@@ -1,5 +1,10 @@
 // src/services/tokenService.js
-import { CognitoRefreshToken } from 'amazon-cognito-identity-js';
+import { 
+    CognitoRefreshToken, 
+    CognitoUserPool,
+    CognitoUser,
+    AuthenticationDetails 
+} from 'amazon-cognito-identity-js';
 import { AuthenticationException } from './exceptions';
 
 class TokenService {
@@ -23,25 +28,22 @@ class TokenService {
     }
 
     startTokenRefreshTimer() {
-        // Clear any existing timer
         if (this.refreshTimer) {
             clearInterval(this.refreshTimer);
         }
 
-        // Check tokens every minute
         this.refreshTimer = setInterval(() => {
             if (this.shouldRefreshToken()) {
                 this.refreshTokenIfNeeded()
                     .catch(error => {
                         console.error('Token refresh failed in timer:', error);
-                        // If refresh fails, clear tokens and trigger auth flow
                         if (error instanceof AuthenticationException) {
                             this.clearTokens();
-                            window.dispatchEvent(new CustomEvent('auth:required'));
+                            window.dispatchEvent(new Event('auth:required'));
                         }
                     });
             }
-        }, 60000);
+        }, 30000); // Check every 30 seconds
     }
 
     shouldRefreshToken() {
@@ -51,7 +53,6 @@ class TokenService {
 
         const now = Date.now();
         const expirationTime = parseInt(this.tokenExpirationTime);
-        
         return now > (expirationTime - this.refreshBuffer);
     }
 
@@ -99,6 +100,7 @@ class TokenService {
             localStorage.removeItem('idToken');
             localStorage.removeItem('refreshToken');
             localStorage.removeItem('tokenExpirationTime');
+            localStorage.removeItem('userData');
         } catch (error) {
             console.error('Failed to clear tokens:', error);
         }
@@ -108,11 +110,17 @@ class TokenService {
             clearInterval(this.refreshTimer);
             this.refreshTimer = null;
         }
+
+        // Dispatch event to notify of auth required
+        window.dispatchEvent(new Event('auth:required'));
     }
 
     async refreshTokenIfNeeded() {
         // If tokens are still valid, return current token
         if (!this.shouldRefreshToken()) {
+            if (!this.idToken) {
+                throw new AuthenticationException('No token available');
+            }
             return this.idToken;
         }
 
@@ -130,6 +138,7 @@ class TokenService {
         try {
             this.refreshing = this._refreshToken();
             const result = await this.refreshing;
+            this.refreshAttempts = 0; // Reset attempts on success
             return result.idToken;
         } catch (error) {
             this.refreshAttempts++;
@@ -157,7 +166,13 @@ class TokenService {
                     RefreshToken: this.refreshToken
                 });
 
-                this.getCognitoUser()?.refreshSession(refreshToken, (err, session) => {
+                const cognitoUser = this.getCognitoUser();
+                
+                if (!cognitoUser) {
+                    throw new AuthenticationException('No Cognito user found');
+                }
+
+                cognitoUser.refreshSession(refreshToken, (err, session) => {
                     if (err) {
                         reject(err);
                         return;
@@ -194,10 +209,93 @@ class TokenService {
         }
     }
 
-    // Getter methods remain unchanged
-    getAccessToken() { return this.accessToken; }
-    getIdToken() { return this.idToken; }
-    getRefreshToken() { return this.refreshToken; }
+    getCognitoUser() {
+        try {
+            const poolData = {
+                UserPoolId: process.env.REACT_APP_COGNITO_USER_POOL_ID,
+                ClientId: process.env.REACT_APP_COGNITO_CLIENT_ID
+            };
+
+            const userPool = new CognitoUserPool(poolData);
+            return userPool.getCurrentUser();
+        } catch (error) {
+            console.error('Error getting Cognito user:', error);
+            return null;
+        }
+    }
+
+    // Public getters
+    getAccessToken() {
+        return this.accessToken;
+    }
+
+    getIdToken() {
+        return this.idToken;
+    }
+
+    getRefreshToken() {
+        return this.refreshToken;
+    }
+
+    isAuthenticated() {
+        if (!this.idToken || !this.tokenExpirationTime) {
+            return false;
+        }
+
+        const now = Date.now();
+        const expirationTime = parseInt(this.tokenExpirationTime);
+        return now < expirationTime;
+    }
+
+    getTokenExpiration() {
+        return this.tokenExpirationTime ? new Date(parseInt(this.tokenExpirationTime)) : null;
+    }
+
+    // Utility methods
+    decodeToken(token) {
+        try {
+            const base64Url = token.split('.')[1];
+            const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+            const jsonPayload = decodeURIComponent(atob(base64).split('').map(function(c) {
+                return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+            }).join(''));
+            return JSON.parse(jsonPayload);
+        } catch (error) {
+            console.error('Error decoding token:', error);
+            return null;
+        }
+    }
+
+    validateTokens() {
+        if (!this.accessToken || !this.idToken || !this.refreshToken) {
+            return false;
+        }
+
+        try {
+            const decodedAccess = this.decodeToken(this.accessToken);
+            const decodedId = this.decodeToken(this.idToken);
+
+            if (!decodedAccess || !decodedId) {
+                return false;
+            }
+
+            const now = Math.floor(Date.now() / 1000);
+            return decodedAccess.exp > now && decodedId.exp > now;
+        } catch (error) {
+            console.error('Token validation error:', error);
+            return false;
+        }
+    }
+
+    getTokenRemainingTime() {
+        if (!this.tokenExpirationTime) {
+            return 0;
+        }
+
+        const now = Date.now();
+        const expirationTime = parseInt(this.tokenExpirationTime);
+        return Math.max(0, expirationTime - now);
+    }
 }
 
 export const tokenService = new TokenService();

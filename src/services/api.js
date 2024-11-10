@@ -1,5 +1,6 @@
 // src/services/api.js
 import { tokenService } from './tokenService';
+import { AuthenticationException } from './exceptions';
 
 class ApiService {
     constructor() {
@@ -7,9 +8,122 @@ class ApiService {
         this.baseUrl = process.env.REACT_APP_API_URL || 'http://localhost:5100';
         this.retryCount = 1;
         this.retryDelay = 1000;
-    }
-    // Add these methods to your existing ApiService class
 
+        // Add event listeners for auth events
+        window.addEventListener('auth:required', () => {
+            this.handleAuthRequired();
+        });
+    }
+
+    handleAuthRequired() {
+        // Clear any stored auth data
+        tokenService.clearTokens();
+        localStorage.removeItem('userData');
+        
+        // Redirect to the root path with a query parameter
+        window.location.href = '/?authRequired=true';
+    }
+
+    async getHeaders() {
+        try {
+            const idToken = await tokenService.refreshTokenIfNeeded();
+            
+            return {
+                'Content-Type': 'application/json',
+                'Accept': 'application/json',
+                'Authorization': idToken ? `Bearer ${idToken}` : '',
+            };
+        } catch (error) {
+            console.error('Error getting headers:', error);
+            tokenService.clearTokens();
+            return {
+                'Content-Type': 'application/json',
+                'Accept': 'application/json',
+            };
+        }
+    }
+        
+    normalizePath(path) {
+        // Remove leading/trailing slashes and normalize multiple slashes
+        const cleanPath = path.replace(/^\/+|\/+$/g, '').replace(/\/+/g, '/');
+        return cleanPath ? `/${cleanPath}` : '';
+    }
+
+    sleep(ms) {
+        return new Promise(resolve => setTimeout(resolve, ms));
+    }
+
+    async request(endpoint, options = {}, retryCount = this.retryCount) {
+        const url = `${this.baseUrl}/${endpoint.replace(/^\/+/, '')}`;
+        
+        try {
+            // Always try to refresh token before making request
+            const idToken = await tokenService.refreshTokenIfNeeded();
+            
+            const headers = {
+                'Content-Type': 'application/json',
+                'Accept': 'application/json',
+                'Authorization': idToken ? `Bearer ${idToken}` : '',
+                ...options.headers,
+            };
+
+            const response = await fetch(url, { ...options, headers });
+
+            if (response.status === 401) {
+                console.log('Received 401, attempting token refresh...');
+                
+                try {
+                    const newIdToken = await tokenService.refreshTokenIfNeeded();
+                    
+                    if (!newIdToken) {
+                        throw new AuthenticationException('Failed to refresh token');
+                    }
+
+                    headers.Authorization = `Bearer ${newIdToken}`;
+                    const retryResponse = await fetch(url, { ...options, headers });
+                    
+                    if (!retryResponse.ok) {
+                        throw new AuthenticationException('Authentication required');
+                    }
+                    
+                    return this.parseResponse(retryResponse);
+                } catch (refreshError) {
+                    console.error('Token refresh failed:', refreshError);
+                    window.dispatchEvent(new Event('auth:required'));
+                    throw new AuthenticationException('Authentication required');
+                }
+            }
+
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+
+            return this.parseResponse(response);
+        } catch (error) {
+            if (error instanceof AuthenticationException) {
+                window.dispatchEvent(new Event('auth:required'));
+                throw error;
+            }
+            
+            // Retry on network errors
+            if (error.name === 'TypeError' && retryCount > 0) {
+                await this.sleep(this.retryDelay);
+                return this.request(endpoint, options, retryCount - 1);
+            }
+            
+            throw error;
+        }
+    }
+
+    async parseResponse(response) {
+        const contentType = response.headers.get('content-type');
+        if (contentType?.includes('application/json')) {
+            return response.json();
+        }
+        return response.text();
+    }
+
+    // Customer APIs
     async getCustomers() {
         return this.request('customers', {
             method: 'GET'
@@ -30,7 +144,6 @@ class ApiService {
     }
 
     async updateCustomer(customerId, customerData) {
-        console.log('Updating customer:', customerId, customerData);
         return this.request(`customers/${customerId}`, {
             method: 'PUT',
             body: JSON.stringify(customerData)
@@ -43,6 +156,7 @@ class ApiService {
         });
     }
 
+    // Product APIs
     async getProducts() {
         return this.request('products', {
             method: 'GET'
@@ -56,7 +170,6 @@ class ApiService {
     }
 
     async createProduct(productData) {
-        console.log('Creating product:', productData);
         return this.request('products', {
             method: 'POST',
             body: JSON.stringify(productData)
@@ -64,7 +177,6 @@ class ApiService {
     }
 
     async updateProduct(productId, productData) {
-        console.log('Updating product:', productId, productData);
         return this.request(`products/${productId}`, {
             method: 'PUT',
             body: JSON.stringify(productData)
@@ -82,119 +194,12 @@ class ApiService {
             method: 'GET'
         });
     }
-    
-
-    async getHeaders() {
-        try {
-            const accessToken = await tokenService.refreshTokenIfNeeded();
-            const idToken = await tokenService.getIdToken(); // You'll need to add this method to tokenService
-            
-            return {
-            'Content-Type': 'application/json',
-            'Accept': 'application/json',
-            'Authorization': idToken ? `Bearer ${idToken}` : '',
-            };
-        } catch (error) {
-            console.error('Error getting headers:', error);
-            // If token refresh fails, clear auth state and return basic headers
-            tokenService.clearTokens();
-            return {
-            'Content-Type': 'application/json',
-            'Accept': 'application/json',
-            };
-        }
-    }
-        
-    normalizePath(path) {
-        // Remove leading/trailing slashes and normalize multiple slashes
-        const cleanPath = path.replace(/^\/+|\/+$/g, '').replace(/\/+/g, '/');
-        return cleanPath ? `/${cleanPath}` : '';
-    }
-
-
-    // Token Management
-    setToken(token) {
-        this.token = token;
-    }
-
-    clearToken() {
-        this.token = null;
-    }
-
-    sleep(ms) {
-        return new Promise(resolve => setTimeout(resolve, ms));
-    }
-    debug(message, ...args) {
-        console.log(`[API Debug] ${message}`, ...args);
-    }
-
-    async request(endpoint, options = {}, retryCount = this.retryCount) {
-        const url = `${this.baseUrl}/${endpoint.replace(/^\/+/, '')}`;
-        console.log('API request to:', url, options);
-        try {
-            // Always try to refresh token before making request
-            const idToken = await tokenService.refreshTokenIfNeeded();
-            
-            const headers = {
-                'Content-Type': 'application/json',
-                'Accept': 'application/json',
-                'Authorization': idToken ? `Bearer ${idToken}` : '',
-                ...options.headers,
-            };
-
-            const response = await fetch(url, { ...options, headers });
-
-            if (response.status === 401) {
-                // Try to refresh token one more time if request fails
-                try {
-                    const newIdToken = await tokenService.refreshTokenIfNeeded();
-                    headers.Authorization = `Bearer ${newIdToken}`;
-                    const retryResponse = await fetch(url, { ...options, headers });
-                    
-                    if (!retryResponse.ok) {
-                        throw new Error(`HTTP error! status: ${retryResponse.status}`);
-                    }
-                    
-                    return this.parseResponse(retryResponse);
-                } catch (refreshError) {
-                    // If refresh fails, clear tokens and redirect to login
-                    tokenService.clearTokens();
-                    window.location.href = '/';
-                    throw new Error('Authentication required');
-                }
-            }
-
-            if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}`);
-            }
-
-            return this.parseResponse(response);
-        } catch (error) {
-            console.error('API request failed:', error);
-            
-            // Retry on network errors
-            if (error.name === 'TypeError' && retryCount > 0) {
-                await new Promise(resolve => setTimeout(resolve, this.retryDelay));
-                return this.request(endpoint, options, retryCount - 1);
-            }
-            
-            throw error;
-        }
-    }
 
     // Scale APIs
     async getScales() {
         return this.request('scales', {
             method: 'GET'
         });
-    }
-
-    async parseResponse(response) {
-        const contentType = response.headers.get('content-type');
-        if (contentType?.includes('application/json')) {
-            return response.json();
-        }
-        return response.text();
     }
 
     async getScale(scaleId) {
@@ -211,7 +216,7 @@ class ApiService {
     }
 
     async createScale(scaleData) {
-        return this.request('scales', {
+        return this.request('scales/register', {
             method: 'POST',
             body: JSON.stringify(scaleData)
         });
@@ -222,6 +227,8 @@ class ApiService {
             method: 'DELETE'
         });
     }
+
+    // Vendor APIs
     async getVendors() {
         return this.request('vendors', {
             method: 'GET'
@@ -265,6 +272,16 @@ class ApiService {
         });
     }
 
+    // Health check API
+    async checkHealth() {
+        try {
+            await this.request('health', { method: 'GET' });
+            return true;
+        } catch (error) {
+            console.error('Health check failed:', error);
+            return false;
+        }
+    }
 }
 
 // Create a singleton instance
