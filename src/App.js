@@ -12,7 +12,10 @@ import AdminRoute from './components/auth/AdminRoute';
 import SideMenu from './components/SideMenu';
 import LandingPage from './components/LandingPage';
 import SharedProductsView from './components/SharedProductsView';
+import MyAccountView from './components/MyAccountView';
 import { Menu as MenuIcon } from 'lucide-react';
+import CustomersMapView from './components/maps/CustomersMapView';
+
 
 function AppContent() {
   const { user } = useAuth();
@@ -130,6 +133,9 @@ function AppContent() {
         {activeView === 'scalesManagement' && <ScalesManagement />}
         {activeView === 'productsMng' && <ProductsManagementView />}
         {activeView === 'sharedProducts' && <SharedProductsView />}
+        {activeView === 'myAccount' && <MyAccountView />}
+        {activeView === 'customersMap' && <CustomersMapView />}
+
         {activeView === 'vendors' && (
           <AdminRoute>
             <VendorsView />

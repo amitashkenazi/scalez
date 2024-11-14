@@ -5,7 +5,9 @@ import {
   Scale,
   Truck,
   Users,
-  Share
+  Share,
+  UserCircle,
+  MapIcon
 } from 'lucide-react';
 import { useLanguage } from '../contexts/LanguageContext';
 import { translations } from '../translations/translations';
@@ -52,7 +54,18 @@ const SideMenu = ({ activeView, onViewChange }) => {
       view: "productsMng",
       description: t.productsDesc
     },
-    // Add this to the baseMenuItems array in SideMenu.jsx
+    {
+      icon: UserCircle, // Import UserCircle from lucide-react
+      label: "My Account",
+      view: "myAccount",
+      description: "Manage your account settings"
+    },
+    {
+      icon: MapIcon,
+      label: "Customers Map",
+      view: "customersMap",
+      description: "View customers and products on a map"
+    }
     
   ];
 

@@ -1,14 +1,16 @@
-import React from 'react';
+// src/components/UnauthenticatedView.jsx
+import React, { useState } from 'react';
 import { useLanguage } from '../contexts/LanguageContext';
 import { translations } from '../translations/translations';
 import LoginForm from './auth/LoginForm';
 import RegisterForm from './auth/RegisterForm';
 import VerifyEmailForm from './auth/VerifyEmailForm';
 import { Scale, Languages } from 'lucide-react';
+import LandingPage from './LandingPage';
 
 const UnauthenticatedView = () => {
-  const [view, setView] = React.useState('login');
-  const [registeredEmail, setRegisteredEmail] = React.useState('');
+  const [view, setView] = useState('landing'); // Change default view to 'landing'
+  const [registeredEmail, setRegisteredEmail] = useState('');
   const { language, toggleLanguage } = useLanguage();
   const t = translations[language];
   const isRTL = language === 'he';
@@ -22,6 +24,12 @@ const UnauthenticatedView = () => {
     window.location.reload();
   };
 
+  // If we're showing the landing page
+  if (view === 'landing') {
+    return <LandingPage onAuthClick={() => setView('login')} />;
+  }
+
+  // Otherwise show the auth forms
   return (
     <div 
       className="min-h-screen bg-gradient-to-b from-gray-50 to-gray-100 relative"
@@ -51,7 +59,7 @@ const UnauthenticatedView = () => {
               </div>
             </div>
             <h1 className="text-3xl font-bold mb-2 text-gray-900">
-              Scale Monitor System
+              {t.welcomeTitle}
             </h1>
             <h2 className="text-xl font-semibold mb-2 text-gray-800">
               {t.welcomeBack}
@@ -87,6 +95,14 @@ const UnauthenticatedView = () => {
                 onSuccess={() => setView('login')}
               />
             )}
+
+            {/* Back to Landing button */}
+            <button
+              onClick={() => setView('landing')}
+              className="mt-4 text-blue-600 hover:text-blue-800 text-sm"
+            >
+              ← Back to home
+            </button>
           </div>
 
           {/* Footer */}

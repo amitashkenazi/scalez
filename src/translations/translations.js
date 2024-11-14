@@ -23,7 +23,7 @@ export const translations = {
     failedToFetchProducts: "Failed to fetch products data",
 
     // Landing Page
-    welcomeTitle: "Scale Monitor System",
+    welcomeTitle: "Quntifyz - Scale Monitor System",
     welcomeSubtitle: "Select a module to begin",
     dashboardDesc: "View all scales and their current status in a comprehensive dashboard.",
     customersDesc: "Manage and monitor customer scales, products, and inventory levels.",
@@ -82,8 +82,8 @@ export const translations = {
     customerOverview: "Customer Overview",
     backToCustomers: "Back to Customers",
     // Menu
-    menuTitle: "Scale Monitor",
-    menuSubtitle: "Inventory Management System",
+    menuTitle: "Quantifyz",
+    menuSubtitle: "Weight It",
     version: "Version",
     copyright: "© 2024 Scale Monitor",
 
@@ -145,7 +145,7 @@ export const translations = {
     tryAgain: "Try Again",
     errorFetchingScales: "Failed to fetch scales data. Please try again later.",
     errorUpdatingScale: "Failed to update scale. Please try again later.",
-    productsManagement: "Products Management",
+    productsManagement: "Products@Customers",
     addProduct: "Add Product",
     
     selectCustomer: "Select Customer",
@@ -266,6 +266,64 @@ export const translations = {
     sharedProducts: "Products from Vendors",
     sharedProductsDesc: "View products that have been shared with you",
     noSharedProducts: "No products have been shared with you yet",
+
+    // In src/translations/translations.js, add these to both 'en' and 'he' objects:
+
+  // ... existing translations ...
+  landing: {
+    hero: {
+      signIn: "Sign In",
+        title: "Smart Inventory Management through Precision Weight Monitoring",
+        subtitle: "Take control of your inventory with real-time weight-based monitoring",
+        getStarted: "Get Started for Free",
+    },
+    features: {
+      title: "Powerful Features for Modern Inventory Management",
+      realTimeMonitoring: {
+        title: "Real-Time Monitoring",
+        description: "Track inventory levels across all locations in real-time with precise weight-based measurements"
+      },
+      analytics: {
+        title: "Advanced Analytics",
+        description: "Make data-driven decisions with comprehensive analytics and trend analysis"
+      },
+      smartAlerts: {
+        title: "Smart Alerts",
+        description: "Get instant notifications when inventory levels reach custom thresholds"
+      },
+      mobileAccess: {
+        title: "Mobile Access",
+        description: "Monitor your inventory from anywhere using our responsive web application"
+      }
+    },
+    benefits: {
+      title: "Why Choose Quantifyz?",
+      globalAccess: {
+        title: "Global Accessibility",
+        description: "Access your inventory data from anywhere in the world"
+      },
+      security: {
+        title: "Secure & Reliable",
+        description: "Enterprise-grade security with 99.9% uptime guarantee"
+      },
+      support: {
+        title: "24/7 Support",
+        description: "Round-the-clock customer support to help you succeed"
+      }
+    },
+    cta: {
+      title: "Ready to Transform Your Inventory Management?",
+      button: "Start Your Journey"
+    },
+    footer: {
+      slogan: "Smart Inventory Solutions",
+      rights: "© 2024 Quantifyz. All rights reserved.",
+      privacy: "Privacy Policy",
+      terms: "Terms of Service"
+    },
+    backToHome: "← Back to home"
+  }
+
   },
   he: {
     // General
@@ -284,7 +342,7 @@ export const translations = {
     to: "עד תאריך",
 
     // Landing Page
-    welcomeTitle: "מערכת ניטור משקל",
+    welcomeTitle: "Quntifyz - מערכת ניטור משקל",
     welcomeSubtitle: "בחר מודול להתחלה",
     dashboardDesc: "צפה בכל המשקלים ובסטטוס הנוכחי שלהם בלוח בקרה מקיף",
     customersDesc: "נהל ועקוב אחר משקלי הלקוחות, המוצרים ורמות המלאי",
@@ -319,8 +377,8 @@ export const translations = {
     customerOverview: "סקירת לקוחות",
     backToCustomers: "חזרה ללקוחות",
     // Menu
-    menuTitle: "ניטור משקל",
-    menuSubtitle: "מערכת ניהול מלאי",
+    menuTitle: "Qunatifyz",
+    menuSubtitle: "שקול!",
     version: "גרסה",
     copyright: "© 2024 ניטור משקל",
 
@@ -383,7 +441,7 @@ export const translations = {
     noData: "אין משקלים זמינים",
     errorFetchingScales: "שגיאה בטעינת נתוני המשקלים. אנא נסה שוב מאוחר יותר.",
     errorUpdatingScale: "שגיאה בעדכון המשקל. אנא נסה שוב מאוחר יותר.",
-    productsManagement: "ניהול מוצרים",
+    productsManagement: "מוצרים אצל לקוחות",
     addProduct: "הוסף מוצר",
     productName: "שם המוצר",
     selectCustomer: "בחר לקוח",
@@ -553,5 +611,61 @@ export const translations = {
     sharedProducts: "מוצרים מספקים",
     sharedProductsDesc: "צפה במוצרים ששותפו איתך",
     noSharedProducts: "טרם שותפו איתך מוצרים",
+    // In src/translations/translations.js, add these to both 'en' and 'he' objects:
+
+  // ... existing translations ...
+  landing: {
+    hero: {
+      title: "מערכת ניטור משקל Quantifyz",
+      subtitle: "ניהול מלאי חכם באמצעות ניטור משקל מדויק",
+      getStarted: "התחל עכשיו",
+      signIn: "התחבר",
+    },
+    features: {
+      title: "תכונות חזקות לניהול מלאי מודרני",
+      realTimeMonitoring: {
+        title: "ניטור בזמן אמת",
+        description: "עקוב אחר רמות המלאי בכל המיקומים בזמן אמת עם מדידות מדויקות מבוססות משקל"
+      },
+      analytics: {
+        title: "ניתוח מתקדם",
+        description: "קבל החלטות מבוססות נתונים עם ניתוח מקיף וניתוח מגמות"
+      },
+      smartAlerts: {
+        title: "התראות חכמות",
+        description: "קבל התראות מיידיות כאשר רמות המלאי מגיעות לספים מותאמים אישית"
+      },
+      mobileAccess: {
+        title: "גישה מהנייד",
+        description: "נטר את המלאי שלך מכל מקום באמצעות האפליקציה"
+      }
+    },
+    benefits: {
+      title: "למה לבחור ב-Quantifyz?",
+      globalAccess: {
+        title: "נגישות גלובלית",
+        description: "גש לנתוני המלאי שלך מכל מקום בעולם"
+      },
+      security: {
+        title: "מאובטח ואמין",
+        description: "אבטחה ברמה ארגונית עם 99.9% זמינות מובטחת"
+      },
+      support: {
+        title: "תמיכה 24/7",
+        description: "תמיכת לקוחות מסביב לשעון כדי לעזור לך להצליח"
+      }
+    },
+    cta: {
+      title: "מוכנים לשנות את ניהול המלאי שלכם?",
+      button: "התחל את המסע"
+    },
+    footer: {
+      slogan: "פתרונות מלאי חכמים",
+      rights: "© 2024 Quantifyz. כל הזכויות שמורות.",
+      privacy: "מדיניות פרטיות",
+      terms: "תנאי שימוש"
+    },
+    backToHome: "← חזרה לדף הבית"
+  }
   }
 };
