@@ -23,12 +23,6 @@ const UserAccountButton = () => {
   if (!user) return null;
 
   // Get the most appropriate display name
-console.log('user.displayName:', user.displayName);
-console.log('user.name:', user.name);
-console.log('user.firstName:', user.firstName);
-console.log('user.lastName:', user.lastName);
-console.log('user.email:', user.email);
-
 const displayName = user.email.length > 10 ? `${user.email.substring(0, 10)}...` : user.email;
 
   return (
