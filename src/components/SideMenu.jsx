@@ -43,6 +43,12 @@ const SideMenu = ({ activeView, onViewChange }) => {
       description: t.customersTableDesc
     },
     {
+      icon: Package,
+      label: "Orders",
+      view: "orders",
+      description: "Track and manage product orders"
+    },
+    {
       icon: Scale,
       label: t.scalesManagement,
       view: 'scalesManagement',

@@ -1,12 +1,24 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { translations } from '../../translations/translations';
-import { Loader2, AlertCircle, Map as MapIcon, List, RefreshCw, Route, Building2,  MapPin, 
-    Home,
-    ArrowRight,
-    ChevronRight,
-    ChevronDown, 
-   } from 'lucide-react';
+import { 
+  Package, 
+  AlertCircle, 
+  Loader2, 
+  RefreshCw, 
+  Scale, 
+  MessageSquare, 
+  Clock, 
+  List, 
+  Route,
+  Building2,
+  MapPin,
+  Home,
+  ArrowRight,
+  ChevronRight,
+  ChevronDown,
+  Map as MapIcon
+} from 'lucide-react';
 import apiService from '../../services/api';
 
 import {
@@ -37,6 +49,44 @@ const MAP_OPTIONS = {
   ]
 };
 
+// Helper function to check if customer has pending delivery
+const hasWaitingDelivery = (customer, orders) => {
+  return orders.some(order => {
+    const [hebrewName, englishName] = customer.name.split(' - ');
+    return (order.customer_name === hebrewName || order.customer_name === englishName) && 
+           order.status === 'waiting_for_delivery';
+  });
+};
+// Add this function near the top of the file with other helper functions
+const createCustomMarkerIcon = (weight, thresholds, hasPendingDelivery, isVendor = false) => {
+  // Get base color based on thresholds or use blue for vendor
+  const baseColor = isVendor ? '#3B82F6' : getStatusColor(weight, thresholds?.upper, thresholds?.lower);
+  const strokeColor = hasPendingDelivery ? '#9333EA' : '#FFFFFF'; // Purple for pending delivery
+  const strokeWidth = hasPendingDelivery ? 3 : 2;
+  
+  const displayText = isVendor ? 'HQ' : (weight ? Math.round(weight) : '?');
+
+  // Create SVG content
+  const svgContent = `
+    <svg width="40" height="40" viewBox="0 0 40 40" xmlns="http://www.w3.org/2000/svg">
+      <circle cx="20" cy="20" r="18" fill="${baseColor}" 
+        stroke="${strokeColor}" stroke-width="${strokeWidth}"/>
+      <text x="20" y="20" font-size="12" fill="white" 
+        text-anchor="middle" dominant-baseline="middle" font-family="Arial">
+        ${displayText}
+      </text>
+    </svg>
+  `;
+
+  return {
+    url: 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(svgContent),
+    scaledSize: new window.google.maps.Size(40, 40),
+    anchor: new window.google.maps.Point(20, 20),
+  };
+};
+
+
+
 // Utility function for status colors
 const getStatusColor = (value, upper, lower) => {
   if (!value || !upper || !lower) return '#6B7280';
@@ -45,28 +95,40 @@ const getStatusColor = (value, upper, lower) => {
   return '#DC2626';
 };
 
-const CustomerCard = ({ customer, onLocationClick, isSelected, onSelect }) => {
+const CustomerCard = ({ customer, onLocationClick, isSelected, onSelect, orders }) => {
   const { language } = useLanguage();
   const [hebrewName, englishName] = customer.name?.split(' - ') || ['', ''];
   const displayName = language === 'he' ? hebrewName : englishName;
+  const isPendingDelivery = hasWaitingDelivery(customer, orders);
+  const isRTL = language === 'he';
 
   return (
     <div
-      className={`p-4 rounded-lg cursor-pointer hover:bg-gray-50 border transition-colors ${isSelected ? 'border-blue-500 bg-blue-50' : ''
-        }`}
+      className={`p-4 rounded-lg cursor-pointer hover:bg-gray-50 border-2 transition-colors
+        ${isSelected ? 'border-blue-500 bg-blue-50' : 'border-gray-200'}
+        ${isPendingDelivery ? 'border-purple-500 bg-purple-50' : ''}
+        ${isPendingDelivery && isSelected ? 'border-purple-700' : ''}`}
     >
-      <div className="flex items-center justify-between mb-2">
-        <div className="font-medium text-lg">{displayName}</div>
+      <div className="flex justify-between items-start mb-2">
+        <div className="font-medium text-lg">
+          {displayName}
+          {isPendingDelivery && (
+            <span className="ml-2 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-800">
+              Pending Delivery
+            </span>
+          )}
+        </div>
         <div className="flex items-center gap-2">
           <button
             onClick={(e) => {
               e.stopPropagation();
               onSelect(customer);
             }}
-            className={`px-3 py-1 rounded ${isSelected
-              ? 'bg-blue-500 text-white'
-              : 'bg-gray-100 hover:bg-gray-200'
-              }`}
+            className={`px-3 py-1 rounded ${
+              isSelected
+                ? 'bg-blue-500 text-white'
+                : 'bg-gray-100 hover:bg-gray-200'
+            }`}
           >
             {isSelected ? 'Selected' : 'Select'}
           </button>
@@ -296,7 +358,8 @@ const Map = ({
   selectedCustomers,
   setSelectedCustomers,
   directionsResponse,
-  onDirectionsChanged
+  onDirectionsChanged,
+  orders
 }) => {
   const mapRef = useRef();
   const [vendorLocation, setVendorLocation] = useState(null);
@@ -309,7 +372,6 @@ const Map = ({
   useEffect(() => {
     const fetchVendorAddress = async () => {
       try {
-        // Get vendor details from the API
         const vendorDetails = await apiService.request('vendors/me', {
           method: 'GET'
         });
@@ -320,7 +382,6 @@ const Map = ({
 
         setVendorAddress(vendorDetails.address);
 
-        // Geocode the address
         try {
           const response = await fetch(
             `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(vendorDetails.address)}&countrycodes=il`
@@ -341,7 +402,6 @@ const Map = ({
           }
         } catch (geocodeError) {
           console.warn('Geocoding error:', geocodeError);
-          // Fallback to Tel Aviv coordinates
           setVendorLocation({ lat: 32.0853, lng: 34.7818 });
           setLocationError('Could not geocode vendor address. Using default location.');
         }
@@ -364,13 +424,11 @@ const Map = ({
 
     const directionsService = new window.google.maps.DirectionsService();
 
-    // Create waypoints from selected customers
     const waypoints = selectedCustomers.map(customer => ({
       location: new window.google.maps.LatLng(customer.lat, customer.lng),
       stopover: true
     }));
 
-    // Request directions starting and ending at vendor's location
     directionsService.route(
       {
         origin: new window.google.maps.LatLng(vendorLocation.lat, vendorLocation.lng),
@@ -387,7 +445,6 @@ const Map = ({
         if (status === window.google.maps.DirectionsStatus.OK) {
           onDirectionsChanged(result);
 
-          // Fit bounds to include vendor location and all stops
           if (mapRef.current) {
             const bounds = new window.google.maps.LatLngBounds();
             bounds.extend(vendorLocation);
@@ -407,7 +464,6 @@ const Map = ({
     );
   }, [selectedCustomers, vendorLocation, onDirectionsChanged]);
 
-  // Debounced route calculation
   const debouncedCalculateRoute = useCallback(() => {
     if (calculationTimeoutRef.current) {
       clearTimeout(calculationTimeoutRef.current);
@@ -420,7 +476,6 @@ const Map = ({
     }
   }, [calculateRoute, vendorLocation, selectedCustomers]);
 
-  // Cleanup timeout on unmount
   useEffect(() => {
     return () => {
       if (calculationTimeoutRef.current) {
@@ -429,16 +484,16 @@ const Map = ({
     };
   }, []);
 
-  // Trigger route calculation when selection changes
   useEffect(() => {
     debouncedCalculateRoute();
   }, [selectedCustomers, vendorLocation, debouncedCalculateRoute]);
 
-  const getStatusColor = (weight, upper, lower) => {
-    if (!weight || !upper || !lower) return '#6B7280';
-    if (weight >= upper) return '#22C55E';
-    if (weight >= lower) return '#F97316';
-    return '#DC2626';
+  const getMarkerIcon = (customer) => {
+    const isPendingDelivery = hasWaitingDelivery(customer, orders);
+    const weight = customer.products?.[0]?.measurement?.weight;
+    const thresholds = customer.products?.[0]?.thresholds;
+    
+    return createCustomMarkerIcon(weight, thresholds, isPendingDelivery);
   };
 
   return (
@@ -453,20 +508,13 @@ const Map = ({
       <GoogleMap
         mapContainerClassName="rounded-lg"
         mapContainerStyle={{ height: '600px', width: '100%' }}
-        center={vendorLocation || { lat: 32.0853, lng: 34.7818 }}
+        center={vendorLocation || MAP_CENTER}
         zoom={13}
-        options={{
-          zoomControl: true,
-          mapTypeControl: false,
-          streetViewControl: false,
-          fullscreenControl: false,
-          gestureHandling: 'cooperative',
-        }}
+        options={MAP_OPTIONS}
         onLoad={(map) => {
           mapRef.current = map;
           if (onMapLoad) onMapLoad(map);
 
-          // Initial bounds fitting
           if (customers.length > 0) {
             const bounds = new window.google.maps.LatLngBounds();
             customers.forEach(customer => {
@@ -479,30 +527,24 @@ const Map = ({
           }
         }}
       >
-        {/* Vendor Location Marker */}
         {vendorLocation && (
           <MarkerF
             position={vendorLocation}
-            icon={{
-              path: window.google.maps.SymbolPath.CIRCLE,
-              scale: 12,
-              fillColor: '#3B82F6',
-              fillOpacity: 1,
-              strokeWeight: 3,
-              strokeColor: '#FFFFFF'
-            }}
+            icon={createCustomMarkerIcon(null, null, false, true)}
+            onClick={() => setSelectedMarker('vendor')}
           >
-            <InfoWindowF position={vendorLocation}>
-              <div className="p-2">
-                <p className="font-medium">Your Company Location</p>
-                <p className="text-sm text-gray-600">{vendorAddress}</p>
-                <p className="text-sm text-gray-600">Starting and ending point</p>
-              </div>
-            </InfoWindowF>
+            {selectedMarker === 'vendor' && (
+              <InfoWindowF position={vendorLocation} onCloseClick={() => setSelectedMarker(null)}>
+                <div className="p-2">
+                  <p className="font-medium">Your Company Location</p>
+                  <p className="text-sm text-gray-600">{vendorAddress}</p>
+                  <p className="text-sm text-gray-600">Starting and ending point</p>
+                </div>
+              </InfoWindowF>
+            )}
           </MarkerF>
         )}
 
-        {/* Customer Markers */}
         {customers
           .filter(customer => !selectedCustomers.includes(customer))
           .map((customer) => (
@@ -510,23 +552,12 @@ const Map = ({
               key={customer.customer_id}
               position={{ lat: customer.lat, lng: customer.lng }}
               onClick={() => setSelectedMarker(customer)}
-              icon={{
-                path: window.google.maps.SymbolPath.CIRCLE,
-                scale: 10,
-                fillColor: getStatusColor(
-                  customer.products?.[0]?.measurement?.weight,
-                  customer.products?.[0]?.thresholds?.upper,
-                  customer.products?.[0]?.thresholds?.lower
-                ),
-                fillOpacity: 1,
-                strokeWeight: 2,
-                strokeColor: '#FFFFFF'
-              }}
+              icon={getMarkerIcon(customer)}
             />
           ))}
 
-        {/* Selected Customer Info Window */}
-        {selectedMarker && (
+        {selectedMarker && selectedMarker !== 'vendor' && (
+          // In the InfoWindow content, add or modify the weight display:
           <InfoWindowF
             position={{ lat: selectedMarker.lat, lng: selectedMarker.lng }}
             onCloseClick={() => setSelectedMarker(null)}
@@ -535,9 +566,14 @@ const Map = ({
               <div className="font-bold mb-1">{selectedMarker.name}</div>
               <div className="text-sm text-gray-600 mb-2">{selectedMarker.address}</div>
               {selectedMarker.products?.map(product => (
-                <div key={product.product_id} className="text-sm">
-                  <span>{product.name}: </span>
-                  <span className="font-medium">
+                <div key={product.product_id} className="text-sm flex justify-between items-center">
+                  <span>{product.name}</span>
+                  <span className={`font-medium ${
+                    !product.measurement?.weight ? 'text-gray-500' :
+                    product.measurement.weight >= product.thresholds?.upper ? 'text-green-600' :
+                    product.measurement.weight >= product.thresholds?.lower ? 'text-orange-500' :
+                    'text-red-600'
+                  }`}>
                     {product.measurement?.weight ?
                       `${Math.round(product.measurement.weight)} kg` :
                       'No data'
@@ -545,11 +581,15 @@ const Map = ({
                   </span>
                 </div>
               ))}
+              {hasWaitingDelivery(selectedMarker, orders) && (
+                <div className="mt-2 px-2 py-1 bg-purple-100 text-purple-800 text-sm font-medium rounded">
+                  Pending Delivery
+                </div>
+              )}
             </div>
           </InfoWindowF>
         )}
 
-        {/* Route Display */}
         {directionsResponse && (
           <DirectionsRenderer
             directions={directionsResponse}
@@ -568,7 +608,7 @@ const Map = ({
       {isCalculatingRoute && (
         <div className="absolute inset-0 bg-white/50 flex items-center justify-center">
           <div className="bg-white p-4 rounded-lg shadow-lg flex items-center gap-2">
-            <Loader2 className="h-5 w-5 animate-spin text-blue-600" />
+          <Loader2 className="h-5 w-5 animate-spin text-blue-600" />
             <span>Calculating optimal route...</span>
           </div>
         </div>
@@ -577,11 +617,10 @@ const Map = ({
   );
 };
 
-
-
-
+// Main CustomersMapView Component
 const CustomersMapView = () => {
   const [customers, setCustomers] = useState([]);
+  const [orders, setOrders] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
   const [isRefreshing, setIsRefreshing] = useState(false);
@@ -603,14 +642,12 @@ const CustomersMapView = () => {
   });
 
   const geocodeAddress = async (address) => {
-    // Default coordinates for major cities
     const DEFAULT_COORDS = {
       tel_aviv: { lat: 32.0853, lng: 34.7818 },
       jerusalem: { lat: 31.7683, lng: 35.2137 },
       haifa: { lat: 32.7940, lng: 34.9896 }
     };
 
-    // City matching patterns
     const cityMatches = {
       'תל אביב': DEFAULT_COORDS.tel_aviv,
       'tel aviv': DEFAULT_COORDS.tel_aviv,
@@ -620,7 +657,6 @@ const CustomersMapView = () => {
       'haifa': DEFAULT_COORDS.haifa
     };
 
-    // Check for known cities first
     for (const [city, coords] of Object.entries(cityMatches)) {
       if (address.toLowerCase().includes(city.toLowerCase())) {
         return {
@@ -631,7 +667,6 @@ const CustomersMapView = () => {
     }
 
     try {
-      // Try Nominatim as fallback
       const response = await fetch(
         `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(address)}&countrycodes=il`
       );
@@ -649,7 +684,6 @@ const CustomersMapView = () => {
       throw new Error('Location not found');
     } catch (err) {
       console.warn('Geocoding fallback for address:', address, err);
-      // Fallback to Tel Aviv with random offset
       return {
         lat: DEFAULT_COORDS.tel_aviv.lat + (Math.random() - 0.5) * 0.02,
         lng: DEFAULT_COORDS.tel_aviv.lng + (Math.random() - 0.5) * 0.02
@@ -665,10 +699,13 @@ const CustomersMapView = () => {
     setError(null);
 
     try {
-      const [customersResponse, productsResponse] = await Promise.all([
+      const [customersResponse, productsResponse, ordersResponse] = await Promise.all([
         apiService.getCustomers(),
-        apiService.getProducts()
+        apiService.getProducts(),
+        apiService.request('orders', { method: 'GET' })
       ]);
+
+      setOrders(ordersResponse);
 
       const measurementPromises = productsResponse.map(product =>
         apiService.request(`measurements/scale/${product.scale_id}/latest`, {
@@ -701,7 +738,6 @@ const CustomersMapView = () => {
       setCustomers(enrichedCustomers);
       setLastUpdate(new Date());
 
-      // Fit bounds if we have customers and map is ready
       if (mapInstance && enrichedCustomers.length > 0) {
         const bounds = new window.google.maps.LatLngBounds();
         enrichedCustomers.forEach(customer => {
@@ -711,7 +747,7 @@ const CustomersMapView = () => {
       }
     } catch (err) {
       console.error('Error fetching data:', err);
-      setError(err.message || t.errorFetchingData || 'Error fetching data');
+      setError(err.message || 'Failed to fetch data');
     } finally {
       setIsLoading(false);
       setIsRefreshing(false);
@@ -747,7 +783,6 @@ const CustomersMapView = () => {
       const route = response.routes[0];
       const legs = route.legs;
 
-      // Calculate total metrics
       const totalDistance = legs.reduce((acc, leg) => acc + leg.distance.value, 0) / 1000;
       const totalTime = legs.reduce((acc, leg) =>
         acc + (leg.duration_in_traffic?.value || leg.duration.value), 0) / 60;
@@ -846,6 +881,7 @@ const CustomersMapView = () => {
                     c => c.customer_id === customer.customer_id
                   )}
                   onSelect={handleCustomerSelect}
+                  orders={orders}
                 />
               ))}
             </div>
@@ -861,9 +897,10 @@ const CustomersMapView = () => {
               setSelectedMarker={setSelectedMarker}
               onMapLoad={setMapInstance}
               selectedCustomers={selectedCustomers}
-              setSelectedCustomers={setSelectedCustomers}  // Add this prop
+              setSelectedCustomers={setSelectedCustomers}
               directionsResponse={directionsResponse}
               onDirectionsChanged={handleDirectionsChanged}
+              orders={orders}
             />
           </div>
         </div>
@@ -894,8 +931,8 @@ const CustomersMapView = () => {
               >
                 Clear Route
               </button>
-            </div>
-          </div>
+        </div>
+      </div>
 
           <RouteSteps
             directionsResponse={directionsResponse}
