@@ -67,10 +67,14 @@ const ProductCard = ({ product, scale, customers, latestMeasurement }) => {
   const { language } = useLanguage();
   const t = translations[language];
   const isRTL = language === 'he';
-  console.log('ProductCard scale:', scale.scale_id);
+
+  // Add safety checks
+  if (!product || !scale) {
+    return null;
+  }
+
   const statusInfo = getStatusInfo(latestMeasurement?.weight, product.thresholds);
 
-  // Format timestamp
   const formatDate = (timestamp) => {
     if (!timestamp) return t.noData;
     return new Date(timestamp).toLocaleString(language === 'he' ? 'he-IL' : 'en-US', {
@@ -83,9 +87,10 @@ const ProductCard = ({ product, scale, customers, latestMeasurement }) => {
     });
   };
 
-  // Get customer data
   const getCustomerInfo = () => {
-    const customer = customers?.find(c => c.customer_id === product.customer_id);
+    if (!customers || !product.customer_id) return null;
+    
+    const customer = customers.find(c => c.customer_id === product.customer_id);
     if (!customer) return null;
 
     const [hebrewName, englishName] = (customer.name || '').split(' - ');
@@ -98,12 +103,11 @@ const ProductCard = ({ product, scale, customers, latestMeasurement }) => {
 
   const customerInfo = getCustomerInfo();
 
-  // Get WhatsApp link with message
   const getWhatsAppLink = () => {
     if (!customerInfo?.phone) return null;
 
     const message = encodeURIComponent(
-      `${t.runningLowMessage} ${product.name}\n${t.productLeft}: ${latestMeasurement?.weight}kg\n${t.pleaseResupply}`
+      `${t.runningLowMessage} ${product.name || ''}\n${t.productLeft}: ${latestMeasurement?.weight || 0}kg\n${t.pleaseResupply}`
     );
     
     const cleanPhone = customerInfo.phone.replace(/\D/g, '');
@@ -121,15 +125,9 @@ const ProductCard = ({ product, scale, customers, latestMeasurement }) => {
           cursor-pointer group ${statusInfo.bgColor} relative overflow-hidden`}
         onClick={() => setIsModalOpen(true)}
       >
-        {/* New hover overlay with history button */}
-        <div className="absolute inset-0 bg-black/0 group-hover:bg-black/5 transition-all duration-300 
-          flex items-center justify-center opacity-0 group-hover:opacity-100">
-          
-        </div>
-
         <div className="flex justify-between items-start mb-4">
           <div className="space-y-1">
-            <h3 className="text-2xl font-bold">{product.name}</h3>
+            <h3 className="text-2xl font-bold">{product.name || 'Unnamed Product'}</h3>
             {customerInfo && (
               <p className="text-gray-600">{customerInfo.displayName}</p>
             )}
@@ -137,7 +135,7 @@ const ProductCard = ({ product, scale, customers, latestMeasurement }) => {
               <div className="flex items-center gap-1 text-gray-400">
                 <Scale size={14} />
                 <span className="text-gray-500">
-                  {scale?.scale_name || `Scale ${scale?.scale_id}` || 'Unknown Scale'}
+                  {scale.scale_name || `Scale ${scale.scale_id}` || 'Unknown Scale'}
                 </span>
               </div>
               <div className="flex items-center gap-1 text-gray-400">
@@ -177,11 +175,11 @@ const ProductCard = ({ product, scale, customers, latestMeasurement }) => {
         <div className="space-y-2">
           <div className="flex justify-between items-center">
             <span className="text-gray-600">{t.upperThreshold}:</span>
-            <span className="text-green-600 font-medium">{product.thresholds?.upper} kg</span>
+            <span className="text-green-600 font-medium">{product.thresholds?.upper || 0} kg</span>
           </div>
           <div className="flex justify-between items-center">
             <span className="text-gray-600">{t.lowerThreshold}:</span>
-            <span className="text-red-600 font-medium">{product.thresholds?.lower} kg</span>
+            <span className="text-red-600 font-medium">{product.thresholds?.lower || 0} kg</span>
           </div>
         </div>
 
@@ -194,7 +192,7 @@ const ProductCard = ({ product, scale, customers, latestMeasurement }) => {
             } transition-all duration-300`}
             style={{
               width: latestMeasurement?.weight ? 
-                `${Math.min(100, (latestMeasurement.weight / product.thresholds?.upper) * 100)}%` : 
+                `${Math.min(100, (latestMeasurement.weight / (product.thresholds?.upper || 100)) * 100)}%` : 
                 '0%'
             }}
           />
