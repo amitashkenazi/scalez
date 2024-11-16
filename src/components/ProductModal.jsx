@@ -70,7 +70,7 @@ const ProductModal = ({
             lower: initialData.thresholds?.lower || 8
           }
         });
-      } else if (!formData.customer_id) {
+      } else {
         setFormData({
           name: '',
           customer_id: '',
@@ -91,18 +91,22 @@ const ProductModal = ({
     if (!formData.name.trim()) {
       newErrors.name = 'Product name is required';
     }
-    if (!formData.customer_id) {
-      newErrors.customer_id = 'Customer selection is required';
+
+    // Only validate thresholds if they've been modified or if we're editing an existing product
+    const initialUpper = initialData?.thresholds?.upper || 40;
+    const initialLower = initialData?.thresholds?.lower || 8;
+    const thresholdsChanged = formData.thresholds.upper !== initialUpper || 
+                             formData.thresholds.lower !== initialLower;
+
+    if (thresholdsChanged) {
+      if (formData.thresholds.upper <= formData.thresholds.lower) {
+        newErrors.thresholds = 'Upper threshold must be greater than lower threshold';
+      }
+      if (formData.thresholds.upper <= 0 || formData.thresholds.lower < 0) {
+        newErrors.thresholds = 'Thresholds must be positive numbers';
+      }
     }
-    if (!formData.scale_id) {
-      newErrors.scale_id = 'Scale selection is required';
-    }
-    if (formData.thresholds.upper <= formData.thresholds.lower) {
-      newErrors.thresholds = 'Upper threshold must be greater than lower threshold';
-    }
-    if (formData.thresholds.upper <= 0 || formData.thresholds.lower < 0) {
-      newErrors.thresholds = 'Thresholds must be positive numbers';
-    }
+
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -115,9 +119,9 @@ const ProductModal = ({
     try {
       const productData = {
         name: formData.name.trim(),
-        customer_id: formData.customer_id,
+        customer_id: formData.customer_id || null,
         customer_name: formData.customer_name,
-        scale_id: formData.scale_id,
+        scale_id: formData.scale_id || null,
         thresholds: {
           upper: Number(formData.thresholds.upper),
           lower: Number(formData.thresholds.lower)
@@ -143,8 +147,6 @@ const ProductModal = ({
         address: customerData.address
       });
 
-      console.log('New customer response:', newCustomer);
-
       const customer_id = newCustomer.customer_id || newCustomer.id;
       if (!customer_id) {
         throw new Error('Invalid customer ID from server response');
@@ -156,8 +158,6 @@ const ProductModal = ({
         name: newCustomer.name
       };
 
-      console.log('Formatted customer:', formattedCustomer);
-
       if (onCustomerAdded) {
         onCustomerAdded(formattedCustomer);
       }
@@ -168,18 +168,15 @@ const ProductModal = ({
           customer_id: customer_id,
           customer_name: formattedCustomer.name
         };
-        console.log('Updated form data:', updatedData);
         return updatedData;
       });
 
       setIsCustomerModalOpen(false);
-
       setErrors(prev => {
         const newErrors = { ...prev };
         delete newErrors.customer_id;
         return newErrors;
       });
-
     } catch (err) {
       console.error('Error creating customer:', err);
       setErrors({ customer: err.message || 'Failed to create customer' });
@@ -281,9 +278,6 @@ const ProductModal = ({
                 + Create New Customer
               </option>
             </select>
-            {errors.customer_id && (
-              <p className="text-red-500 text-sm mt-1">{errors.customer_id}</p>
-            )}
           </div>
 
           <div>
@@ -301,9 +295,7 @@ const ProductModal = ({
               disabled={isSubmitting || isLoadingScales}
             >
               <option value="">
-                {isLoadingScales ? 'Loading scales...' : 
-                 scalesError ? 'Error loading scales' : 
-                 'Select a scale'}
+                {isLoadingScales ? 'Loading scales...' : 'None (Optional)'}
               </option>
               {!isLoadingScales && !scalesError && availableScales.map(scale => (
                 <option 
@@ -317,12 +309,6 @@ const ProductModal = ({
             </select>
             {errors.scale_id && (
               <p className="text-red-500 text-sm mt-1">{errors.scale_id}</p>
-            )}
-            {scalesError && (
-              <p className="text-red-500 text-sm mt-1">
-                <AlertCircle className="inline-block w-4 h-4 mr-1" />
-                {scalesError}
-              </p>
             )}
           </div>
 

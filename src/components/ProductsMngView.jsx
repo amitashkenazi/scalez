@@ -60,7 +60,9 @@ export default function ProductsManagementView() {
 
   const handleAddProduct = async (productData) => {
     try {
+      console.log('productData', productData);
       const newProduct = await apiService.createProduct(productData);
+      console.log('newProduct', newProduct);
       setProducts(prev => [...prev, newProduct]);
       setIsModalOpen(false);
       showSuccessMessage(t.productAdded || 'Product added successfully');
@@ -71,6 +73,7 @@ export default function ProductsManagementView() {
 
   const handleEditProduct = async (productData) => {
     try {
+      console.log('productData', productData);
       const updatedProduct = await apiService.updateProduct(productData.product_id, productData);
       setProducts(prev => prev.map(p => p.product_id === updatedProduct.product_id ? updatedProduct : p));
       setIsModalOpen(false);
@@ -113,6 +116,8 @@ export default function ProductsManagementView() {
       </div>
     );
   }
+  console.log('products', products);
+  console.log('customers', customers);
 
   return (
     <div className="p-6 max-w-7xl mx-auto" dir={isRTL ? 'rtl' : 'ltr'}>
