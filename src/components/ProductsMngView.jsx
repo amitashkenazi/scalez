@@ -1,23 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { useLanguage } from '../contexts/LanguageContext';
 import { translations } from '../translations/translations';
-import { Plus, Pencil, Trash2, Loader2, RefreshCw, AlertCircle,  Scale } from 'lucide-react';
+import { Plus, Pencil, Trash2, Loader2, RefreshCw, AlertCircle } from 'lucide-react';
 import apiService from '../services/api';
 import ProductModal from './ProductModal';
 import DeleteConfirmationModal from './modals/DeleteConfirmationModal';
-import useScaleData from '../hooks/useScaleData';
-
-// Component to display thresholds in the product table
-const ProductThreshold = ({ thresholds }) => (
-  <div className="flex flex-col gap-1">
-    <span className="text-sm text-green-600">
-      Upper: {thresholds?.upper || 'N/A'} kg
-    </span>
-    <span className="text-sm text-red-600">
-      Lower: {thresholds?.lower || 'N/A'} kg
-    </span>
-  </div>
-);
 
 export default function ProductsManagementView() {
   const [products, setProducts] = useState([]);
@@ -27,9 +14,6 @@ export default function ProductsManagementView() {
   const [successMessage, setSuccessMessage] = useState('');
   const [isRefreshing, setIsRefreshing] = useState(false);
   
-  // Get scales data using the hook
-  const { scales, isLoading: isLoadingScales } = useScaleData();
-  
   // Modal states
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
@@ -38,11 +22,6 @@ export default function ProductsManagementView() {
   const { language } = useLanguage();
   const t = translations[language];
   const isRTL = language === 'he';
-
-  // Fetch customers and products on component mount
-  useEffect(() => {
-    fetchInitialData();
-  }, []);
 
   const fetchInitialData = async () => {
     try {
@@ -61,6 +40,10 @@ export default function ProductsManagementView() {
     }
   };
 
+  useEffect(() => {
+    fetchInitialData();
+  }, []);
+
   const handleRefresh = async () => {
     setIsRefreshing(true);
     try {
@@ -77,51 +60,23 @@ export default function ProductsManagementView() {
 
   const handleAddProduct = async (productData) => {
     try {
-      const newProductData = {
-        name: productData.name,
-        customer_id: productData.customer_id,
-        customer_name: productData.customer_name,
-        scale_id: productData.scale_id,
-        thresholds: {
-          upper: parseFloat(productData.thresholds.upper),
-          lower: parseFloat(productData.thresholds.lower)
-        }
-      };
-
-      const newProduct = await apiService.createProduct(newProductData);
+      const newProduct = await apiService.createProduct(productData);
       setProducts(prev => [...prev, newProduct]);
+      setIsModalOpen(false);
       showSuccessMessage(t.productAdded || 'Product added successfully');
     } catch (err) {
-      console.error('Error creating product:', err);
       throw new Error(err.message || 'Failed to add product');
     }
   };
 
   const handleEditProduct = async (productData) => {
     try {
-      const updatedProductData = {
-        product_id: productData.product_id,
-        name: productData.name,
-        customer_id: productData.customer_id,
-        customer_name: productData.customer_name,
-        scale_id: productData.scale_id,
-        thresholds: {
-          upper: parseFloat(productData.thresholds.upper),
-          lower: parseFloat(productData.thresholds.lower)
-        }
-      };
-
-      const updatedProduct = await apiService.updateProduct(
-        productData.product_id, 
-        updatedProductData
-      );
-      
-      setProducts(prev => prev.map(p => 
-        p.product_id === productData.product_id ? updatedProduct : p
-      ));
+      const updatedProduct = await apiService.updateProduct(productData.product_id, productData);
+      setProducts(prev => prev.map(p => p.product_id === updatedProduct.product_id ? updatedProduct : p));
+      setIsModalOpen(false);
+      setSelectedProduct(null);
       showSuccessMessage(t.productUpdated || 'Product updated successfully');
     } catch (err) {
-      console.error('Error updating product:', err);
       throw new Error(err.message || 'Failed to update product');
     }
   };
@@ -140,37 +95,34 @@ export default function ProductsManagementView() {
     }
   };
 
-  const getCustomerName = (customerId) => {
-    const customer = customers.find(c => c.customer_id === customerId);
-    return customer ? customer.name : (t.unassigned || 'Unassigned');
+  const handleNewCustomerAdded = (newCustomer) => {
+    // Make sure we format the customer data consistently
+    const formattedCustomer = {
+      ...newCustomer,
+      customer_id: newCustomer.customer_id || newCustomer.id,
+      name: newCustomer.name
+    };
+    
+    setCustomers(prev => [...prev, formattedCustomer]);
   };
 
-  const getScaleInfo = (scaleId) => {
-    console.log('Scales:', scales, 'Scale ID:', scaleId);
-    const scale = scales.find(s => s.scale_id === scaleId);
-    if (!scale) return null;
-    return scale;
-  };
-
-  if (isLoading || isLoadingScales) {
+  if (isLoading) {
     return (
       <div className="flex justify-center items-center h-64">
         <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
-        <span className="ml-2 text-gray-600">{t.loading}</span>
       </div>
     );
   }
 
   return (
     <div className="p-6 max-w-7xl mx-auto" dir={isRTL ? 'rtl' : 'ltr'}>
-      {/* Header */}
       <div className="mb-6">
         <div className="flex justify-between items-center">
           <h2 className="text-2xl font-bold">{t.productsManagement}</h2>
           <div className="flex gap-2">
             <button
               onClick={handleRefresh}
-              className="flex items-center gap-2 px-4 py-2 text-gray-600 hover:text-gray-800 disabled:opacity-50"
+              className="flex items-center gap-2 px-4 py-2 text-gray-600 hover:text-gray-800"
               disabled={isRefreshing}
             >
               <RefreshCw className={`h-5 w-5 ${isRefreshing ? 'animate-spin' : ''}`} />
@@ -190,7 +142,6 @@ export default function ProductsManagementView() {
         </div>
       </div>
 
-      {/* Messages */}
       {successMessage && (
         <div className="mb-6 bg-green-50 border border-green-400 rounded-lg p-4">
           <p className="text-green-700">{successMessage}</p>
@@ -204,8 +155,7 @@ export default function ProductsManagementView() {
         </div>
       )}
 
-      {/* Products Table */}
-      <div className="bg-white rounded-lg shadow-lg overflow-hidden">
+      <div className="bg-white rounded-lg shadow overflow-hidden">
         <table className="min-w-full divide-y divide-gray-200">
           <thead className="bg-gray-50">
             <tr>
@@ -219,7 +169,7 @@ export default function ProductsManagementView() {
                 {t.thresholds}
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Linked Scale
+                {t.linkedScales}
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 {t.actions}
@@ -227,58 +177,51 @@ export default function ProductsManagementView() {
             </tr>
           </thead>
           <tbody className="bg-white divide-y divide-gray-200">
-            {products.map(product => {
-              const scaleInfo = getScaleInfo(product.scale_id);
-              console.log('Scale Info:', scaleInfo);
-              return (
-                <tr key={product.product_id} className="hover:bg-gray-50">
-                  <td className="px-6 py-4 text-sm font-medium text-gray-900">
-                    {product.name}
-                  </td>
-                  <td className="px-6 py-4 text-sm text-gray-500">
-                    {getCustomerName(product.customer_id)}
-                  </td>
-                  <td className="px-6 py-4">
-                    <ProductThreshold thresholds={product.thresholds} />
-                  </td>
-                  <td className="px-6 py-4">
-                    {scaleInfo ? (
-                      <div className="flex items-center gap-2">
-                        <Scale size={16} className="text-blue-500" />
-                        <span className="text-sm">
-                          {scaleInfo.scale_id}
-                          {scaleInfo.location && ` - ${scaleInfo.location}`}
-                        </span>
-                      </div>
-                    ) : (
-                      <span className="text-sm text-gray-500">No scale linked</span>
-                    )}
-                  </td>
-                  <td className="px-6 py-4 text-sm font-medium">
-                    <div className="flex gap-3">
-                      <button
-                        onClick={() => {
-                          setSelectedProduct(product);
-                          setIsModalOpen(true);
-                        }}
-                        className="text-blue-600 hover:text-blue-800"
-                      >
-                        <Pencil size={20} />
-                      </button>
-                      <button
-                        onClick={() => {
-                          setSelectedProduct(product);
-                          setIsDeleteModalOpen(true);
-                        }}
-                        className="text-red-600 hover:text-red-800"
-                      >
-                        <Trash2 size={20} />
-                      </button>
+            {products.map(product => (
+              <tr key={product.product_id} className="hover:bg-gray-50">
+                <td className="px-6 py-4 text-sm font-medium text-gray-900">
+                  {product.name}
+                </td>
+                <td className="px-6 py-4 text-sm text-gray-500">
+                  {customers.find(c => c.customer_id === product.customer_id)?.name || 'Unknown'}
+                </td>
+                <td className="px-6 py-4">
+                  <div className="text-sm space-y-1">
+                    <div className="text-green-600">
+                      Upper: {product.thresholds?.upper || '-'} kg
                     </div>
-                  </td>
-                </tr>
-              );
-            })}
+                    <div className="text-red-600">
+                      Lower: {product.thresholds?.lower || '-'} kg
+                    </div>
+                  </div>
+                </td>
+                <td className="px-6 py-4 text-sm text-gray-500">
+                  {product.scale_id || 'No scale linked'}
+                </td>
+                <td className="px-6 py-4 text-sm font-medium">
+                  <div className="flex gap-3">
+                    <button
+                      onClick={() => {
+                        setSelectedProduct(product);
+                        setIsModalOpen(true);
+                      }}
+                      className="text-blue-600 hover:text-blue-800"
+                    >
+                      <Pencil size={20} />
+                    </button>
+                    <button
+                      onClick={() => {
+                        setSelectedProduct(product);
+                        setIsDeleteModalOpen(true);
+                      }}
+                      className="text-red-600 hover:text-red-800"
+                    >
+                      <Trash2 size={20} />
+                    </button>
+                  </div>
+                </td>
+              </tr>
+            ))}
           </tbody>
         </table>
       </div>
@@ -293,6 +236,7 @@ export default function ProductsManagementView() {
         onSubmit={selectedProduct ? handleEditProduct : handleAddProduct}
         customers={customers}
         initialData={selectedProduct}
+        onCustomerAdded={handleNewCustomerAdded}
       />
 
       <DeleteConfirmationModal

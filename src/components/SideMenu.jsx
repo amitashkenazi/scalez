@@ -7,7 +7,10 @@ import {
   Users,
   Share,
   UserCircle,
-  MapIcon
+  MapIcon,
+  LayoutDashboard,
+  Settings,
+  FileText
 } from 'lucide-react';
 import { useLanguage } from '../contexts/LanguageContext';
 import { translations } from '../translations/translations';
@@ -22,8 +25,8 @@ const SideMenu = ({ activeView, onViewChange }) => {
   const t = translations[language];
   const isRTL = language === 'he';
 
-  // Define base menu items
-  const baseMenuItems = [
+  // Define menu sections
+  const dashboardItems = [
     {
       icon: Package,
       label: t.productsDashboard,
@@ -31,10 +34,31 @@ const SideMenu = ({ activeView, onViewChange }) => {
       description: t.productsDashboardDesc
     },
     {
-      icon: Share, // Import Share from lucide-react
-      label: t.sharedProducts, // Add translation
+      icon: MapIcon,
+      label: t.mapLabel,
+      view: "customersMap",
+      description: "View customers and products on a map"
+    },
+    {
+      icon: FileText,
+      label: t.orders,
+      view: "orders",
+      description: "Track and manage product orders"
+    },
+    {
+      icon: Share,
+      label: t.sharedProducts,
       view: "sharedProducts",
       description: t.sharedProductsDesc
+    }
+  ];
+
+  const setupItems = [
+    {
+      icon: Package,
+      label: t.productsManagement,
+      view: "productsMng",
+      description: t.productsDesc
     },
     {
       icon: Users,
@@ -43,48 +67,57 @@ const SideMenu = ({ activeView, onViewChange }) => {
       description: t.customersTableDesc
     },
     {
-      icon: Package,
-      label: "Orders",
-      view: "orders",
-      description: "Track and manage product orders"
-    },
-    {
       icon: Scale,
       label: t.scalesManagement,
       view: 'scalesManagement',
       description: 'Manage and monitor all scales in the system'
     },
+    
+   
     {
-      icon: Package,
-      label: t.productsManagement,
-      view: "productsMng",
-      description: t.productsDesc
-    },
-    {
-      icon: UserCircle, // Import UserCircle from lucide-react
+      icon: UserCircle,
       label: "My Account",
       view: "myAccount",
       description: "Manage your account settings"
     },
-    {
-      icon: MapIcon,
-      label: "Customers Map",
-      view: "customersMap",
-      description: "View customers and products on a map"
-    }
     
   ];
 
-  // Add vendors tab only for admin users
-  const menuItems = isAdmin ? [
-    ...baseMenuItems,
-    {
+  // Add vendors to setup items if user is admin
+  if (isAdmin) {
+    setupItems.push({
       icon: Truck,
       label: t.vendors.title,
       view: "vendors",
       description: t.vendors.description
-    }
-  ] : baseMenuItems;
+    });
+  }
+
+  const renderMenuSection = (title, items, icon) => (
+    <div className="mb-6">
+      <div className={`px-4 mb-2 flex items-center gap-2 text-gray-400 ${isRTL ? 'flex-row-reverse' : ''}`}>
+        {icon}
+        <span className="text-sm font-medium uppercase">{title}</span>
+      </div>
+      <div className="space-y-1">
+        {items.map((item) => (
+          <button
+            key={item.view}
+            onClick={() => onViewChange(item.view)}
+            className={`
+              w-full px-3 py-2.5 rounded-lg transition-colors
+              flex items-center gap-3
+              ${activeView === item.view ? 'bg-blue-600 text-white' : 'text-gray-300 hover:bg-gray-700 hover:text-white'}
+              ${isRTL ? 'flex-row-reverse justify-end text-right' : 'flex-row justify-start text-left'}
+            `}
+          >
+            <item.icon size={20} />
+            <span className="font-medium">{item.label}</span>
+          </button>
+        ))}
+      </div>
+    </div>
+  );
 
   return (
     <>
@@ -103,7 +136,7 @@ const SideMenu = ({ activeView, onViewChange }) => {
           )}
         </div>
 
-        {/* Rest of your menu code... */}
+        {/* Menu Title */}
         <div className="p-6">
           <h2 className={`text-xl font-bold text-white mb-2 ${isRTL ? 'text-right' : 'text-left'}`}>
             {t.menuTitle}
@@ -113,24 +146,11 @@ const SideMenu = ({ activeView, onViewChange }) => {
           </p>
         </div>
 
-        <nav className="flex-1 px-4">
-          <div className="space-y-1">
-            {menuItems.map((item) => (
-              <button
-                key={item.view}
-                onClick={() => onViewChange(item.view)}
-                className={`
-                  w-full px-3 py-2.5 rounded-lg transition-colors
-                  flex items-center gap-3
-                  ${activeView === item.view ? 'bg-blue-600 text-white' : 'text-gray-300 hover:bg-gray-700 hover:text-white'}
-                  ${isRTL ? 'flex-row-reverse justify-end text-right' : 'flex-row justify-start text-left'}
-                `}
-              >
-                <item.icon size={20} />
-                <span className="font-medium">{item.label}</span>
-              </button>
-            ))}
-          </div>
+        {/* Menu Sections */}
+        <nav className="flex-1 px-4 overflow-y-auto">
+          {renderMenuSection('Dashboards', dashboardItems, <LayoutDashboard size={18} />)}
+          <div className="mx-2 my-4 border-t border-gray-700" />
+          {renderMenuSection('Setup', setupItems, <Settings size={18} />)}
         </nav>
 
         {/* Language Toggle */}

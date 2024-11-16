@@ -159,18 +159,20 @@ const CustomerModal = ({ isOpen, onClose, onSubmit, initialData = null }) => {
 
     setIsSubmitting(true);
     try {
-      const formattedData = {
+      // Format the customer data
+      const customerData = {
         name: `${formData.name_he} - ${formData.name_en}`,
         email: formData.email,
         phone: formData.phone,
-        address: formData.address,
-        id: initialData?.id
+        address: formData.address
       };
 
-      await onSubmit(formattedData);
-      onClose();
-    } catch (error) {
-      setErrors({ submit: error.message });
+      // Submit to parent component (which will handle the API call)
+      await onSubmit(customerData);
+      
+      // Close modal handled by parent after successful submission
+    } catch (err) {
+      setErrors({ submit: err.message });
     } finally {
       setIsSubmitting(false);
     }

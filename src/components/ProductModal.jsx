@@ -1,10 +1,19 @@
 import React, { useState, useEffect } from 'react';
 import { useLanguage } from '../contexts/LanguageContext';
 import { translations } from '../translations/translations';
-import { X, Loader2, AlertCircle } from 'lucide-react';
+import { X, Loader2, AlertCircle, UserPlus } from 'lucide-react';
 import useScaleData from '../hooks/useScaleData';
+import CustomerModal from './CustomerModal';
+import apiService from '../services/api';
 
-const ProductModal = ({ isOpen, onClose, onSubmit, customers, initialData = null }) => {
+const ProductModal = ({ 
+  isOpen, 
+  onClose, 
+  onSubmit, 
+  customers, 
+  initialData = null,
+  onCustomerAdded 
+}) => {
   const { scales, isLoading: isLoadingScales, error: scalesError } = useScaleData();
   const [formData, setFormData] = useState({
     name: '',
@@ -19,16 +28,15 @@ const ProductModal = ({ isOpen, onClose, onSubmit, customers, initialData = null
   const [availableScales, setAvailableScales] = useState([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errors, setErrors] = useState({});
+  const [isCustomerModalOpen, setIsCustomerModalOpen] = useState(false);
 
   const { language } = useLanguage();
   const t = translations[language];
-  // const isRTL = language === 'he';
+  const isRTL = language === 'he';
 
   useEffect(() => {
     if (!isLoadingScales && scales) {
       try {
-        // Map all scales, including assigned ones
-        console.log('scales:', scales);
         const mappedScales = scales.map(scale => {
           let status = '';
           if (scale.productName && initialData?.scale_id !== scale.id) {
@@ -40,7 +48,6 @@ const ProductModal = ({ isOpen, onClose, onSubmit, customers, initialData = null
           };
         });
 
-        console.log('Processed scales:', mappedScales);
         setAvailableScales(mappedScales);
       } catch (error) {
         console.error('Error processing scales:', error);
@@ -63,7 +70,7 @@ const ProductModal = ({ isOpen, onClose, onSubmit, customers, initialData = null
             lower: initialData.thresholds?.lower || 8
           }
         });
-      } else {
+      } else if (!formData.customer_id) {
         setFormData({
           name: '',
           customer_id: '',
@@ -77,7 +84,7 @@ const ProductModal = ({ isOpen, onClose, onSubmit, customers, initialData = null
       }
       setErrors({});
     }
-  }, [isOpen, initialData, customers]);
+  }, [isOpen, initialData]);
 
   const validateForm = () => {
     const newErrors = {};
@@ -127,24 +134,82 @@ const ProductModal = ({ isOpen, onClose, onSubmit, customers, initialData = null
     }
   };
 
+  const handleCustomerModalSubmit = async (customerData) => {
+    try {
+      const newCustomer = await apiService.createCustomer({
+        name: customerData.name,
+        email: customerData.email,
+        phone: customerData.phone,
+        address: customerData.address
+      });
+
+      console.log('New customer response:', newCustomer);
+
+      const customer_id = newCustomer.customer_id || newCustomer.id;
+      if (!customer_id) {
+        throw new Error('Invalid customer ID from server response');
+      }
+
+      const formattedCustomer = {
+        ...newCustomer,
+        customer_id: customer_id,
+        name: newCustomer.name
+      };
+
+      console.log('Formatted customer:', formattedCustomer);
+
+      if (onCustomerAdded) {
+        onCustomerAdded(formattedCustomer);
+      }
+
+      setFormData(prevData => {
+        const updatedData = {
+          ...prevData,
+          customer_id: customer_id,
+          customer_name: formattedCustomer.name
+        };
+        console.log('Updated form data:', updatedData);
+        return updatedData;
+      });
+
+      setIsCustomerModalOpen(false);
+
+      setErrors(prev => {
+        const newErrors = { ...prev };
+        delete newErrors.customer_id;
+        return newErrors;
+      });
+
+    } catch (err) {
+      console.error('Error creating customer:', err);
+      setErrors({ customer: err.message || 'Failed to create customer' });
+    }
+  };
+
   const handleCustomerChange = (e) => {
-    const selectedCustomerId = e.target.value;
-    const selectedCustomer = customers.find(c => c.customer_id === selectedCustomerId);
+    const selectedValue = e.target.value;
+    
+    if (selectedValue === 'new') {
+      setIsCustomerModalOpen(true);
+      return;
+    }
+
+    const selectedCustomer = customers.find(c => 
+      (c.customer_id || c.id).toString() === selectedValue
+    );
     
     if (selectedCustomer) {
-      setFormData({
-        ...formData,
-        customer_id: selectedCustomer.customer_id,
-        customer_name: selectedCustomer.name,
-        scale_id: '' // Reset scale selection when customer changes
-      });
+      setFormData(prevData => ({
+        ...prevData,
+        customer_id: selectedValue,
+        customer_name: selectedCustomer.name
+      }));
     } else {
-      setFormData({
-        ...formData,
+      setFormData(prevData => ({
+        ...prevData,
         customer_id: '',
-        customer_name: '',
-        scale_id: ''
-      });
+        customer_name: ''
+      }));
     }
   };
 
@@ -152,7 +217,10 @@ const ProductModal = ({ isOpen, onClose, onSubmit, customers, initialData = null
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-lg p-6 w-full max-w-md">
+      <div 
+        className="bg-white rounded-lg p-6 w-full max-w-md max-h-[90vh] overflow-y-auto"
+        dir={isRTL ? 'rtl' : 'ltr'}
+      >
         <div className="flex justify-between items-center mb-4">
           <h2 className="text-xl font-bold">
             {initialData ? t.updateProduct : t.addProduct}
@@ -160,7 +228,6 @@ const ProductModal = ({ isOpen, onClose, onSubmit, customers, initialData = null
           <button 
             onClick={onClose}
             className="text-gray-500 hover:text-gray-700"
-            disabled={isSubmitting}
           >
             <X size={24} />
           </button>
@@ -189,18 +256,30 @@ const ProductModal = ({ isOpen, onClose, onSubmit, customers, initialData = null
               {t.selectCustomer}
             </label>
             <select
-              value={formData.customer_id}
+              value={formData.customer_id ? formData.customer_id.toString() : ''}
               onChange={handleCustomerChange}
               className={`w-full p-2 border rounded-lg focus:ring-2 focus:ring-blue-500
                 ${errors.customer_id ? 'border-red-500' : 'border-gray-300'}`}
               disabled={isSubmitting}
             >
               <option value="">{t.selectCustomer}</option>
-              {customers.map(customer => (
-                <option key={customer.customer_id} value={customer.customer_id}>
-                  {customer.name}
-                </option>
-              ))}
+              {customers.map(customer => {
+                const customerId = (customer.customer_id || customer.id).toString();
+                return (
+                  <option 
+                    key={customerId}
+                    value={customerId}
+                  >
+                    {customer.name}
+                  </option>
+                );
+              })}
+              <option value="" disabled className="border-t border-gray-200">
+                ────────────────
+              </option>
+              <option value="new" className="text-blue-600 font-medium">
+                + Create New Customer
+              </option>
             </select>
             {errors.customer_id && (
               <p className="text-red-500 text-sm mt-1">{errors.customer_id}</p>
@@ -213,7 +292,10 @@ const ProductModal = ({ isOpen, onClose, onSubmit, customers, initialData = null
             </label>
             <select
               value={formData.scale_id}
-              onChange={(e) => setFormData({ ...formData, scale_id: e.target.value })}
+              onChange={(e) => setFormData(prevData => ({
+                ...prevData,
+                scale_id: e.target.value
+              }))}
               className={`w-full p-2 border rounded-lg focus:ring-2 focus:ring-blue-500
                 ${errors.scale_id ? 'border-red-500' : 'border-gray-300'}`}
               disabled={isSubmitting || isLoadingScales}
@@ -254,16 +336,17 @@ const ProductModal = ({ isOpen, onClose, onSubmit, customers, initialData = null
                 <input
                   type="number"
                   value={formData.thresholds.upper}
-                  onChange={(e) => setFormData({
-                    ...formData,
+                  onChange={(e) => setFormData(prevData => ({
+                    ...prevData,
                     thresholds: {
-                      ...formData.thresholds,
+                      ...prevData.thresholds,
                       upper: Number(e.target.value)
                     }
-                  })}
+                  }))}
                   className="w-full p-2 border rounded-lg focus:ring-2 focus:ring-blue-500 border-gray-300"
                   min="0"
                   step="1"
+                  disabled={isSubmitting}
                 />
               </div>
               <div>
@@ -273,17 +356,18 @@ const ProductModal = ({ isOpen, onClose, onSubmit, customers, initialData = null
                 <input
                   type="number"
                   value={formData.thresholds.lower}
-                  onChange={(e) => setFormData({
-                    ...formData,
+                  onChange={(e) => setFormData(prevData => ({
+                    ...prevData,
                     thresholds: {
-                      ...formData.thresholds,
+                      ...prevData.thresholds,
                       lower: Number(e.target.value)
                     }
-                  })}
+                  }))}
                   className="w-full p-2 border rounded-lg focus:ring-2 focus:ring-blue-500 border-gray-300"
                   min="0"
                   max={formData.thresholds.upper - 1}
                   step="1"
+                  disabled={isSubmitting}
                 />
               </div>
             </div>
@@ -298,16 +382,33 @@ const ProductModal = ({ isOpen, onClose, onSubmit, customers, initialData = null
             </div>
           )}
 
-          <button
-            type="submit"
-            className="w-full bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 disabled:bg-blue-400 flex items-center justify-center gap-2"
-            disabled={isSubmitting || isLoadingScales}
-          >
-            {(isSubmitting || isLoadingScales) && <Loader2 className="h-4 w-4 animate-spin" />}
-            {isSubmitting ? t.saving : (initialData ? t.update : t.add)}
-          </button>
+          <div className={`flex justify-end gap-3 ${isRTL ? 'flex-row-reverse' : ''}`}>
+            <button
+              type="button"
+              onClick={onClose}
+              className="px-4 py-2 text-gray-700 border rounded-lg hover:bg-gray-50"
+              disabled={isSubmitting}
+            >
+              {t.cancel}
+            </button>
+            <button
+              type="submit"
+              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 
+                disabled:bg-blue-400 flex items-center gap-2"
+              disabled={isSubmitting}
+            >
+              {isSubmitting && <Loader2 className="h-4 w-4 animate-spin" />}
+              {isSubmitting ? t.saving : (initialData ? t.update : t.add)}
+            </button>
+          </div>
         </form>
       </div>
+
+      <CustomerModal
+        isOpen={isCustomerModalOpen}
+        onClose={() => setIsCustomerModalOpen(false)}
+        onSubmit={handleCustomerModalSubmit}
+      />
     </div>
   );
 };

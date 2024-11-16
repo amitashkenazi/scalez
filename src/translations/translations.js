@@ -21,7 +21,7 @@ export const translations = {
     lastUpdated: "Last Updated",
     noProducts: "No products found",
     failedToFetchProducts: "Failed to fetch products data",
-
+    mapLabel: "Map",
     // Landing Page
     welcomeTitle: "Quntifyz - Scale Monitor System",
     welcomeSubtitle: "Select a module to begin",
@@ -140,12 +140,13 @@ export const translations = {
     noCustomers: "No customers found",
     noSearchResults: "No customers match your search",
     customersTableDesc: "Manage and view all customer information",
-    customersTable: "Customers Table",
+    customersTable: "Customers",
+    orders: "Orders",
     loading: "Loading...",
     tryAgain: "Try Again",
     errorFetchingScales: "Failed to fetch scales data. Please try again later.",
     errorUpdatingScale: "Failed to update scale. Please try again later.",
-    productsManagement: "Products@Customers",
+    productsManagement: "My Products",
     addProduct: "Add Product",
     
     selectCustomer: "Select Customer",
@@ -157,7 +158,7 @@ export const translations = {
     deleteCustomer: "Delete Customer",
     customerNameEn: "Customer Name (English)",
     customerNameHe: "Customer Name (Hebrew)",
-    scalesManagement: "Scales Management",
+    scalesManagement: "Scales",
     
     phone: "Phone",
     address: "Address",
@@ -263,7 +264,7 @@ export const translations = {
     continueToApp: "Continue to App",
     verificationLinkExpired: "Verification link has expired. Please request a new one.",
     invalidVerificationCode: "Invalid verification code. Please try again.",
-    sharedProducts: "Products from Vendors",
+    sharedProducts: "Shared Products",
     sharedProductsDesc: "View products that have been shared with you",
     noSharedProducts: "No products have been shared with you yet",
 
@@ -417,11 +418,11 @@ export const translations = {
     lastUpdated: "עדכון אחרון",
     customer: "לקוח",
     productName: "שם מוצר",
-    customersTable: "טבלת לקוחות",
-
+    customersTable: "לקוחות",
     // Graph
     time: "זמן",
-
+    // orders
+    orders: "הזמנות",
     // Notifications
     notificationSettings: "הגדרות התראות",
     phoneNumber: "מספר טלפון",
@@ -441,7 +442,7 @@ export const translations = {
     noData: "אין משקלים זמינים",
     errorFetchingScales: "שגיאה בטעינת נתוני המשקלים. אנא נסה שוב מאוחר יותר.",
     errorUpdatingScale: "שגיאה בעדכון המשקל. אנא נסה שוב מאוחר יותר.",
-    productsManagement: "מוצרים אצל לקוחות",
+    productsManagement: "המוצרים שלי",
     addProduct: "הוסף מוצר",
     productName: "שם המוצר",
     selectCustomer: "בחר לקוח",
@@ -453,6 +454,7 @@ export const translations = {
     deleteCustomer: "מחק לקוח",
     customerNameEn: "שם לקוח (אנגלית)",
     customerNameHe: "שם לקוח (עברית)",
+    mapLabel: "מפה",
     email: "דוא\"ל",
     phone: "טלפון",
     address: "כתובת",
@@ -594,7 +596,7 @@ export const translations = {
     loading: "טוען...",
     processing: "מעבד...",
     pleaseWait: "נא להמתין...",
-    scalesManagement: "ניהול משקלים",
+    scalesManagement: "משקלים",
     verifyingEmail: "מאמת את כתובת האימייל שלך...",
     emailVerified: "האימייל אומת!",
     emailVerifiedDesc: "כתובת האימייל שלך אומתה בהצלחה. כעת תוכל להתחבר לחשבונך.",
@@ -608,7 +610,7 @@ export const translations = {
     continueToApp: "המשך לאפליקציה",
     verificationLinkExpired: "קישור האימות פג תוקף. אנא בקש קישור חדש.",
     invalidVerificationCode: "קוד אימות לא חוקי. אנא נסה שוב.",
-    sharedProducts: "מוצרים מספקים",
+    sharedProducts: "מוצרים ששותפו",
     sharedProductsDesc: "צפה במוצרים ששותפו איתך",
     noSharedProducts: "טרם שותפו איתך מוצרים",
     // In src/translations/translations.js, add these to both 'en' and 'he' objects:
