@@ -1,43 +1,62 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { MapPin, X } from 'lucide-react';
-import { useLoadScript, Autocomplete } from '@react-google-maps/api';
+import React, { useState, useEffect } from 'react';
+import { ChevronDown, MapPin, Plus } from 'lucide-react';
+import AddressModal from './AddressModal';
+import apiService from '../../../services/api';
+import { useLanguage } from '../../../contexts/LanguageContext';
 
-const LocationSelector = ({ 
-  label, 
-  defaultLocation,
-  defaultAddress,
-  onLocationSelect,
-  isRequired = true,
-  className = ''
+const LocationSelector = ({
+  value,
+  onChange,
+  label,
+  className = '',
 }) => {
-  const [address, setAddress] = useState(defaultAddress || '');
-  const [location, setLocation] = useState(defaultLocation);
-  const [autocomplete, setAutocomplete] = useState(null);
-  const inputRef = useRef(null);
+  const [isOpen, setIsOpen] = useState(false);
+  const [addresses, setAddresses] = useState([]);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const { language } = useLanguage();
+  const isRTL = language === 'he';
 
-  const handlePlaceSelect = () => {
-    if (autocomplete) {
-      const place = autocomplete.getPlace();
-      
-      if (place.geometry && place.geometry.location) {
-        const newLocation = {
-          lat: place.geometry.location.lat(),
-          lng: place.geometry.location.lng()
-        };
-        
-        setLocation(newLocation);
-        setAddress(place.formatted_address);
-        onLocationSelect(newLocation, place.formatted_address);
-      }
+  useEffect(() => {
+    fetchAddresses();
+  }, []);
+
+  const fetchAddresses = async () => {
+    try {
+      const response = await apiService.request('vendors/addresses', {
+        method: 'GET'
+      });
+      setAddresses(response || []);
+    } catch (error) {
+      console.error('Failed to fetch addresses:', error);
     }
   };
 
-  const clearLocation = () => {
-    setLocation(null);
-    setAddress('');
-    onLocationSelect(null, '');
-    if (inputRef.current) {
-      inputRef.current.value = '';
+  const handleAddressSelect = (address) => {
+    onChange(address);
+    setIsOpen(false);
+  };
+
+  const handleNewAddress = async (address) => {
+    setIsLoading(true);
+    try {
+      // Add the new address to the server
+      await apiService.request('vendors/addresses', {
+        method: 'POST',
+        data: { address }
+      });
+      
+      // Refresh the addresses list
+      await fetchAddresses();
+      
+      // Select the new address
+      onChange(address);
+      
+      setIsModalOpen(false);
+    } catch (error) {
+      console.error('Failed to add address:', error);
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -45,41 +64,61 @@ const LocationSelector = ({
     <div className={`relative ${className}`}>
       <label className="block text-sm font-medium text-gray-700 mb-1">
         {label}
-        {isRequired && <span className="text-red-500">*</span>}
       </label>
       
-      <div className="relative">
-        <Autocomplete
-          onLoad={setAutocomplete}
-          onPlaceChanged={handlePlaceSelect}
-          restrictions={{ country: 'il' }}
-        >
-          <input
-            ref={inputRef}
-            type="text"
-            defaultValue={address}
-            className="w-full pl-10 pr-10 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
-            placeholder="Enter address..."
-          />
-        </Autocomplete>
-        
-        <MapPin className="absolute left-3 top-2.5 h-5 w-5 text-gray-400" />
-        
-        {address && (
-          <button
-            onClick={clearLocation}
-            className="absolute right-3 top-2.5 text-gray-400 hover:text-gray-600"
-          >
-            <X className="h-5 w-5" />
-          </button>
-        )}
-      </div>
-      
-      {location && (
-        <div className="mt-1 text-sm text-gray-500">
-          {`${location.lat.toFixed(6)}, ${location.lng.toFixed(6)}`}
+      <button
+        type="button"
+        onClick={() => setIsOpen(!isOpen)}
+        className="w-full flex items-center justify-between gap-2 px-3 py-2 border rounded-md shadow-sm bg-white hover:bg-gray-50"
+      >
+        <div className="flex items-center gap-2">
+          <MapPin className="h-4 w-4 text-gray-400" />
+          <span className="block truncate">
+            {value || 'Select address'}
+          </span>
+        </div>
+        <ChevronDown className="h-4 w-4 text-gray-400" />
+      </button>
+
+      {isOpen && (
+        <div className="absolute z-10 mt-1 w-full bg-white rounded-md shadow-lg">
+          <ul className="py-1 max-h-60 overflow-auto">
+            {addresses.map((address, index) => (
+              <li
+                key={index}
+                className="px-3 py-2 hover:bg-gray-100 cursor-pointer"
+                onClick={() => handleAddressSelect(address)}
+              >
+                {address}
+              </li>
+            ))}
+            
+            {addresses.length > 0 && (
+              <li className="px-3 py-2">
+                <div className="border-t border-gray-200" />
+              </li>
+            )}
+            
+            <li
+              className="px-3 py-2 hover:bg-gray-100 cursor-pointer flex items-center gap-2 text-blue-600"
+              onClick={() => {
+                setIsModalOpen(true);
+                setIsOpen(false);
+              }}
+            >
+              <Plus className="h-4 w-4" />
+              Add new address
+            </li>
+          </ul>
         </div>
       )}
+
+      <AddressModal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        onSubmit={handleNewAddress}
+        isLoading={isLoading}
+      />
     </div>
   );
 };

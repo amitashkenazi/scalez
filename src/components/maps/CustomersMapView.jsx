@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { translations } from '../../translations/translations';
-import {
+import { 
   AlertCircle,
   Loader2,
   RefreshCw,
@@ -17,8 +17,10 @@ import {
   CalendarClock,
   Navigation,
   Milestone,
-  Map as MapIcon
-} from 'lucide-react';
+  Map as MapIcon,
+  Plus  // Add this
+} from 'lucide-react';  
+import AddressModal from './components/AddressModal';
 import apiService from '../../services/api';
 import LocationSelector from './components/LocationSelector';
 
@@ -344,15 +346,20 @@ const RouteSummary = ({ totalStats, selectedCustomers, startTime }) => {
 
 const RouteSteps = ({ 
   directionsResponse, 
-  selectedCustomers, 
+  selectedCustomers,
+  setSelectedCustomers, 
   startLocation,
   startAddress,
   endLocation,
   endAddress,
   onChangeStartLocation,
-  onChangeEndLocation
+  onChangeEndLocation,
+  onAddStop
 }) => {
   const [expandedLeg, setExpandedLeg] = useState(null);
+  const [isAddingStop, setIsAddingStop] = useState(false);
+  const [addStopIndex, setAddStopIndex] = useState(null);
+
   const { language } = useLanguage();
   const t = translations[language];
   const isRTL = language === 'he';
@@ -363,8 +370,6 @@ const RouteSteps = ({
   const route = directionsResponse.routes[0];
   const legs = route?.legs || [];
   const waypointOrder = route?.waypoint_order || [];
-
-  // Reorder selected customers based on the optimized waypoint order
   const orderedCustomers = waypointOrder.map(index => selectedCustomers[index]);
 
   const totalStats = legs.reduce((acc, leg) => ({
@@ -372,12 +377,89 @@ const RouteSteps = ({
     duration: acc.duration + (leg?.duration_in_traffic?.value || leg?.duration?.value || 0)
   }), { distance: 0, duration: 0 });
 
-  // Calculate accumulated time for each stop
-  const calculateArrivalTime = (legIndex) => {
-    const accumulatedDuration = legs
-      .slice(0, legIndex + 1)
-      .reduce((acc, leg) => acc + (leg?.duration_in_traffic?.value || leg?.duration?.value || 0), 0);
-    return new Date(startTime.getTime() + accumulatedDuration * 1000);
+  const geocodeAddress = async (address) => {
+    const DEFAULT_COORDS = {
+      tel_aviv: { lat: 32.0853, lng: 34.7818 },
+      jerusalem: { lat: 31.7683, lng: 35.2137 },
+      haifa: { lat: 32.7940, lng: 34.9896 }
+    };
+
+    const cityMatches = {
+      'תל אביב': DEFAULT_COORDS.tel_aviv,
+      'tel aviv': DEFAULT_COORDS.tel_aviv,
+      'ירושלים': DEFAULT_COORDS.jerusalem,
+      'jerusalem': DEFAULT_COORDS.jerusalem,
+      'חיפה': DEFAULT_COORDS.haifa,
+      'haifa': DEFAULT_COORDS.haifa
+    };
+
+    for (const [city, coords] of Object.entries(cityMatches)) {
+      if (address.toLowerCase().includes(city.toLowerCase())) {
+        return {
+          lat: coords.lat + (Math.random() - 0.5) * 0.01,
+          lng: coords.lng + (Math.random() - 0.5) * 0.01
+        };
+      }
+    }
+
+    try {
+      const response = await fetch(
+        `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(address)}&countrycodes=il`
+      );
+
+      if (!response.ok) throw new Error('Geocoding failed');
+
+      const data = await response.json();
+      if (data && data.length > 0) {
+        return {
+          lat: parseFloat(data[0].lat),
+          lng: parseFloat(data[0].lon)
+        };
+      }
+
+      throw new Error('Location not found');
+    } catch (err) {
+      console.error('Geocoding fallback for address:', address, err);
+      return {
+        lat: DEFAULT_COORDS.tel_aviv.lat + (Math.random() - 0.5) * 0.02,
+        lng: DEFAULT_COORDS.tel_aviv.lng + (Math.random() - 0.5) * 0.02
+      };
+    }
+  };
+
+  // Add handleAddStop function inside CustomersMapView
+  const handleAddStop = async (address, index) => {
+    try {
+      // Geocode the address to get coordinates
+      const coords = await geocodeAddress(address);
+      
+      // Create a new "customer" object for the stop
+      const newStop = {
+        customer_id: `custom-${Date.now()}`, // Generate a temporary ID
+        name: `Custom Stop - Custom Stop`,
+        address: address,
+        lat: coords.lat,
+        lng: coords.lng,
+        products: []
+      };
+
+      // Insert the new stop at the specified index
+      const newSelectedCustomers = [...selectedCustomers];
+      newSelectedCustomers.splice(index, 0, newStop);
+      setSelectedCustomers(newSelectedCustomers);
+    } catch (error) {
+      console.error('Failed to add stop:', error);
+    }
+  };
+
+
+
+  const handleAddressSubmit = async (address) => {
+    if (onAddStop) {
+      await onAddStop(address, addStopIndex);
+    }
+    setIsAddingStop(false);
+    setAddStopIndex(null);
   };
 
   return (
@@ -390,7 +472,21 @@ const RouteSteps = ({
 
       <div className="bg-white rounded-lg shadow-lg p-6">
         <div className="space-y-4">
-          {/* Starting Base */}
+          {/* Location selectors */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+            <LocationSelector
+              label="Start Location"
+              value={startAddress}
+              onChange={address => onChangeStartLocation(address)}
+            />
+            <LocationSelector
+              label="End Location"
+              value={endAddress}
+              onChange={address => onChangeEndLocation(address)}
+            />
+          </div>
+
+          {/* Starting point */}
           <div className="border rounded-lg bg-blue-50 p-4">
             <div className="flex items-start gap-3">
               <div className="mt-1">
@@ -399,75 +495,48 @@ const RouteSteps = ({
               <div>
                 <div className="font-medium text-lg">Start from Base</div>
                 <div className="text-sm text-gray-600">{startAddress}</div>
-                <div className="text-sm text-gray-500 mt-1">
-                  Departure: {startTime.toLocaleTimeString([], { 
-                    hour: '2-digit', 
-                    minute: '2-digit',
-                    hour12: false 
-                  })}
-                </div>
               </div>
+            </div>
+          </div>
+
+          {/* Add stop button before first stop */}
+          <div className="relative py-2">
+            <div className="absolute left-1/2 -translate-x-1/2">
+              <button
+                onClick={() => handleAddStop(0)}
+                className="flex items-center justify-center w-8 h-8 rounded-full border-2 border-blue-500 bg-white hover:bg-blue-50"
+              >
+                <Plus className="h-4 w-4 text-blue-500" />
+              </button>
             </div>
           </div>
 
           {/* Stops and Driving Instructions */}
           {orderedCustomers.map((customer, index) => (
             <React.Fragment key={customer.customer_id}>
-              {/* Show driving instructions to this stop */}
               <DrivingInstructions
                 leg={legs[index]}
                 expanded={expandedLeg === index}
                 onToggle={() => setExpandedLeg(expandedLeg === index ? null : index)}
               />
               
-              {/* Show the stop details */}
               <div className="border rounded-lg bg-white p-4">
-                <div className="flex items-start gap-3">
-                  <div className="mt-1">
-                    <MapPin className="h-5 w-5 text-gray-600" />
-                  </div>
-                  <div className="flex-1">
-                    <div className="flex items-center justify-between">
-                      <div className="font-medium text-lg">
-                        Stop {index + 1}: {language === 'he' ? 
-                          customer.name.split(' - ')[0] : 
-                          customer.name.split(' - ')[1] || customer.name}
-                      </div>
-                      <div className="text-sm text-gray-500">
-                        Estimated arrival: {calculateArrivalTime(index).toLocaleTimeString([], {
-                          hour: '2-digit',
-                          minute: '2-digit',
-                          hour12: false
-                        })}
-                      </div>
-                    </div>
-                    <div className="text-sm text-gray-600 mb-2">{customer.address}</div>
+                <StopPoint 
+                  customer={customer} 
+                  index={index + 1}
+                  language={language}
+                />
+              </div>
 
-                    {customer.products && customer.products.length > 0 && (
-                      <div className="space-y-2 mt-3">
-                        <div className="text-sm font-medium text-gray-700">Products to check:</div>
-                        {customer.products.map(product => (
-                          <div
-                            key={product.product_id}
-                            className="flex justify-between items-center bg-gray-50 p-2 rounded"
-                          >
-                            <span>{product.name}</span>
-                            <span className={`font-medium ${
-                              !product.measurement?.weight ? 'text-gray-500' :
-                              product.measurement.weight >= product.thresholds?.upper ? 'text-green-600' :
-                              product.measurement.weight >= product.thresholds?.lower ? 'text-orange-500' :
-                              'text-red-600'}`}
-                            >
-                              {product.measurement?.weight ?
-                                `${Math.round(product.measurement.weight)} kg` :
-                                'No data'
-                              }
-                            </span>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </div>
+              {/* Add stop button after each stop */}
+              <div className="relative py-2">
+                <div className="absolute left-1/2 -translate-x-1/2">
+                  <button
+                    onClick={() => handleAddStop(index + 1)}
+                    className="flex items-center justify-center w-8 h-8 rounded-full border-2 border-blue-500 bg-white hover:bg-blue-50"
+                  >
+                    <Plus className="h-4 w-4 text-blue-500" />
+                  </button>
                 </div>
               </div>
             </React.Fragment>
@@ -491,27 +560,21 @@ const RouteSteps = ({
                 <div className="text-sm text-gray-600">
                   {endAddress || startAddress}
                 </div>
-                {legs[legs.length - 1] && (
-                  <div className="space-y-1 mt-2 text-sm text-gray-600">
-                    <div>
-                      Return trip: {legs[legs.length - 1].distance?.text || '0 km'} • 
-                      {legs[legs.length - 1].duration_in_traffic?.text || legs[legs.length - 1].duration?.text || '0 mins'}
-                    </div>
-                    <div>
-                      Estimated arrival: {calculateArrivalTime(legs.length - 1)
-                        .toLocaleTimeString([], { 
-                          hour: '2-digit', 
-                          minute: '2-digit',
-                          hour12: false 
-                        })}
-                    </div>
-                  </div>
-                )}
               </div>
             </div>
           </div>
         </div>
       </div>
+
+      {/* Address Modal for adding stops */}
+      <AddressModal
+        isOpen={isAddingStop}
+        onClose={() => {
+          setIsAddingStop(false);
+          setAddStopIndex(null);
+        }}
+        onSubmit={handleAddressSubmit}
+      />
     </div>
   );
 };
@@ -777,6 +840,29 @@ const CustomersMapView = () => {
     googleMapsApiKey: GOOGLE_MAPS_API_KEY,
     libraries: LIBRARIES
   });
+  const handleAddStop = async (address, index) => {
+    try {
+      // Geocode the address to get coordinates
+      const coords = await geocodeAddress(address);
+      
+      // Create a new "customer" object for the stop
+      const newStop = {
+        customer_id: `custom-${Date.now()}`, // Generate a temporary ID
+        name: `Custom Stop - Custom Stop`,
+        address: address,
+        lat: coords.lat,
+        lng: coords.lng,
+        products: []
+      };
+
+      // Insert the new stop at the specified index
+      const newSelectedCustomers = [...selectedCustomers];
+      newSelectedCustomers.splice(index, 0, newStop);
+      setSelectedCustomers(newSelectedCustomers);
+    } catch (error) {
+      console.error('Failed to add stop:', error);
+    }
+  };
 
   const geocodeAddress = async (address) => {
     const DEFAULT_COORDS = {
@@ -820,13 +906,14 @@ const CustomersMapView = () => {
 
       throw new Error('Location not found');
     } catch (err) {
-      console.warn('Geocoding fallback for address:', address, err);
+      console.error('Geocoding fallback for address:', address, err);
       return {
         lat: DEFAULT_COORDS.tel_aviv.lat + (Math.random() - 0.5) * 0.02,
         lng: DEFAULT_COORDS.tel_aviv.lng + (Math.random() - 0.5) * 0.02
       };
     }
   };
+
 
   const fetchData = async (showLoadingState = true) => {
     if (showLoadingState) {
@@ -1074,10 +1161,12 @@ const CustomersMapView = () => {
         <RouteSteps
           directionsResponse={directionsResponse}
           selectedCustomers={selectedCustomers}
+          setSelectedCustomers={setSelectedCustomers}
           startLocation={startLocation}
           startAddress={startAddress}
           endLocation={endLocation}
           endAddress={endAddress}
+          onAddStop={handleAddStop}
           onChangeStartLocation={(location, address) =>
             handleLocationChange('start', location, address)}
           onChangeEndLocation={(location, address) =>
