@@ -72,15 +72,12 @@ const SideMenu = ({ activeView, onViewChange }) => {
       view: 'scalesManagement',
       description: 'Manage and monitor all scales in the system'
     },
-    
-   
     {
       icon: UserCircle,
       label: "My Account",
       view: "myAccount",
       description: "Manage your account settings"
     },
-    
   ];
 
   // Add vendors to setup items if user is admin
@@ -95,9 +92,18 @@ const SideMenu = ({ activeView, onViewChange }) => {
 
   const renderMenuSection = (title, items, icon) => (
     <div className="mb-6">
-      <div className={`px-4 mb-2 flex items-center gap-2 text-gray-400 ${isRTL ? 'flex-row-reverse' : ''}`}>
-        {icon}
-        <span className="text-sm font-medium uppercase">{title}</span>
+      <div className={`px-4 mb-2 flex items-center ${isRTL ? 'justify-end' : 'justify-start'} gap-2 text-gray-400`}>
+        {isRTL ? (
+          <>
+            <span className="text-sm font-medium uppercase">{title}</span>
+            {icon}
+          </>
+        ) : (
+          <>
+            {icon}
+            <span className="text-sm font-medium uppercase">{title}</span>
+          </>
+        )}
       </div>
       <div className="space-y-1">
         {items.map((item) => (
@@ -147,10 +153,10 @@ const SideMenu = ({ activeView, onViewChange }) => {
         </div>
 
         {/* Menu Sections */}
-        <nav className="flex-1 px-4 overflow-y-auto">
-          {renderMenuSection('Dashboards', dashboardItems, <LayoutDashboard size={18} />)}
-          <div className="mx-2 my-4 border-t border-gray-700" />
-          {renderMenuSection('Setup', setupItems, <Settings size={18} />)}
+        <nav className={`flex-1 px-4 overflow-y-auto ${isRTL ? 'text-right' : 'text-left'}`}>
+          {renderMenuSection(t.dashboardsLabel, dashboardItems, <LayoutDashboard size={18} />)}
+          <div className={`mx-2 my-4 border-t border-gray-700`} />
+          {renderMenuSection(t.setup, setupItems, <Settings size={18} />)}
         </nav>
 
         {/* Language Toggle */}

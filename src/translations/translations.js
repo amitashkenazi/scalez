@@ -13,6 +13,8 @@ export const translations = {
     save: "Save Changes",
     close: "Close",
     from: "From",
+    dashboardsLabel: "Dashboards",
+    setup: "Setup",
     to: "To",
     productsDashboard: "Products Dashboard",
     productStatus: "Product Status",
@@ -591,7 +593,7 @@ export const translations = {
     loginSuccess: "התחברת בהצלחה",
     logoutSuccess: "התנתקת בהצלחה",
     registrationSuccess: "ההרשמה הושלמה בהצלחה. נא לאמת את הדוא\"ל",
-
+    dashboardsLabel: "דשבורדים",
     // Loading States
     loading: "טוען...",
     processing: "מעבד...",
@@ -613,6 +615,7 @@ export const translations = {
     sharedProducts: "מוצרים ששותפו",
     sharedProductsDesc: "צפה במוצרים ששותפו איתך",
     noSharedProducts: "טרם שותפו איתך מוצרים",
+    setup: "הגדרות",
     // In src/translations/translations.js, add these to both 'en' and 'he' objects:
 
   // ... existing translations ...
