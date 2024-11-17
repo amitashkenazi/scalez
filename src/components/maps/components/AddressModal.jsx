@@ -1,6 +1,7 @@
 import React from 'react';
 import { X, MapPin, Loader2 } from 'lucide-react';
 import { useLanguage } from '../../../contexts/LanguageContext';
+import { translations } from '../../../translations/translations';
 
 const AddressModal = ({ 
   isOpen, 

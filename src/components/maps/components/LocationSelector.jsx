@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { ChevronDown, MapPin, Plus } from 'lucide-react';
 import AddressModal from './AddressModal';
 import apiService from '../../../services/api';
@@ -17,7 +17,7 @@ const LocationSelector = ({
   const { language } = useLanguage();
   const isRTL = language === 'he';
 
-  useEffect(() => {
+  React.useEffect(() => {
     fetchAddresses();
   }, []);
 
