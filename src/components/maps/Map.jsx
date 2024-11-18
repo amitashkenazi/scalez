@@ -42,20 +42,46 @@ const Map = ({
   const [isCalculatingRoute, setIsCalculatingRoute] = useState(false);
   const [error, setError] = useState(null);
 
-  // Watch for changes in selected customers and trigger route calculation
-  useEffect(() => {
-    if (selectedCustomers.length > 0 && startLocation && calculateRoute) {
+  // Memoize the calculateRoute function to prevent it from changing on every render
+  const memoizedCalculateRoute = useCallback(() => {
+    if (selectedCustomers.length > 0 && startLocation) {
+      console.log('Calculating route...');
       calculateRoute();
     }
   }, [selectedCustomers, startLocation, calculateRoute]);
 
-  const getMarkerIcon = useCallback((customer) => {
-    const isPendingDelivery = hasWaitingDelivery(customer, orders);
-    const firstProduct = customer.products?.[0];
-    const weight = firstProduct?.scale_id ? firstProduct?.measurement?.weight : null;
-    const thresholds = firstProduct?.thresholds;
-    return createCustomMarkerIcon(weight, thresholds, isPendingDelivery);
-  }, [orders]);
+  // Use a ref to store the previous selectedCustomers for comparison
+  const prevSelectedCustomersRef = useRef([]);
+
+  useEffect(() => {
+    const prevSelectedCustomers = prevSelectedCustomersRef.current;
+
+    // Compare previous and current selectedCustomers arrays
+    const hasSelectedCustomersChanged =
+      selectedCustomers.length !== prevSelectedCustomers.length ||
+      selectedCustomers.some(
+        (customer, index) =>
+          customer.customer_id !== prevSelectedCustomers[index]?.customer_id
+      );
+
+    if (hasSelectedCustomersChanged) {
+      memoizedCalculateRoute();
+      prevSelectedCustomersRef.current = selectedCustomers;
+    }
+  }, [selectedCustomers, memoizedCalculateRoute]);
+
+  const getMarkerIcon = useCallback(
+    (customer) => {
+      const isPendingDelivery = hasWaitingDelivery(customer, orders);
+      const firstProduct = customer.products?.[0];
+      const weight = firstProduct?.scale_id
+        ? firstProduct?.measurement?.weight
+        : null;
+      const thresholds = firstProduct?.thresholds;
+      return createCustomMarkerIcon(weight, thresholds, isPendingDelivery);
+    },
+    [orders]
+  );
 
   const handleBoundsChanged = () => {
     if (mapRef.current && onBoundsChanged) {
@@ -80,7 +106,7 @@ const Map = ({
 
           if (customers.length > 0) {
             const bounds = new window.google.maps.LatLngBounds();
-            customers.forEach(customer => {
+            customers.forEach((customer) => {
               bounds.extend({ lat: customer.lat, lng: customer.lng });
             });
             if (startLocation) {
@@ -99,10 +125,15 @@ const Map = ({
             onClick={() => setSelectedMarker('start')}
           >
             {selectedMarker === 'start' && (
-              <InfoWindowF position={startLocation} onCloseClick={() => setSelectedMarker(null)}>
+              <InfoWindowF
+                position={startLocation}
+                onCloseClick={() => setSelectedMarker(null)}
+              >
                 <div className="p-2">
                   <p className="font-medium">Starting Point</p>
-                  <p className="text-sm text-gray-600">Starting location for route</p>
+                  <p className="text-sm text-gray-600">
+                    Starting location for route
+                  </p>
                 </div>
               </InfoWindowF>
             )}
@@ -117,7 +148,10 @@ const Map = ({
             onClick={() => setSelectedMarker('end')}
           >
             {selectedMarker === 'end' && (
-              <InfoWindowF position={endLocation} onCloseClick={() => setSelectedMarker(null)}>
+              <InfoWindowF
+                position={endLocation}
+                onCloseClick={() => setSelectedMarker(null)}
+              >
                 <div className="p-2">
                   <p className="font-medium">End Point</p>
                   <p className="text-sm text-gray-600">Final destination</p>
@@ -142,21 +176,32 @@ const Map = ({
               >
                 <div className="p-2 max-w-xs">
                   <div className="font-bold mb-1">{customer.name}</div>
-                  <div className="text-sm text-gray-600 mb-2">{customer.address}</div>
-                  {customer.products?.map(product => (
-                    <div key={product.product_id} className="text-sm flex justify-between items-center">
+                  <div className="text-sm text-gray-600 mb-2">
+                    {customer.address}
+                  </div>
+                  {customer.products?.map((product) => (
+                    <div
+                      key={product.product_id}
+                      className="text-sm flex justify-between items-center"
+                    >
                       <span>{product.name}</span>
                       {product.scale_id ? (
-                        <span className={`font-medium ${
-                          !product.measurement?.weight ? 'text-gray-500' :
-                          product.measurement.weight >= product.thresholds?.upper ? 'text-green-600' :
-                          product.measurement.weight >= product.thresholds?.lower ? 'text-orange-500' :
-                          'text-red-600'
-                        }`}>
-                          {product.measurement?.weight ?
-                            `${Math.round(product.measurement.weight)} kg` :
-                            'No data'
-                          }
+                        <span
+                          className={`font-medium ${
+                            !product.measurement?.weight
+                              ? 'text-gray-500'
+                              : product.measurement.weight >=
+                                product.thresholds?.upper
+                              ? 'text-green-600'
+                              : product.measurement.weight >=
+                                product.thresholds?.lower
+                              ? 'text-orange-500'
+                              : 'text-red-600'
+                          }`}
+                        >
+                          {product.measurement?.weight
+                            ? `${Math.round(product.measurement.weight)} kg`
+                            : 'No data'}
                         </span>
                       ) : (
                         <span className="text-gray-500">No scale</span>

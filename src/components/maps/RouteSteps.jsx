@@ -1,10 +1,17 @@
 import React, { useState } from 'react';
-import { Route, Building2, MapPin, Plus, Clock, Navigation, Milestone, CalendarClock, ChevronDown, ChevronRight } from 'lucide-react';
+import { 
+    Route, 
+    Building2, 
+    MapPin, 
+    ChevronDown,
+    ChevronRight
+} from 'lucide-react';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { translations } from '../../translations/translations';
 import AddressModal from './components/AddressModal';
 import RouteSummary from './components/RouteSummary';
 import LocationSelector from './components/LocationSelector';
+
 
 const DrivingInstructions = ({ leg, expanded, onToggle }) => {
   if (!leg) return null;
@@ -105,165 +112,108 @@ const StopPoint = ({ customer, index, language }) => {
 };
 
 const RouteSteps = ({
-  directionsResponse,
-  selectedCustomers,
-  setSelectedCustomers,
-  startLocation,
-  startAddress,
-  endLocation,
-  endAddress,
-  onAddStop,
-  onChangeStartLocation,
-  onChangeEndLocation
-}) => {
-  const [expandedLeg, setExpandedLeg] = useState(null);
-  const [isAddingStop, setIsAddingStop] = useState(false);
-  const [addStopIndex, setAddStopIndex] = useState(null);
-
-  const { language } = useLanguage();
-  const t = translations[language];
-  const isRTL = language === 'he';
-  const startTime = new Date();
-
-  if (!directionsResponse || !selectedCustomers?.length || !startLocation) return null;
-
-  const route = directionsResponse.routes[0];
-  const legs = route?.legs || [];
-  const waypointOrder = route?.waypoint_order || [];
-  const orderedCustomers = waypointOrder.map(index => selectedCustomers[index]);
-
-  const totalStats = legs.reduce((acc, leg) => ({
-    distance: acc.distance + (leg?.distance?.value || 0),
-    duration: acc.duration + (leg?.duration_in_traffic?.value || leg?.duration?.value || 0)
-  }), { distance: 0, duration: 0 });
-
-  const handleAddressSubmit = async (address) => {
-    if (onAddStop) {
-      await onAddStop(address, addStopIndex);
-    }
-    setIsAddingStop(false);
-    setAddStopIndex(null);
-  };
-
-  return (
-    <div className="space-y-6">
-      <RouteSummary
-        totalStats={totalStats}
-        selectedCustomers={selectedCustomers}
-        startTime={startTime}
-      />
-
-      <div className="bg-white rounded-lg shadow-lg p-6">
-        <div className="space-y-4">
-          {/* Location selectors */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-            <LocationSelector
-              label="Start Location"
-              value={startAddress}
-              onChange={address => onChangeStartLocation(address)}
-            />
-            <LocationSelector
-              label="End Location"
-              value={endAddress}
-              onChange={address => onChangeEndLocation(address)}
-            />
-          </div>
-
-          {/* Starting point */}
-          <div className="border rounded-lg bg-blue-50 p-4">
-            <div className="flex items-start gap-3">
-              <div className="mt-1">
-                <Building2 className="h-5 w-5 text-blue-600" />
-              </div>
-              <div>
-                <div className="font-medium text-lg">Start from Base</div>
-                <div className="text-sm text-gray-600">{startAddress}</div>
-              </div>
-            </div>
-          </div>
-
-          {/* Add stop button before first stop */}
-          <div className="relative py-2">
-            <div className="absolute left-1/2 -translate-x-1/2">
-              <button
-                onClick={() => {
-                  setIsAddingStop(true);
-                  setAddStopIndex(0);
-                }}
-                className="flex items-center justify-center w-8 h-8 rounded-full border-2 border-blue-500 bg-white hover:bg-blue-50"
-              >
-                <Plus className="h-4 w-4 text-blue-500" />
-              </button>
-            </div>
-          </div>
-
-          {/* Stops and Driving Instructions */}
-          {orderedCustomers.map((customer, index) => (
-            <React.Fragment key={customer.customer_id}>
-              <DrivingInstructions
-                leg={legs[index]}
-                expanded={expandedLeg === index}
-                onToggle={() => setExpandedLeg(expandedLeg === index ? null : index)}
+    directionsResponse,
+    selectedCustomers,
+    setSelectedCustomers,
+    startLocation,
+    startAddress,
+    endLocation,
+    endAddress,
+    onAddressesChange,
+    selectedAddresses = []
+  }) => {
+    const [expandedLeg, setExpandedLeg] = useState(null);
+    const { language } = useLanguage();
+    const t = translations[language];
+    const isRTL = language === 'he';
+    const startTime = new Date();
+  
+    if (!directionsResponse || !selectedCustomers?.length || !startLocation) return null;
+  
+    const route = directionsResponse.routes[0];
+    const legs = route?.legs || [];
+    const waypointOrder = route?.waypoint_order || [];
+    const orderedCustomers = waypointOrder.map(index => selectedCustomers[index]);
+  
+    const totalStats = legs.reduce((acc, leg) => ({
+      distance: acc.distance + (leg?.distance?.value || 0),
+      duration: acc.duration + (leg?.duration_in_traffic?.value || leg?.duration?.value || 0)
+    }), { distance: 0, duration: 0 });
+  
+    return (
+      <div className="space-y-6">
+        <RouteSummary
+          totalStats={totalStats}
+          selectedCustomers={selectedCustomers}
+          startTime={startTime}
+        />
+  
+        <div className="bg-white rounded-lg shadow-lg p-6">
+          <div className="space-y-4">
+            {/* Location selector */}
+            <div className="grid grid-cols-1 gap-4 mb-6">
+              <LocationSelector
+                label="Add Addresses to Route"
+                selectedAddresses={selectedAddresses}
+                onAddressesChange={onAddressesChange}
               />
-              
-              <StopPoint 
-                customer={customer} 
-                index={index + 1}
-                language={language}
-              />
-
-              {/* Add stop button after each stop */}
-              <div className="relative py-2">
-                <div className="absolute left-1/2 -translate-x-1/2">
-                  <button
-                    onClick={() => {
-                      setIsAddingStop(true);
-                      setAddStopIndex(index + 1);
-                    }}
-                    className="flex items-center justify-center w-8 h-8 rounded-full border-2 border-blue-500 bg-white hover:bg-blue-50"
-                  >
-                    <Plus className="h-4 w-4 text-blue-500" />
-                  </button>
+            </div>
+  
+            {/* Starting point */}
+            <div className="border rounded-lg bg-blue-50 p-4">
+              <div className="flex items-start gap-3">
+                <div className="mt-1">
+                  <Building2 className="h-5 w-5 text-blue-600" />
+                </div>
+                <div>
+                  <div className="font-medium text-lg">Start from Base</div>
+                  <div className="text-sm text-gray-600">{startAddress}</div>
                 </div>
               </div>
-            </React.Fragment>
-          ))}
-
-          {/* Final leg back to base */}
-          <DrivingInstructions
-            leg={legs[legs.length - 1]}
-            expanded={expandedLeg === legs.length - 1}
-            onToggle={() => setExpandedLeg(expandedLeg === legs.length - 1 ? null : legs.length - 1)}
-          />
-
-          {/* Return to Base */}
-          <div className="border rounded-lg bg-blue-50 p-4">
-            <div className="flex items-start gap-3">
-              <div className="mt-1">
-                <Building2 className="h-5 w-5 text-blue-600" />
-              </div>
-              <div>
-                <div className="font-medium text-lg">Return to Base</div>
-                <div className="text-sm text-gray-600">
-                  {endAddress || startAddress}
+            </div>
+  
+            {/* Stops and Driving Instructions */}
+            {orderedCustomers.map((customer, index) => (
+              <React.Fragment key={customer.customer_id}>
+                <DrivingInstructions
+                  leg={legs[index]}
+                  expanded={expandedLeg === index}
+                  onToggle={() => setExpandedLeg(expandedLeg === index ? null : index)}
+                />
+                
+                <StopPoint 
+                  customer={customer} 
+                  index={index + 1}
+                  language={language}
+                />
+              </React.Fragment>
+            ))}
+  
+            {/* Final leg back to base */}
+            <DrivingInstructions
+              leg={legs[legs.length - 1]}
+              expanded={expandedLeg === legs.length - 1}
+              onToggle={() => setExpandedLeg(expandedLeg === legs.length - 1 ? null : legs.length - 1)}
+            />
+  
+            {/* Return to Base */}
+            <div className="border rounded-lg bg-blue-50 p-4">
+              <div className="flex items-start gap-3">
+                <div className="mt-1">
+                  <Building2 className="h-5 w-5 text-blue-600" />
+                </div>
+                <div>
+                  <div className="font-medium text-lg">Return to Base</div>
+                  <div className="text-sm text-gray-600">
+                    {endAddress || startAddress}
+                  </div>
                 </div>
               </div>
             </div>
           </div>
         </div>
       </div>
-
-      {/* Address Modal for adding stops */}
-      <AddressModal
-        isOpen={isAddingStop}
-        onClose={() => {
-          setIsAddingStop(false);
-          setAddStopIndex(null);
-        }}
-        onSubmit={handleAddressSubmit}
-      />
-    </div>
-  );
-};
-
-export default RouteSteps;
+    );
+  };
+  
+  export default RouteSteps;

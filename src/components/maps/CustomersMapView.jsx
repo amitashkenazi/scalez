@@ -1,4 +1,6 @@
-import React, { useState, useEffect, useCallback } from 'react';
+// src/components/maps/CustomersMapView.jsx
+
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { translations } from '../../translations/translations';
 import { Package, AlertCircle, Loader2, RefreshCw, List } from 'lucide-react';
@@ -8,12 +10,15 @@ import Map from './Map';
 import RouteSteps from './RouteSteps';
 import CustomerCard from './components/CustomerCard';
 import { geocodeAddress } from './utils';
+import { DirectionsOptimizer } from '../../utils/DirectionsOptimizer';
+import ApiStats from '../ApiStats';
+
 
 const GOOGLE_MAPS_API_KEY = process.env.REACT_APP_GOOGLE_MAPS_API_KEY;
 const LIBRARIES = ['places'];
 
 const CustomersMapView = () => {
-  // State management for data
+  // State for data
   const [customers, setCustomers] = useState([]);
   const [orders, setOrders] = useState([]);
   const [measurements, setMeasurements] = useState({});
@@ -21,23 +26,31 @@ const CustomersMapView = () => {
   const [directionsResponse, setDirectionsResponse] = useState(null);
   const [routeSummary, setRouteSummary] = useState(null);
 
-  // UI state management
+  // UI state
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [lastRefreshTime, setLastRefreshTime] = useState(new Date());
   const [selectedMarker, setSelectedMarker] = useState(null);
   const [mapInstance, setMapInstance] = useState(null);
-  
-  // Location state
+  const [selectedAddresses, setSelectedAddresses] = useState([]);
+  const [isCalculatingRoute, setIsCalculatingRoute] = useState(false);
+
+  // Initialize the optimizer
+  const [directionsOptimizer] = useState(() => new DirectionsOptimizer({
+    batchSize: 5,
+    batchInterval: 1000,
+    debounceDelay: 1000
+  }));
+
+  // Location state with Tel Aviv as default
   const [startLocation, setStartLocation] = useState({
     lat: 32.0853,
-    lng: 34.7818 
+    lng: 34.7818
   });
   const [startAddress, setStartAddress] = useState('Tel Aviv, Israel');
   const [endLocation, setEndLocation] = useState(null);
   const [endAddress, setEndAddress] = useState('');
-  const [isCalculatingRoute, setIsCalculatingRoute] = useState(false);
 
   const { language } = useLanguage();
   const t = translations[language];
@@ -133,18 +146,107 @@ const CustomersMapView = () => {
     }
   };
 
-  const handleBoundsChanged = useCallback((bounds) => {
-    if (mapInstance && bounds) {
-      // Handle bounds change - you can use this to update visible markers, etc.
-      console.log('Map bounds changed:', bounds);
-    }
-  }, [mapInstance]);
+  const calculateRoute = async () => {
+    console.log(new Error().stack);
+    if (!selectedCustomers.length || !startLocation || !window.google) return;
+    
+    setIsCalculatingRoute(true);
+    setError(null);
 
-  useEffect(() => {
-    fetchData();
+    try {
+      const origin = new window.google.maps.LatLng(startLocation.lat, startLocation.lng);
+      const destination = endLocation ? 
+        new window.google.maps.LatLng(endLocation.lat, endLocation.lng) : 
+        origin;
+
+      const waypoints = selectedCustomers.map(customer => ({
+        location: new window.google.maps.LatLng(customer.lat, customer.lng),
+        stopover: true
+      }));
+
+      // Use debounced directions to prevent rapid recalculation
+      const result = await directionsOptimizer.getDebouncedDirections(
+        origin,
+        destination,
+        waypoints,
+        {
+          avoidTolls: false,
+          avoidHighways: false,
+          optimizeWaypoints: true,
+          drivingOptions: {
+            departureTime: new Date(),
+            trafficModel: window.google.maps.TrafficModel.BEST_GUESS
+          }
+        }
+      );
+
+      setDirectionsResponse(result);
+      
+      if (mapInstance) {
+        const bounds = new window.google.maps.LatLngBounds();
+        bounds.extend(origin);
+        result.routes[0].legs.forEach(leg => {
+          bounds.extend(leg.start_location);
+          bounds.extend(leg.end_location);
+        });
+        mapInstance.fitBounds(bounds);
+      }
+
+    } catch (err) {
+      console.error('Error calculating route:', err);
+      setError('Failed to calculate route. Please try again.');
+    } finally {
+      setIsCalculatingRoute(false);
+    }
+  };
+
+  // Handle address changes
+  const handleAddressesChange = async (addresses) => {
+    if (!addresses.length) return;
+  
+    try {
+      // Get coordinates for all addresses
+      const coordsPromises = addresses.map(address => geocodeAddress(address));
+      const coordinates = await Promise.all(coordsPromises);
+  
+      // Set the first address as start location
+      setStartLocation(coordinates[0]);
+      setStartAddress(addresses[0]);
+  
+      // If there are more addresses, calculate route through them
+      if (coordinates.length > 1) {
+        const waypoints = coordinates.slice(1).map(coords => ({
+          location: new window.google.maps.LatLng(coords.lat, coords.lng),
+          stopover: true
+        }));
+  
+        setSelectedCustomers(addresses.map((address, index) => ({
+          customer_id: `address-${index}`,
+          name: address,
+          address: address,
+          lat: coordinates[index].lat,
+          lng: coordinates[index].lng,
+          products: []
+        })));
+        console.log('calculateRoute1');
+        calculateRoute();
+      }
+    } catch (error) {
+      console.error('Error updating locations:', error);
+      setError('Failed to process addresses');
+    }
+  };
+
+  // Handlers
+  const handleRefresh = useCallback(() => {
+    setIsRefreshing(true);
+    fetchData(false);
   }, []);
 
-  // Click handlers
+  const handleBoundsChanged = useCallback((bounds) => {
+    // Handle bounds change if needed
+  }, []);
+
   const handleCustomerClick = useCallback((customer) => {
     if (mapInstance) {
       mapInstance.panTo({ lat: customer.lat, lng: customer.lng });
@@ -164,154 +266,23 @@ const CustomersMapView = () => {
     });
   }, []);
 
-  const handleDirectionsChanged = useCallback((response) => {
-    setDirectionsResponse(response);
-    if (response) {
-      const route = response.routes[0];
-      const legs = route.legs;
-
-      const totalDistance = legs.reduce((acc, leg) => acc + leg.distance.value, 0) / 1000;
-      const totalTime = legs.reduce((acc, leg) =>
-        acc + (leg.duration_in_traffic?.value || leg.duration.value), 0) / 60;
-
-      setRouteSummary({
-        totalDistance,
-        totalTime,
-        waypoints: route.waypoint_order,
-        legs: legs.map(leg => ({
-          distance: leg.distance,
-          duration: leg.duration_in_traffic || leg.duration,
-          startAddress: leg.start_address,
-          endAddress: leg.end_address,
-          steps: leg.steps
-        }))
-      });
-    } else {
-      setRouteSummary(null);
-    }
-  }, []);
-
-
-  const calculateRoute = useCallback(async () => {
-    if (!startLocation || selectedCustomers.length === 0 || !window.google) {
-      return;
-    }
-  
-    setIsCalculatingRoute(true);
-    setError(null);
-  
-    try {
-      const directionsService = new window.google.maps.DirectionsService();
-  
-      const validCustomers = selectedCustomers.filter(customer => 
-        customer && customer.lat && customer.lng
-      );
-  
-      if (validCustomers.length === 0) {
-        setError('No valid customers with coordinates for route calculation');
-        setIsCalculatingRoute(false);
-        return;
-      }
-  
-      const waypoints = validCustomers.map(customer => ({
-        location: new window.google.maps.LatLng(customer.lat, customer.lng),
-        stopover: true
-      }));
-  
-      const destination = endLocation || startLocation;
-  
-      const result = await new Promise((resolve, reject) => {
-        directionsService.route(
-          {
-            origin: new window.google.maps.LatLng(startLocation.lat, startLocation.lng),
-            destination: new window.google.maps.LatLng(destination.lat, destination.lng),
-            waypoints: waypoints,
-            optimizeWaypoints: true,
-            travelMode: window.google.maps.TravelMode.DRIVING,
-            drivingOptions: {
-              departureTime: new Date(),
-              trafficModel: window.google.maps.TrafficModel.BEST_GUESS
-            }
-          },
-          (result, status) => {
-            if (status === window.google.maps.DirectionsStatus.OK) {
-              resolve(result);
-            } else {
-              reject(new Error(`Directions request failed with status: ${status}`));
-            }
-          }
-        );
-      });
-  
-      handleDirectionsChanged(result);
-      
-      if (mapInstance) {
-        const bounds = new window.google.maps.LatLngBounds();
-        bounds.extend(startLocation);
-        bounds.extend(destination);
-        result.routes[0].legs.forEach(leg => {
-          bounds.extend(leg.start_location);
-          bounds.extend(leg.end_location);
-        });
-        mapInstance.fitBounds(bounds);
-      }
-    } catch (err) {
-      console.error('Error calculating route:', err);
-      setError('Failed to calculate route. Please try again.');
-    } finally {
-      setIsCalculatingRoute(false);
-    }
-  }, [selectedCustomers, startLocation, endLocation, mapInstance, handleDirectionsChanged, handleDirectionsChanged]);
-  
-
-  const handleAddStop = async (address, index) => {
-    try {
-      const coords = await geocodeAddress(address);
-      
-      const newStop = {
-        customer_id: `custom-${Date.now()}`,
-        name: `Custom Stop - Custom Stop`,
-        address: address,
-        lat: coords.lat,
-        lng: coords.lng,
-        products: []
-      };
-
-      const newSelectedCustomers = [...selectedCustomers];
-      newSelectedCustomers.splice(index, 0, newStop);
-      setSelectedCustomers(newSelectedCustomers);
-    } catch (error) {
-      console.error('Failed to add stop:', error);
-      setError('Failed to add custom stop');
-    }
-  };
-
-  const handleLocationChange = useCallback((type, address) => {
-    const updateLocation = async () => {
-      try {
-        const coords = await geocodeAddress(address);
-        if (type === 'start') {
-          setStartLocation(coords);
-          setStartAddress(address);
-        } else {
-          setEndLocation(coords);
-          setEndAddress(address);
-        }
-      } catch (error) {
-        console.error('Error updating location:', error);
-        setError(`Failed to update ${type} location`);
-      }
+  // Effects
+  useEffect(() => {
+    fetchData();
+    return () => {
+      directionsOptimizer.cancelAll();
     };
-
-    updateLocation();
   }, []);
 
-  
-  const handleRefresh = () => {
-    setIsRefreshing(true);
-    fetchData(false); // Don't show loading state for manual refresh
-  };
+  useEffect(() => {
+    console.log('Selected customers:', selectedCustomers);
+    if (selectedCustomers.length > 0 && startLocation) {
+    console.log('calculateRoute2');
+      calculateRoute();
+    }
+  }, [selectedCustomers, startLocation, endLocation]);
 
+  // Format time helper
   const getLastRefreshTimeString = () => {
     return lastRefreshTime.toLocaleTimeString(language === 'he' ? 'he-IL' : 'en-US', {
       hour: '2-digit',
@@ -372,7 +343,7 @@ const CustomersMapView = () => {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        {/* Customer List Panel */}
+        {/* Customer List */}
         <div className="space-y-4">
           <div className="bg-white rounded-lg shadow-lg p-4">
             <div className="flex items-center justify-between mb-4">
@@ -403,7 +374,7 @@ const CustomersMapView = () => {
           </div>
         </div>
 
-        {/* Map Panel */}
+        {/* Map */}
         <div className="md:col-span-2">
           <div className="bg-white rounded-lg shadow-lg p-4">
             <Map
@@ -414,20 +385,19 @@ const CustomersMapView = () => {
               selectedCustomers={selectedCustomers}
               setSelectedCustomers={setSelectedCustomers}
               directionsResponse={directionsResponse}
-              onDirectionsChanged={handleDirectionsChanged}
               orders={orders}
               startLocation={startLocation}
               endLocation={endLocation}
-              onBoundsChanged={handleBoundsChanged} // Now properly defined
+              onBoundsChanged={handleBoundsChanged}
               calculateRoute={calculateRoute}
-
+              isCalculatingRoute={isCalculatingRoute}
             />
           </div>
         </div>
       </div>
 
       {/* Route Details */}
-      {routeSummary && (
+      {directionsResponse && (
         <RouteSteps
           directionsResponse={directionsResponse}
           selectedCustomers={selectedCustomers}
@@ -436,9 +406,11 @@ const CustomersMapView = () => {
           startAddress={startAddress}
           endLocation={endLocation}
           endAddress={endAddress}
-          onAddStop={handleAddStop}
-          onChangeStartLocation={(address) => handleLocationChange('start', address)}
-          onChangeEndLocation={(address) => handleLocationChange('end', address)}
+          onAddressesChange={(addresses) => {
+            setSelectedAddresses(addresses);
+            handleAddressesChange(addresses);
+          }}
+          selectedAddresses={selectedAddresses}
         />
       )}
 
@@ -449,6 +421,7 @@ const CustomersMapView = () => {
           <p className="text-red-700">{error}</p>
         </div>
       )}
+      <ApiStats />
     </div>
   );
 };
