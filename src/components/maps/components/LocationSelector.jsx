@@ -23,7 +23,7 @@ const LocationSelector = ({
 
   const fetchAddresses = async () => {
     try {
-      const response = await apiService.request('vendors/addresses', {
+      const response = await apiService.request('addresses', {
         method: 'GET'
       });
       setAddresses(response || []);
@@ -41,7 +41,7 @@ const LocationSelector = ({
     setIsLoading(true);
     try {
       // Add the new address to the server
-      await apiService.request('vendors/addresses', {
+      await apiService.request('addresses', {
         method: 'POST',
         data: { address }
       });
