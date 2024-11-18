@@ -40,7 +40,7 @@ const CustomersMapView = () => {
   const [directionsOptimizer] = useState(() => new DirectionsOptimizer({
     batchSize: 5,
     batchInterval: 1000,
-    debounceDelay: 1000
+    debounceDelay: 2500
   }));
 
   // Location state with Tel Aviv as default
