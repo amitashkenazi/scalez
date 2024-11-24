@@ -18,7 +18,15 @@ import { Menu as MenuIcon } from 'lucide-react';
 import CustomersMapView from './components/maps/CustomersMapView';
 
 
+/**
+ * AppContent component renders the main application layout including a side menu and main content area.
+ * It handles user authentication, language direction, and touch events for menu toggling.
+ * 
+ * @component
+ * @returns {JSX.Element} The rendered component.
+ */
 function AppContent() {
+
   const { user } = useAuth();
   const { language } = useLanguage();
   const [activeView, setActiveView] = useState('products');
@@ -148,6 +156,13 @@ function AppContent() {
   );
 }
 
+
+/**
+ * The main application component that sets up the context providers for authentication and language.
+ * 
+ * @component
+ * @returns {JSX.Element} The rendered application component with context providers.
+ */
 function App() {
   return (
     <AuthProvider>

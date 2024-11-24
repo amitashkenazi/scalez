@@ -1,7 +1,13 @@
+
 // src/utils/DirectionsOptimizer.js
 
 import { apiTracker } from './ApiTracker';
 
+
+/**
+ * DirectionsOptimizer class is responsible for optimizing and managing Google Maps Directions API requests.
+ * It handles batching, debouncing, and rate limiting of requests to avoid exceeding API quotas and improve performance.
+ */
 export class DirectionsOptimizer {
   constructor(options = {}) {
     this.batchSize = options.batchSize || 10;

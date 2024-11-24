@@ -11,6 +11,11 @@ import {
 } from 'lucide-react';
 import apiService from '../services/api';
 
+
+
+/**
+ * CustomerModal component for adding or editing customer details.
+ */
 const CustomerModal = ({ isOpen, onClose, onSubmit, initialData = null }) => {
   const { language } = useLanguage();
   const t = translations[language];

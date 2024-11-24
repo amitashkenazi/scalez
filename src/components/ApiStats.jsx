@@ -1,7 +1,16 @@
+
 import React, { useState, useEffect } from 'react';
 import { apiTracker } from '../utils/ApiTracker';
 import { RefreshCw, Server, Map, X } from 'lucide-react';
 
+
+/**
+ * A React component that displays API call statistics and allows resetting the counters.
+ *
+ * @component
+ * @example
+ * return <ApiStats />
+ */
 const ApiStats = () => {
   const [stats, setStats] = useState(apiTracker.getStats());
   const [isVisible, setIsVisible] = useState(false);

@@ -7,6 +7,7 @@ import {
 } from 'amazon-cognito-identity-js';
 import { AuthenticationException } from './exceptions';
 
+// Import necessary modules from Amazon Cognito Identity JS
 class TokenService {
     constructor() {
         // Initialize with stored tokens

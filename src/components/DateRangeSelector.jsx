@@ -1,7 +1,12 @@
+
 import React from 'react';
 import { useLanguage } from '../contexts/LanguageContext';
 import { translations } from '../translations/translations';
 
+
+/**
+ * DateRangeSelector component allows users to select a date range with start and end dates.
+ */
 const DateRangeSelector = ({ startDate, endDate, onStartDateChange, onEndDateChange }) => {
   const { language } = useLanguage();
   const t = translations[language];
