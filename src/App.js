@@ -1,4 +1,3 @@
-// src/App.js
 import React, { useState, useRef, useCallback } from 'react';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { LanguageProvider, useLanguage } from './contexts/LanguageContext';
@@ -16,17 +15,9 @@ import SharedProductsView from './components/SharedProductsView';
 import MyAccountView from './components/MyAccountView';
 import { Menu as MenuIcon } from 'lucide-react';
 import CustomersMapView from './components/maps/CustomersMapView';
+import ScaleMonitor from './components/ScaleMonitor';
 
-
-/**
- * AppContent component renders the main application layout including a side menu and main content area.
- * It handles user authentication, language direction, and touch events for menu toggling.
- * 
- * @component
- * @returns {JSX.Element} The rendered component.
- */
 function AppContent() {
-
   const { user } = useAuth();
   const { language } = useLanguage();
   const [activeView, setActiveView] = useState('products');
@@ -76,7 +67,6 @@ function AppContent() {
     touchEndX.current = null;
   }, [isMenuOpen, language]);
 
-  // RTL-aware styles
   const getMenuStyles = () => {
     const baseStyles = 'fixed top-0 h-full bg-gray-800 transition-all duration-300 ease-in-out w-64 z-40';
     if (language === 'he') {
@@ -98,6 +88,42 @@ function AppContent() {
     return language === 'he' ? `${baseStyles} right-4` : `${baseStyles} left-4`;
   };
 
+  // Render scale monitor component inside ScalesManagement instead of directly in main content
+  const renderMainContent = () => {
+    if (activeView === 'scalesManagement') {
+      return (
+        <div className="p-4">
+          <ScalesManagement>
+            {(selectedScaleId) => selectedScaleId && (
+              <ScaleMonitor 
+                scaleId={selectedScaleId}
+                className="mt-4"
+              />
+            )}
+          </ScalesManagement>
+        </div>
+      );
+    }
+
+    return (
+      <>
+        {activeView === 'home' && <LandingPage onViewChange={setActiveView} />}
+        {activeView === 'products' && <ProductsView />}
+        {activeView === 'customersTable' && <CustomersTableView />}
+        {activeView === 'productsMng' && <ProductsManagementView />}
+        {activeView === 'sharedProducts' && <SharedProductsView />}
+        {activeView === 'myAccount' && <MyAccountView />}
+        {activeView === 'orders' && <OrdersView />}
+        {activeView === 'customersMap' && <CustomersMapView />}
+        {activeView === 'vendors' && (
+          <AdminRoute>
+            <VendorsView />
+          </AdminRoute>
+        )}
+      </>
+    );
+  };
+
   if (!user) {
     return <UnauthenticatedView />;
   }
@@ -110,7 +136,6 @@ function AppContent() {
       onTouchEnd={handleTouchEnd}
       dir={language === 'he' ? 'rtl' : 'ltr'}
     >
-      {/* Toggle Button */}
       <button
         onClick={() => setIsMenuOpen(!isMenuOpen)}
         className={getMenuButtonPosition()}
@@ -118,7 +143,6 @@ function AppContent() {
         <MenuIcon size={24} />
       </button>
 
-      {/* Menu */}
       <div ref={menuRef} className={getMenuStyles()}>
         <SideMenu 
           activeView={activeView} 
@@ -126,7 +150,6 @@ function AppContent() {
         />
       </div>
 
-      {/* Mobile Overlay */}
       {isMenuOpen && (
         <div
           className="fixed inset-0 bg-black bg-opacity-50 z-30 md:hidden"
@@ -134,35 +157,13 @@ function AppContent() {
         />
       )}
 
-      {/* Main Content */}
       <main className={getMainContentStyles()}>
-        {activeView === 'home' && <LandingPage onViewChange={setActiveView} />}
-        {activeView === 'products' && <ProductsView />}
-        {activeView === 'customersTable' && <CustomersTableView />}
-        {activeView === 'scalesManagement' && <ScalesManagement />}
-        {activeView === 'productsMng' && <ProductsManagementView />}
-        {activeView === 'sharedProducts' && <SharedProductsView />}
-        {activeView === 'myAccount' && <MyAccountView />}
-        {activeView === 'orders' && <OrdersView />}
-        {activeView === 'customersMap' && <CustomersMapView />}
-
-        {activeView === 'vendors' && (
-          <AdminRoute>
-            <VendorsView />
-          </AdminRoute>
-        )}
+        {renderMainContent()}
       </main>
     </div>
   );
 }
 
-
-/**
- * The main application component that sets up the context providers for authentication and language.
- * 
- * @component
- * @returns {JSX.Element} The rendered application component with context providers.
- */
 function App() {
   return (
     <AuthProvider>

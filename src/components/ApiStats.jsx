@@ -15,14 +15,6 @@ const ApiStats = () => {
   const [stats, setStats] = useState(apiTracker.getStats());
   const [isVisible, setIsVisible] = useState(false);
 
-  useEffect(() => {
-    const updateInterval = setInterval(() => {
-      setStats(apiTracker.getStats());
-    }, 1000);
-
-    return () => clearInterval(updateInterval);
-  }, []);
-
   if (!isVisible) {
     return (
       <button

@@ -15,7 +15,6 @@ const ProductDetailModal = ({
   latestMeasurement,
   customer 
 }) => {
-  console.log('init scale_id:', scale_id); // Debug log
   const { language } = useLanguage();
   const t = translations[language];
   const isRTL = language === 'he';
@@ -25,7 +24,7 @@ const ProductDetailModal = ({
   const [isLoadingMeasurements, setIsLoadingMeasurements] = useState(false);
   const [error, setError] = useState(null);
   
-  // State for date range - initialize with last 7 days
+  // State for date range - memoize initial value
   const [dateRange, setDateRange] = useState(() => {
     const end = new Date();
     const start = new Date();
@@ -36,24 +35,21 @@ const ProductDetailModal = ({
     };
   });
 
-  // Fetch measurements when modal opens or date range changes
+  // Fetch measurements only when necessary conditions are met
   useEffect(() => {
+    let isMounted = true;
     
     const fetchMeasurements = async () => {
-      console.log('Fetching measurements...'); // Debug log
-      console.log('isOpen:', isOpen); // Debug log
-      console.log('scale_id:', scale_id); // Debug log
+      // Only proceed if modal is open and we have a scale_id
       if (!isOpen || !scale_id) return;
 
       setIsLoadingMeasurements(true);
       setError(null);
 
       try {
-        // Format dates for API request
         const start = new Date(dateRange.startDate).toISOString();
         const end = new Date(dateRange.endDate).toISOString();
 
-        // Fetch measurements from API
         const response = await apiService.request(
           `measurements/scale/${scale_id}`, 
           { 
@@ -65,30 +61,41 @@ const ProductDetailModal = ({
           }
         );
 
-        console.log('Raw measurements:', response); // Debug log
+        // Only update state if component is still mounted
+        if (isMounted) {
+          const transformedData = Array.isArray(response) ? response
+            .map(measurement => ({
+              timestamp: measurement.timestamp,
+              weight: parseFloat(measurement.weight)
+            }))
+            .sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp)) 
+            : [];
 
-        // Transform the data to match the expected format
-        const transformedData = Array.isArray(response) ? response.map(measurement => ({
-          timestamp: measurement.timestamp,
-          weight: parseFloat(measurement.weight)
-        })).sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp)) : [];
-
-        console.log('Transformed measurements:', transformedData); // Debug log
-
-        setMeasurements(transformedData);
+          setMeasurements(transformedData);
+          setError(null);
+        }
       } catch (err) {
-        console.error('Error fetching measurements:', err);
-        setError(t.failedToFetchMeasurements || 'Failed to fetch measurements');
+        if (isMounted) {
+          console.error('Error fetching measurements:', err);
+          setError(t.failedToFetchMeasurements || 'Failed to fetch measurements');
+        }
       } finally {
-        setIsLoadingMeasurements(false);
+        if (isMounted) {
+          setIsLoadingMeasurements(false);
+        }
       }
     };
 
     fetchMeasurements();
-  }, [isOpen, scale_id, dateRange, t]);
 
-  // Format timestamp
-  const formatDate = (timestamp) => {
+    // Cleanup function to prevent updates on unmounted component
+    return () => {
+      isMounted = false;
+    };
+  }, [isOpen, scale_id, dateRange.startDate, dateRange.endDate, t]);
+
+  // Memoize date formatter
+  const formatDate = React.useCallback((timestamp) => {
     if (!timestamp) return 'N/A';
     return new Date(timestamp).toLocaleString(language === 'he' ? 'he-IL' : 'en-US', {
       year: 'numeric',
@@ -98,7 +105,7 @@ const ProductDetailModal = ({
       minute: '2-digit',
       hour12: false
     });
-  };
+  }, [language]);
 
   if (!isOpen) return null;
 
@@ -189,4 +196,4 @@ const ProductDetailModal = ({
   );
 };
 
-export default ProductDetailModal;
+export default React.memo(ProductDetailModal);

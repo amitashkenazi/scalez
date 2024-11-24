@@ -1,13 +1,12 @@
-// src/hooks/useScaleData.js
-
 import { useState, useEffect } from 'react';
 import apiService from '../services/api';
 
-const useScaleData = () => {
+const useScaleData = (initialScaleId = null) => {
   const [scales, setScales] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [latestMeasurement, setLatestMeasurement] = useState(null);
 
   const fetchScales = async (isRefresh = false) => {
     try {
@@ -33,11 +32,33 @@ const useScaleData = () => {
       }));
 
       setScales(transformedScales);
+      
+      // If we have an initial scale ID, fetch its latest measurement
+      if (initialScaleId) {
+        await fetchLatestMeasurement(initialScaleId);
+      }
     } catch (err) {
       console.error('Error fetching scales:', err);
       setError(err.message || 'Failed to fetch scales data. Please try again later.');
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const fetchLatestMeasurement = async (scaleId) => {
+    if (!scaleId) {
+      console.error('Scale ID is required to fetch latest measurement');
+      return;
+    }
+
+    try {
+      const measurement = await apiService.getLatestMeasurement(scaleId);
+      setLatestMeasurement(measurement);
+      return measurement;
+    } catch (error) {
+      console.error(`Error fetching latest measurement for scale ${scaleId}:`, error);
+      setError(error.message);
+      return null;
     }
   };
 
@@ -58,6 +79,11 @@ const useScaleData = () => {
           scale.id === updatedScale.id ? updatedScale : scale
         )
       );
+
+      // Fetch latest measurement after update
+      if (updatedScale.id) {
+        await fetchLatestMeasurement(updatedScale.id);
+      }
 
       return true;
     } catch (error) {
@@ -82,6 +108,8 @@ const useScaleData = () => {
     updateScale,
     refreshScales,
     setScales,
+    latestMeasurement,
+    fetchLatestMeasurement
   };
 };
 

@@ -137,6 +137,31 @@ class ApiService {
   }
 
   /**
+   * Gets the latest measurement for a specific scale.
+   * @param {string} scaleId - The ID of the scale to get measurements for
+   * @returns {Promise<Object>} A promise that resolves to the latest measurement
+   * @throws {Error} If scaleId is missing or invalid, or if the request fails
+   */
+  async getLatestMeasurement(scaleId) {
+    if (!scaleId) {
+      throw new Error('Scale ID is required to fetch latest measurement');
+    }
+    
+    try {
+      console.log('get latest measurement: scaleid: ', scaleId); // Debug log
+      return await this.request(`measurements/scale/${scaleId}/latest`, {
+        method: 'GET'
+      });
+    } catch (error) {
+      if (error.response?.status === 404) {
+        throw new Error(`No measurements found for scale ${scaleId}`);
+      }
+      throw error;
+    }
+  }
+
+
+  /**
    * Parses the response from the API.
    * @param {Response} response - The response object from the fetch request.
    * @returns {Promise<Object|string>} A promise that resolves to the parsed response, either as JSON or text.
@@ -399,6 +424,7 @@ class ApiService {
     const queryParams = new URLSearchParams();
     if (startDate) queryParams.append('start_date', startDate);
     if (endDate) queryParams.append('end_date', endDate);
+    console.log('get measurements: scaleid: ', scaleId); // Debug log  
     return this.request(`measurements/scale/${scaleId}?${queryParams}`, {
       method: 'GET'
     });

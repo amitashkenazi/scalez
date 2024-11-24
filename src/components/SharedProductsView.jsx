@@ -174,7 +174,7 @@ const SharedProductsView = () => {
       setCustomers(sharedCustomers);
 
       // Fetch latest measurements for each scale
-      const scaleIds = [...new Set(allSharedProducts.map(p => p.scale_id))];
+      const scaleIds = [...new Set(allSharedProducts.map(p => p.scale_id).filter(id => id !== null))];
       await fetchLatestMeasurements(scaleIds);
 
     } catch (err) {
@@ -188,6 +188,7 @@ const SharedProductsView = () => {
 
   // Fetch latest measurements for scales
   const fetchLatestMeasurements = async (scaleIds) => {
+    console.log('Fetching latest measurements for scales:', scaleIds);
     try {
       const measurementPromises = scaleIds.map(scaleId => 
         apiService.request(`measurements/scale/${scaleId}/latest`, {
@@ -218,9 +219,12 @@ const SharedProductsView = () => {
   // Auto-refresh measurements
   useEffect(() => {
     if (sharedProducts.length === 0) return;
-
+    
     const refreshInterval = setInterval(() => {
-      const scaleIds = [...new Set(sharedProducts.map(p => p.scale_id))];
+      const scaleIds = [...new Set(sharedProducts
+        .filter(p => p.scale_id)
+        .map(p => p.scale_id))];
+      // const scaleIds = [...new Set(sharedProducts.map(p => p.scale_id).filter(id => id !== null))];
       fetchLatestMeasurements(scaleIds);
     }, 20000); // 20 seconds
 

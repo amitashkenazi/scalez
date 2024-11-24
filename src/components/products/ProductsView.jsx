@@ -230,11 +230,13 @@ const ProductsView = () => {
   // Fetch latest measurements for each scale
   const fetchLatestMeasurements = async (scaleIds) => {
     try {
-      const measurementPromises = scaleIds.map(scaleId => 
-        apiService.request(`measurements/scale/${scaleId}/latest`, {
-          method: 'GET'
-        })
-      );
+      const measurementPromises = scaleIds
+        .filter(scaleId => scaleId !== null)
+        .map(scaleId => 
+          apiService.request(`measurements/scale/${scaleId}/latest`, {
+        method: 'GET'
+          })
+        );
       
       const measurementResults = await Promise.allSettled(measurementPromises);
       
@@ -244,7 +246,6 @@ const ProductsView = () => {
           newMeasurements[scaleIds[index]] = result.value;
         }
       });
-      
       setMeasurements(newMeasurements);
       setLastRefreshTime(new Date());
     } catch (err) {
@@ -269,7 +270,9 @@ const ProductsView = () => {
       setCustomers(customersResponse);
       
       // Get unique scale IDs from products
-      const scaleIds = [...new Set(productsResponse.map(p => p.scale_id))];
+      const scaleIds = [...new Set(productsResponse
+        .filter(p => p.scale_id)
+        .map(p => p.scale_id))];
       await fetchLatestMeasurements(scaleIds);
       
       setError(null);
@@ -294,7 +297,9 @@ const ProductsView = () => {
     const refreshInterval = setInterval(() => {
       // Only fetch measurements if we have products
       if (products.length > 0) {
-        const scaleIds = [...new Set(products.map(p => p.scale_id))];
+        const scaleIds = [...new Set(products
+          .filter(p => p.scale_id)
+          .map(p => p.scale_id))];
         fetchLatestMeasurements(scaleIds);
       }
     }, 20000); // 20 seconds
