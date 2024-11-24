@@ -118,6 +118,34 @@ export const translations = {
         "View Notifications"
       ]
     },
+    pricing: {
+      title: "Simple, transparent pricing",
+      subtitle: "Choose the plan that's right for your business",
+      selectPlan: "Select Plan",
+      faq: {
+        title: "Frequently Asked Questions",
+        items: [
+          {
+            q: "Can I change plans later?",
+            a: "Yes, you can upgrade or downgrade your plan at any time. Changes will be reflected in your next billing cycle."
+          },
+          {
+            q: "What payment methods do you accept?",
+            a: "We accept all major credit cards and bank transfers for annual plans."
+          },
+          {
+            q: "Is there a minimum contract period?",
+            a: "No, our services are provided on a month-to-month basis with no long-term commitment required."
+          }
+        ]
+      }
+    },
+    upgrade: {
+      mapsFeatureTitle: "Upgrade to Access Maps",
+      mapsFeatureDescription: "Get access to route optimization, maps integration, and advanced features by upgrading to our Advanced plan.",
+      viewPricingPlans: "View Pricing Plans"
+    },
+    
 
     unknownCustomer: "Unknown Customer",
     saving: "Saving...",

@@ -1,49 +1,34 @@
-// src/components/maps/CustomersMapView.jsx
-
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { translations } from '../../translations/translations';
+import { useLoadScript } from '@react-google-maps/api';
 import { Package, AlertCircle, Loader2, RefreshCw, List } from 'lucide-react';
 import apiService from '../../services/api';
-import { useLoadScript } from '@react-google-maps/api';
-import Map from './Map';
+import MapDisplay from './Map';
 import RouteSteps from './RouteSteps';
 import CustomerCard from './components/CustomerCard';
 import { geocodeAddress } from './utils';
 import { DirectionsOptimizer } from '../../utils/DirectionsOptimizer';
 import ApiStats from '../ApiStats';
-
-
-const GOOGLE_MAPS_API_KEY = process.env.REACT_APP_GOOGLE_MAPS_API_KEY;
-const LIBRARIES = ['places'];
+import { useSubscription } from '../../contexts/SubscriptionContext';
+import UpgradePrompt from '../UpgradePrompt';
+import { mapsService } from '../../services/mapsService';
 
 const CustomersMapView = () => {
-  // State for data
+  // States
   const [customers, setCustomers] = useState([]);
   const [orders, setOrders] = useState([]);
   const [measurements, setMeasurements] = useState({});
   const [selectedCustomers, setSelectedCustomers] = useState([]);
   const [directionsResponse, setDirectionsResponse] = useState(null);
-  const [routeSummary, setRouteSummary] = useState(null);
-
-  // UI state
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
   const [isRefreshing, setIsRefreshing] = useState(false);
-  const [lastRefreshTime, setLastRefreshTime] = useState(new Date());
   const [selectedMarker, setSelectedMarker] = useState(null);
   const [mapInstance, setMapInstance] = useState(null);
   const [selectedAddresses, setSelectedAddresses] = useState([]);
   const [isCalculatingRoute, setIsCalculatingRoute] = useState(false);
-
-  // Initialize the optimizer
-  const [directionsOptimizer] = useState(() => new DirectionsOptimizer({
-    batchSize: 5,
-    batchInterval: 1000,
-    debounceDelay: 2500
-  }));
-
-  // Location state with Tel Aviv as default
+  const [showList, setShowList] = useState(false);
   const [startLocation, setStartLocation] = useState({
     lat: 32.0853,
     lng: 34.7818
@@ -52,35 +37,43 @@ const CustomersMapView = () => {
   const [endLocation, setEndLocation] = useState(null);
   const [endAddress, setEndAddress] = useState('');
 
+  // Hooks
   const { language } = useLanguage();
+  const { isFeatureEnabled } = useSubscription();
   const t = translations[language];
   const isRTL = language === 'he';
 
-  // Initialize Google Maps
-  const { isLoaded, loadError } = useLoadScript({
-    googleMapsApiKey: GOOGLE_MAPS_API_KEY,
-    libraries: LIBRARIES
+  // Load Google Maps
+  const { isLoaded: isMapsLoaded, loadError: mapsLoadError } = useLoadScript({
+    googleMapsApiKey: process.env.REACT_APP_GOOGLE_MAPS_API_KEY
   });
 
-  // Fetch initial data
-  const fetchData = async (showLoadingState = true) => {
-    if (showLoadingState) {
-      setIsLoading(true);
-    }
-    
+  // Initialize DirectionsOptimizer
+  const [directionsOptimizer] = useState(() => new DirectionsOptimizer({
+    batchSize: 5,
+    batchInterval: 1000,
+    debounceDelay: 2500
+  }));
+
+  // Single fetch data function
+  const fetchData = useCallback(async () => {
+    setIsLoading(true);
+    setError(null);
+
     try {
+      // Batch initial requests
       const [customersResponse, productsResponse, ordersResponse] = await Promise.all([
         apiService.getCustomers(),
         apiService.getProducts(),
         apiService.request('orders', { method: 'GET' })
       ]);
 
-      // Get scale IDs from products
+      // Get scale IDs for measurements
       const scaleIds = [...new Set(productsResponse
         .filter(p => p.scale_id)
         .map(p => p.scale_id))];
       
-      // Fetch measurements for scales
+      // Fetch measurements for each scale
       const measurementsMap = {};
       if (scaleIds.length > 0) {
         const measurementPromises = scaleIds.map(scaleId =>
@@ -89,109 +82,108 @@ const CustomersMapView = () => {
           }).catch(() => null)
         );
 
-        const measurementResults = await Promise.all(measurementPromises);
-        measurementResults.forEach((measurement, index) => {
-          if (measurement) {
-            measurementsMap[scaleIds[index]] = measurement;
+        const measurementResults = await Promise.allSettled(measurementPromises);
+        measurementResults.forEach((result, index) => {
+          if (result.status === 'fulfilled' && result.value) {
+            measurementsMap[scaleIds[index]] = result.value;
           }
         });
       }
 
-      // Enrich customers with geocoded coordinates and products
+      // Cache geocoding results
+      const geocodeCache = new Map();
       const enrichedCustomers = await Promise.all(
         customersResponse.map(async (customer) => {
-          const coords = await geocodeAddress(customer.address);
-          const customerProducts = productsResponse
-            .filter(p => p.customer_id === customer.customer_id)
-            .map(product => ({
-              ...product,
-              measurement: product.scale_id ? measurementsMap[product.scale_id] || null : null
-            }));
+          try {
+            let coords = geocodeCache.get(customer.address);
+            if (!coords) {
+              coords = await geocodeAddress(customer.address);
+              geocodeCache.set(customer.address, coords);
+            }
 
-          return {
-            ...customer,
-            lat: coords.lat,
-            lng: coords.lng,
-            products: customerProducts
-          };
+            return {
+              ...customer,
+              lat: coords.lat,
+              lng: coords.lng,
+              products: productsResponse
+                .filter(p => p.customer_id === customer.customer_id)
+                .map(product => ({
+                  ...product,
+                  measurement: product.scale_id ? measurementsMap[product.scale_id] : null
+                }))
+            };
+          } catch (err) {
+            console.error(`Error processing customer ${customer.customer_id}:`, err);
+            return null;
+          }
         })
       );
 
-      setCustomers(enrichedCustomers);
+      // Update state with valid customers only
+      const validCustomers = enrichedCustomers.filter(c => c !== null);
+      setCustomers(validCustomers);
       setOrders(ordersResponse);
       setMeasurements(measurementsMap);
-      setLastRefreshTime(new Date());
 
       // Update map bounds if needed
-      if (mapInstance && enrichedCustomers.length > 0) {
+      if (mapInstance && validCustomers.length > 0) {
         const bounds = new window.google.maps.LatLngBounds();
-        enrichedCustomers.forEach(customer => {
-          bounds.extend({ lat: customer.lat, lng: customer.lng });
+        validCustomers.forEach(customer => {
+          if (customer.lat && customer.lng) {
+            bounds.extend({ lat: customer.lat, lng: customer.lng });
+          }
         });
         if (startLocation) {
           bounds.extend(startLocation);
         }
         mapInstance.fitBounds(bounds);
       }
-
-      setError(null);
     } catch (err) {
       console.error('Error fetching data:', err);
       setError(err.message || 'Failed to fetch data');
     } finally {
-      if (showLoadingState) {
-        setIsLoading(false);
-      }
+      setIsLoading(false);
       setIsRefreshing(false);
     }
-  };
+  }, [mapInstance, startLocation]);
 
+  // Initial load only
+  useEffect(() => {
+    fetchData();
+    // Cleanup on unmount
+    return () => {
+      directionsOptimizer.cancelAll();
+    };
+  }, []);
+
+  // Route calculation
   const calculateRoute = async () => {
-    console.log(new Error().stack);
-    if (!selectedCustomers.length || !startLocation || !window.google) return;
+    if (!selectedCustomers.length || !startLocation) return;
     
     setIsCalculatingRoute(true);
     setError(null);
-
+  
     try {
-      const origin = new window.google.maps.LatLng(startLocation.lat, startLocation.lng);
-      const destination = endLocation ? 
-        new window.google.maps.LatLng(endLocation.lat, endLocation.lng) : 
-        origin;
-
-      const waypoints = selectedCustomers.map(customer => ({
-        location: new window.google.maps.LatLng(customer.lat, customer.lng),
-        stopover: true
-      }));
-
-      // Use debounced directions to prevent rapid recalculation
-      const result = await directionsOptimizer.getDebouncedDirections(
-        origin,
-        destination,
-        waypoints,
-        {
-          avoidTolls: false,
-          avoidHighways: false,
-          optimizeWaypoints: true,
-          drivingOptions: {
-            departureTime: new Date(),
-            trafficModel: window.google.maps.TrafficModel.BEST_GUESS
-          }
-        }
+      const result = await mapsService.getDirections(
+        startLocation,
+        endLocation || startLocation,
+        selectedCustomers.map(customer => ({
+          lat: customer.lat,
+          lng: customer.lng
+        }))
       );
-
+      
       setDirectionsResponse(result);
       
       if (mapInstance) {
         const bounds = new window.google.maps.LatLngBounds();
-        bounds.extend(origin);
+        bounds.extend(startLocation);
         result.routes[0].legs.forEach(leg => {
           bounds.extend(leg.start_location);
           bounds.extend(leg.end_location);
         });
         mapInstance.fitBounds(bounds);
       }
-
     } catch (err) {
       console.error('Error calculating route:', err);
       setError('Failed to calculate route. Please try again.');
@@ -200,227 +192,173 @@ const CustomersMapView = () => {
     }
   };
 
-  // Handle address changes
-  const handleAddressesChange = async (addresses) => {
+  const handleCustomerClick = useCallback((customer) => {
+    if (!customer?.lat || !customer?.lng || !mapInstance) return;
+    
+    const lat = parseFloat(customer.lat);
+    const lng = parseFloat(customer.lng);
+    
+    if (isNaN(lat) || isNaN(lng)) {
+      console.error('Invalid coordinates for customer:', customer);
+      return;
+    }
+    
+    mapInstance.panTo({ lat, lng });
+    mapInstance.setZoom(15);
+    setSelectedMarker(customer);
+  }, [mapInstance]);
+
+  const handleCustomerSelect = useCallback((customer) => {
+    setSelectedCustomers(prev => {
+      const isSelected = prev.some(c => c.customer_id === customer.customer_id);
+      return isSelected
+        ? prev.filter(c => c.customer_id !== customer.customer_id)
+        : [...prev, customer];
+    });
+  }, []);
+
+  const handleAddressesChange = useCallback(async (addresses) => {
     if (!addresses.length) return;
   
     try {
-      // Get coordinates for all addresses
       const coordsPromises = addresses.map(address => geocodeAddress(address));
       const coordinates = await Promise.all(coordsPromises);
   
-      // Set the first address as start location
       setStartLocation(coordinates[0]);
       setStartAddress(addresses[0]);
   
-      // If there are more addresses, calculate route through them
       if (coordinates.length > 1) {
-        const waypoints = coordinates.slice(1).map(coords => ({
-          location: new window.google.maps.LatLng(coords.lat, coords.lng),
-          stopover: true
-        }));
-  
-        setSelectedCustomers(addresses.map((address, index) => ({
+        const selectedCustomersFromAddresses = addresses.map((address, index) => ({
           customer_id: `address-${index}`,
           name: address,
           address: address,
           lat: coordinates[index].lat,
           lng: coordinates[index].lng,
           products: []
-        })));
-        console.log('calculateRoute1');
-        calculateRoute();
+        }));
+  
+        setSelectedCustomers(selectedCustomersFromAddresses);
       }
     } catch (error) {
       console.error('Error updating locations:', error);
       setError('Failed to process addresses');
     }
-  };
-
-  // Handlers
-  const handleRefresh = useCallback(() => {
-    setIsRefreshing(true);
-    fetchData(false);
   }, []);
 
-  const handleBoundsChanged = useCallback((bounds) => {
-    // Handle bounds change if needed
-  }, []);
-
-  const handleCustomerClick = useCallback((customer) => {
-    if (mapInstance) {
-      mapInstance.panTo({ lat: customer.lat, lng: customer.lng });
-      mapInstance.setZoom(15);
-      setSelectedMarker(customer);
-    }
-  }, [mapInstance]);
-
-  const handleCustomerSelect = useCallback((customer) => {
-    setSelectedCustomers(prev => {
-      const isSelected = prev.some(c => c.customer_id === customer.customer_id);
-      if (isSelected) {
-        return prev.filter(c => c.customer_id !== customer.customer_id);
-      } else {
-        return [...prev, customer];
-      }
-    });
-  }, []);
-
-  // Effects
-  useEffect(() => {
-    fetchData();
-    return () => {
-      directionsOptimizer.cancelAll();
-    };
-  }, []);
-
-  useEffect(() => {
-    console.log('Selected customers:', selectedCustomers);
-    if (selectedCustomers.length > 0 && startLocation) {
-    console.log('calculateRoute2');
-      calculateRoute();
-    }
-  }, [selectedCustomers, startLocation, endLocation]);
-
-  // Format time helper
-  const getLastRefreshTimeString = () => {
-    return lastRefreshTime.toLocaleTimeString(language === 'he' ? 'he-IL' : 'en-US', {
-      hour: '2-digit',
-      minute: '2-digit',
-      second: '2-digit'
-    });
-  };
-
-  if (loadError) {
+  // Loading states
+  if (!isMapsLoaded || isLoading) {
     return (
-      <div className="p-6 max-w-7xl mx-auto">
-        <div className="bg-red-50 border border-red-400 rounded-lg p-4 flex items-center">
-          <AlertCircle className="h-5 w-5 text-red-600 mr-2" />
-          <p className="text-red-700">Failed to load Google Maps</p>
-        </div>
-      </div>
-    );
-  }
-
-  if (!isLoaded || isLoading) {
-    return (
-      <div className="flex justify-center items-center h-[600px]">
+      <div className="flex justify-center items-center h-64">
         <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
       </div>
     );
   }
 
+  // Error states
+  if (mapsLoadError) {
+    return (
+      <div className="p-6">
+        <div className="bg-red-50 border border-red-400 rounded-lg p-4 flex items-center">
+          <AlertCircle className="h-5 w-5 text-red-600 mr-2" />
+          <div>
+            <p className="text-red-700 font-medium">Error loading Google Maps</p>
+            <p className="text-red-600">{mapsLoadError.message}</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // if (!isFeatureEnabled('maps')) {
+  if (false) {
+    return <UpgradePrompt />;
+  }
+
   return (
     <div className="p-6 max-w-7xl mx-auto" dir={isRTL ? 'rtl' : 'ltr'}>
-      {/* Header */}
       <div className="mb-6">
         <div className="flex justify-between items-center">
           <div>
             <h2 className="text-2xl font-bold flex items-center gap-2">
               <Package className="h-6 w-6" />
-              Customers Map
+              Customer Locations
             </h2>
             <p className="text-gray-600 mt-1">
-              View customer locations and plan routes
+              View customers and optimize delivery routes
             </p>
           </div>
           <div className="flex items-center gap-4">
-            {lastRefreshTime && (
-              <span className="text-sm text-gray-500">
-                Last updated: {getLastRefreshTimeString()}
-              </span>
-            )}
             <button
-              onClick={handleRefresh}
-              className="flex items-center gap-2 px-4 py-2 text-gray-600 hover:text-gray-800 disabled:opacity-50"
-              disabled={isRefreshing}
+              onClick={() => setShowList(!showList)}
+              className="flex items-center gap-2 px-4 py-2 text-gray-600 hover:text-gray-800"
             >
-              <RefreshCw className={`h-5 w-5 ${isRefreshing ? 'animate-spin' : ''}`} />
-              Refresh
+              <List className="h-5 w-5" />
+              {showList ? 'Hide List' : 'Show List'}
             </button>
           </div>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        {/* Customer List */}
-        <div className="space-y-4">
-          <div className="bg-white rounded-lg shadow-lg p-4">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="font-bold flex items-center gap-2">
-                <List className="h-5 w-5" />
-                Customers ({customers.length})
-              </h3>
-              {selectedCustomers.length > 0 && (
-                <span className="text-sm text-gray-600">
-                  {selectedCustomers.length} selected
-                </span>
-              )}
-            </div>
-            <div className="space-y-2 max-h-[600px] overflow-y-auto">
-              {customers.map(customer => (
-                <CustomerCard
-                  key={customer.customer_id}
-                  customer={customer}
-                  onLocationClick={handleCustomerClick}
-                  isSelected={selectedCustomers.some(
-                    c => c.customer_id === customer.customer_id
-                  )}
-                  onSelect={handleCustomerSelect}
-                  orders={orders}
-                />
-              ))}
-            </div>
-          </div>
-        </div>
-
-        {/* Map */}
-        <div className="md:col-span-2">
-          <div className="bg-white rounded-lg shadow-lg p-4">
-            <Map
-              customers={customers}
-              selectedMarker={selectedMarker}
-              setSelectedMarker={setSelectedMarker}
-              onMapLoad={setMapInstance}
-              selectedCustomers={selectedCustomers}
-              setSelectedCustomers={setSelectedCustomers}
-              directionsResponse={directionsResponse}
-              orders={orders}
-              startLocation={startLocation}
-              endLocation={endLocation}
-              onBoundsChanged={handleBoundsChanged}
-              calculateRoute={calculateRoute}
-              isCalculatingRoute={isCalculatingRoute}
-            />
-          </div>
-        </div>
-      </div>
-
-      {/* Route Details */}
-      {directionsResponse && (
-        <RouteSteps
-          directionsResponse={directionsResponse}
-          selectedCustomers={selectedCustomers}
-          setSelectedCustomers={setSelectedCustomers}
-          startLocation={startLocation}
-          startAddress={startAddress}
-          endLocation={endLocation}
-          endAddress={endAddress}
-          onAddressesChange={(addresses) => {
-            setSelectedAddresses(addresses);
-            handleAddressesChange(addresses);
-          }}
-          selectedAddresses={selectedAddresses}
-        />
-      )}
-
-      {/* Error message */}
       {error && (
         <div className="mb-6 bg-red-50 border border-red-400 rounded-lg p-4 flex items-center">
           <AlertCircle className="h-5 w-5 text-red-600 mr-2" />
           <p className="text-red-700">{error}</p>
         </div>
       )}
+
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {showList && (
+          <div className="lg:col-span-1 space-y-4">
+            {customers.map(customer => (
+              <CustomerCard
+                key={customer.customer_id}
+                customer={customer}
+                onLocationClick={handleCustomerClick}
+                isSelected={selectedCustomers.some(
+                  c => c.customer_id === customer.customer_id
+                )}
+                onSelect={handleCustomerSelect}
+                orders={orders}
+              />
+            ))}
+          </div>
+        )}
+
+        <div className={showList ? 'lg:col-span-2' : 'lg:col-span-3'}>
+          <div className="bg-white rounded-lg shadow-lg p-4 mb-6">
+            <div className="relative w-full h-[600px] bg-gray-100 rounded-lg overflow-hidden">
+              <MapDisplay
+                customers={customers}
+                selectedMarker={selectedMarker}
+                setSelectedMarker={setSelectedMarker}
+                onMapLoad={map => setMapInstance(map)}
+                selectedCustomers={selectedCustomers}
+                setSelectedCustomers={setSelectedCustomers}
+                directionsResponse={directionsResponse}
+                orders={orders}
+                startLocation={startLocation}
+                endLocation={endLocation}
+                calculateRoute={calculateRoute}
+              />
+            </div>
+          </div>
+
+          {directionsResponse && (
+            <RouteSteps
+              directionsResponse={directionsResponse}
+              selectedCustomers={selectedCustomers}
+              setSelectedCustomers={setSelectedCustomers}
+              startLocation={startLocation}
+              startAddress={startAddress}
+              endLocation={endLocation}
+              endAddress={endAddress}
+              onAddressesChange={handleAddressesChange}
+              selectedAddresses={selectedAddresses}
+            />
+          )}
+        </div>
+      </div>
+
       <ApiStats />
     </div>
   );

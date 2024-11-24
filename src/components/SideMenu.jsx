@@ -10,6 +10,7 @@ import {
   MapIcon,
   LayoutDashboard,
   Settings,
+  CreditCard,
   FileText
 } from 'lucide-react';
 import { useLanguage } from '../contexts/LanguageContext';
@@ -27,6 +28,12 @@ const SideMenu = ({ activeView, onViewChange }) => {
 
   // Define menu sections
   const dashboardItems = [
+    {
+      icon: MapIcon,
+      label: "Map Test",
+      view: "maptest",
+      description: "Test Google Maps integration"
+    },
     {
       icon: Package,
       label: t.productsDashboard,
@@ -77,6 +84,11 @@ const SideMenu = ({ activeView, onViewChange }) => {
       label: "My Account",
       view: "myAccount",
       description: "Manage your account settings"
+    },{
+      icon: CreditCard, // Import this from lucide-react
+      label: "Pricing",
+      view: "pricing",
+      description: "View pricing plans and upgrade your subscription"
     },
   ];
 

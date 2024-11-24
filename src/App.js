@@ -1,7 +1,7 @@
-// src/App.js
 import React, { useState, useRef, useCallback } from 'react';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { LanguageProvider, useLanguage } from './contexts/LanguageContext';
+import { SubscriptionProvider } from './contexts/SubscriptionContext';
 import UnauthenticatedView from './components/UnauthenticatedView';
 import ProductsView from './components/products/ProductsView';
 import CustomersTableView from './components/customers/CustomersTableView';
@@ -14,8 +14,11 @@ import SideMenu from './components/SideMenu';
 import LandingPage from './components/LandingPage';
 import SharedProductsView from './components/SharedProductsView';
 import MyAccountView from './components/MyAccountView';
-import { Menu as MenuIcon } from 'lucide-react';
 import CustomersMapView from './components/maps/CustomersMapView';
+import PricingView from './components/pricing/PricingView';
+import { Menu as MenuIcon } from 'lucide-react';
+import { BrowserRouter } from 'react-router-dom';
+import MapTest from './components/MapTest'; 
 
 
 function AppContent() {
@@ -68,7 +71,6 @@ function AppContent() {
     touchEndX.current = null;
   }, [isMenuOpen, language]);
 
-  // RTL-aware styles
   const getMenuStyles = () => {
     const baseStyles = 'fixed top-0 h-full bg-gray-800 transition-all duration-300 ease-in-out w-64 z-40';
     if (language === 'he') {
@@ -102,7 +104,6 @@ function AppContent() {
       onTouchEnd={handleTouchEnd}
       dir={language === 'he' ? 'rtl' : 'ltr'}
     >
-      {/* Toggle Button */}
       <button
         onClick={() => setIsMenuOpen(!isMenuOpen)}
         className={getMenuButtonPosition()}
@@ -110,7 +111,6 @@ function AppContent() {
         <MenuIcon size={24} />
       </button>
 
-      {/* Menu */}
       <div ref={menuRef} className={getMenuStyles()}>
         <SideMenu 
           activeView={activeView} 
@@ -118,7 +118,6 @@ function AppContent() {
         />
       </div>
 
-      {/* Mobile Overlay */}
       {isMenuOpen && (
         <div
           className="fixed inset-0 bg-black bg-opacity-50 z-30 md:hidden"
@@ -126,8 +125,7 @@ function AppContent() {
         />
       )}
 
-      {/* Main Content */}
-      <main className={getMainContentStyles()}>
+<main className={getMainContentStyles()}>
         {activeView === 'home' && <LandingPage onViewChange={setActiveView} />}
         {activeView === 'products' && <ProductsView />}
         {activeView === 'customersTable' && <CustomersTableView />}
@@ -137,6 +135,8 @@ function AppContent() {
         {activeView === 'myAccount' && <MyAccountView />}
         {activeView === 'orders' && <OrdersView />}
         {activeView === 'customersMap' && <CustomersMapView />}
+        {activeView === 'pricing' && <PricingView />}
+        {activeView === 'maptest' && <MapTest />} 
 
         {activeView === 'vendors' && (
           <AdminRoute>
@@ -150,11 +150,15 @@ function AppContent() {
 
 function App() {
   return (
-    <AuthProvider>
-      <LanguageProvider>
-        <AppContent />
-      </LanguageProvider>
-    </AuthProvider>
+    <BrowserRouter>
+      <AuthProvider>
+        <LanguageProvider>
+          <SubscriptionProvider>
+            <AppContent />
+          </SubscriptionProvider>
+        </LanguageProvider>
+      </AuthProvider>
+    </BrowserRouter>
   );
 }
 
