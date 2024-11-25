@@ -471,16 +471,16 @@ class ApiService {
     }
   }
 
-  /**
- * Get directions between points using server-side API
- * @param {Object} params - Direction request parameters
- * @param {Object} params.origin - Origin coordinates {lat, lng}
- * @param {Object} params.destination - Destination coordinates {lat, lng}
- * @param {Array} params.waypoints - Array of waypoint objects
- * @param {Object} params.options - Additional options
- * @returns {Promise<Object>} Directions response
- */
-  async getDirections({ origin, destination, waypoints = [] }) {
+ /**
+   * Get directions between points using server-side API
+   * @param {Object} params - Direction request parameters
+   * @param {Object} params.origin - Origin coordinates {lat, lng}
+   * @param {Object} params.destination - Destination coordinates {lat, lng}
+   * @param {Array} params.waypoints - Array of waypoint objects
+   * @param {Object} params.options - Additional options
+   * @returns {Promise<Object>} Directions response
+   */
+  async getDirections({ origin, destination, waypoints = [], options = {} }) {
     // Validation and data normalization
     const normalizeLocation = (location, name) => {
       if (!location) {
@@ -512,7 +512,7 @@ class ApiService {
     };
 
     try {
-      console.log('Raw input:', { origin, destination, waypoints });
+      console.log('Raw input:', { origin, destination, waypoints, options });
 
       const normalizedOrigin = normalizeLocation(origin, 'origin');
       const normalizedDestination = normalizeLocation(destination, 'destination');
@@ -521,7 +521,7 @@ class ApiService {
         try {
           return {
             location: normalizeLocation(wp, `waypoint[${index}]`),
-            stopover: true
+            stopover: wp.stopover ?? true
           };
         } catch (error) {
           console.error(`Error processing waypoint ${index}:`, wp);
@@ -535,7 +535,10 @@ class ApiService {
         waypoints: normalizedWaypoints
       });
 
-      const response = await this.request('maps/directions', {
+      // Choose endpoint based on optimization flag
+      const endpoint = options.optimizeWaypoints ? 'maps/optimize-route' : 'maps/directions';
+
+      const response = await this.request(endpoint, {
         method: 'POST',
         body: JSON.stringify({
           origin: normalizedOrigin,
@@ -543,7 +546,7 @@ class ApiService {
           waypoints: normalizedWaypoints
         })
       });
-
+      console.log('Directions API response:', response);
       return response;
     } catch (error) {
       console.error('Directions API error:', error);

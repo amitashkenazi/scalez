@@ -17,15 +17,15 @@ export class DirectionsOptimizer {
     if (point.location) {
       const loc = point.location;
       return {
-        lat: typeof loc.lat === 'function' ? loc.lat() : loc.lat,
-        lng: typeof loc.lng === 'function' ? loc.lng() : loc.lng
+        lat: typeof loc.lat === 'function' ? loc.lat() : Number(loc.lat),
+        lng: typeof loc.lng === 'function' ? loc.lng() : Number(loc.lng)
       };
     }
 
     // Handle direct coordinate format
     return {
-      lat: typeof point.lat === 'function' ? point.lat() : point.lat,
-      lng: typeof point.lng === 'function' ? point.lng() : point.lng
+      lat: typeof point.lat === 'function' ? point.lat() : Number(point.lat),
+      lng: typeof point.lng === 'function' ? point.lng() : Number(point.lng)
     };
   }
 
@@ -84,7 +84,11 @@ export class DirectionsOptimizer {
       const result = await routePromise;
       this.pendingRequests.delete(routeKey);
 
-      return this.transformDirectionsResponse(result);
+      return this.transformDirectionsResponse(result, {
+        origin: this.getCoordinates(origin),
+        destination: this.getCoordinates(destination),
+        travelMode: window.google.maps.TravelMode.DRIVING
+      });
 
     } catch (error) {
       console.error('Error getting directions:', error);
@@ -92,63 +96,125 @@ export class DirectionsOptimizer {
     }
   }
 
-  transformDirectionsResponse(serverResponse) {
-    if (!window.google) {
-      throw new Error('Google Maps not loaded');
-    }
-
-    if (!serverResponse || !serverResponse.routes || !serverResponse.routes.length) {
+  transformDirectionsResponse(serverResponse, request) {
+    if (!window.google || !serverResponse || !serverResponse.routes || !serverResponse.routes.length) {
       return {
         routes: [],
         status: 'ZERO_RESULTS'
       };
     }
 
-    return {
-      routes: serverResponse.routes.map(route => ({
-        ...route,
-        bounds: new window.google.maps.LatLngBounds(
-          new window.google.maps.LatLng(
-            route.bounds.south,
-            route.bounds.west
-          ),
-          new window.google.maps.LatLng(
-            route.bounds.north,
-            route.bounds.east
-          )
-        ),
-        legs: route.legs?.map(leg => ({
-          ...leg,
-          start_location: new window.google.maps.LatLng(
-            leg.start_location.lat, 
-            leg.start_location.lng
-          ),
-          end_location: new window.google.maps.LatLng(
-            leg.end_location.lat, 
-            leg.end_location.lng
-          ),
-          steps: leg.steps?.map(step => ({
-            ...step,
-            start_location: new window.google.maps.LatLng(
-              step.start_location.lat, 
-              step.start_location.lng
-            ),
-            end_location: new window.google.maps.LatLng(
-              step.end_location.lat, 
-              step.end_location.lng
-            ),
-            path: step.path?.map(point => 
-              new window.google.maps.LatLng(point.lat, point.lng)
-            )
-          }))
-        })),
-        overview_path: route.overview_path?.map(point =>
-          new window.google.maps.LatLng(point.lat, point.lng)
-        )
-      })),
-      status: serverResponse.status
-    };
+    try {
+      const transformedResponse = {
+        geocoded_waypoints: serverResponse.geocoded_waypoints || [],
+        routes: serverResponse.routes.map(route => {
+          // Create proper bounds
+          const bounds = new window.google.maps.LatLngBounds();
+          if (route.bounds) {
+            bounds.extend(new window.google.maps.LatLng(
+              Number(route.bounds.southwest.lat),
+              Number(route.bounds.southwest.lng)
+            ));
+            bounds.extend(new window.google.maps.LatLng(
+              Number(route.bounds.northeast.lat),
+              Number(route.bounds.northeast.lng)
+            ));
+          }
+
+          return {
+            bounds,
+            copyrights: route.copyrights,
+            legs: route.legs?.map(leg => ({
+              distance: leg.distance,
+              duration: leg.duration,
+              end_address: leg.end_address,
+              start_address: leg.start_address,
+              end_location: new window.google.maps.LatLng(
+                Number(leg.end_location.lat),
+                Number(leg.end_location.lng)
+              ),
+              start_location: new window.google.maps.LatLng(
+                Number(leg.start_location.lat),
+                Number(leg.start_location.lng)
+              ),
+              steps: leg.steps?.map(step => ({
+                distance: step.distance,
+                duration: step.duration,
+                instructions: step.html_instructions,
+                travel_mode: window.google.maps.TravelMode.DRIVING,
+                maneuver: step.maneuver,
+                path: this.decodePolyline(step.polyline?.points || ""),
+                start_location: new window.google.maps.LatLng(
+                  Number(step.start_location.lat),
+                  Number(step.start_location.lng)
+                ),
+                end_location: new window.google.maps.LatLng(
+                  Number(step.end_location.lat),
+                  Number(step.end_location.lng)
+                )
+              }))
+            })),
+            overview_path: this.decodePolyline(route.overview_polyline?.points || ""),
+            warnings: route.warnings || [],
+            waypoint_order: route.waypoint_order || [],
+            overview_polyline: route.overview_polyline || { points: "" }
+          };
+        }),
+        status: serverResponse.status,
+        request: {
+          origin: request.origin,
+          destination: request.destination,
+          travelMode: request.travelMode,
+          optimizeWaypoints: true
+        }
+      };
+
+      return transformedResponse;
+    } catch (error) {
+      console.error('Error transforming directions response:', error);
+      throw error;
+    }
   }
+
+  // Helper function to decode polyline points
+  decodePolyline(encoded) {
+    if (!encoded) return [];
+    
+    const poly = [];
+    let index = 0, len = encoded.length;
+    let lat = 0, lng = 0;
+
+    while (index < len) {
+      let b, shift = 0, result = 0;
+
+      do {
+        b = encoded.charCodeAt(index++) - 63;
+        result |= (b & 0x1f) << shift;
+        shift += 5;
+      } while (b >= 0x20);
+
+      const dlat = ((result & 1) ? ~(result >> 1) : (result >> 1));
+      lat += dlat;
+
+      shift = 0;
+      result = 0;
+
+      do {
+        b = encoded.charCodeAt(index++) - 63;
+        result |= (b & 0x1f) << shift;
+        shift += 5;
+      } while (b >= 0x20);
+
+      const dlng = ((result & 1) ? ~(result >> 1) : (result >> 1));
+      lng += dlng;
+
+      const point = new window.google.maps.LatLng(lat * 1e-5, lng * 1e-5);
+      poly.push(point);
+    }
+
+    return poly;
+  }
+
 
   getDebouncedDirections(origin, destination, waypoints = [], options = {}) {
     const routeKey = this.generateRouteKey(origin, destination, waypoints);
