@@ -1,3 +1,5 @@
+import apiService from '../../services/api';
+
 // Check if customer has pending delivery
 export const hasWaitingDelivery = (customer, orders) => {
     return orders.some(order => {
@@ -43,54 +45,30 @@ export const hasWaitingDelivery = (customer, orders) => {
     };
   };
   
-  // Geocode an address to coordinates
-  export const geocodeAddress = async (address) => {
-    console.log('Geocoding address:', address);
-    const DEFAULT_COORDS = {
-      tel_aviv: { lat: 32.0853, lng: 34.7818 },
-      jerusalem: { lat: 31.7683, lng: 35.2137 },
-      haifa: { lat: 32.7940, lng: 34.9896 }
-    };
+  // Geocode an address to coordinates using server endpoint
+export const geocodeAddress = async (address) => {
+  console.log('Geocoding address:', address);
   
-    const cityMatches = {
-      'תל אביב': DEFAULT_COORDS.tel_aviv,
-      'tel aviv': DEFAULT_COORDS.tel_aviv,
-      'ירושלים': DEFAULT_COORDS.jerusalem,
-      'jerusalem': DEFAULT_COORDS.jerusalem,
-      'חיפה': DEFAULT_COORDS.haifa,
-      'haifa': DEFAULT_COORDS.haifa
-    };
-  
-    for (const [city, coords] of Object.entries(cityMatches)) {
-      if (address.toLowerCase().includes(city.toLowerCase())) {
-        return {
-          lat: coords.lat + (Math.random() - 0.5) * 0.01,
-          lng: coords.lng + (Math.random() - 0.5) * 0.01
-        };
-      }
+  try {
+    // Use the apiService to call the server's geocoding endpoint
+    const coordinates = await apiService.geocodeAddress(address);
+    
+    if (!coordinates || (!coordinates.lat && !coordinates.lng)) {
+      throw new Error('Invalid geocoding response');
     }
-  
-    try {
-      const response = await fetch(
-        `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(address)}&countrycodes=il`
-      );
-  
-      if (!response.ok) throw new Error('Geocoding failed');
-  
-      const data = await response.json();
-      if (data && data.length > 0) {
-        return {
-          lat: parseFloat(data[0].lat),
-          lng: parseFloat(data[0].lon)
-        };
-      }
-  
-      throw new Error('Location not found');
-    } catch (err) {
-      console.error('Geocoding fallback for address:', address, err);
-      return {
-        lat: DEFAULT_COORDS.tel_aviv.lat + (Math.random() - 0.5) * 0.02,
-        lng: DEFAULT_COORDS.tel_aviv.lng + (Math.random() - 0.5) * 0.02
-      };
-    }
-  };
+    
+    return {
+      lat: coordinates.lat,
+      lng: coordinates.lng
+    };
+  } catch (err) {
+    console.error('Geocoding error for address:', address, err);
+    
+    // Fallback to default Tel Aviv coordinates with slight randomization
+    const DEFAULT_COORDS = { lat: 32.0853, lng: 34.7818 };
+    return {
+      lat: DEFAULT_COORDS.lat + (Math.random() - 0.5) * 0.02,
+      lng: DEFAULT_COORDS.lng + (Math.random() - 0.5) * 0.02
+    };
+  }
+};
