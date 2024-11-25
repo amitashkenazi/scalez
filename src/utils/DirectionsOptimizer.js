@@ -1,34 +1,53 @@
-
-// src/utils/DirectionsOptimizer.js
-
+import apiService from '../services/api';
 import { apiTracker } from './ApiTracker';
 
-
-/**
- * DirectionsOptimizer class is responsible for optimizing and managing Google Maps Directions API requests.
- * It handles batching, debouncing, and rate limiting of requests to avoid exceeding API quotas and improve performance.
- */
 export class DirectionsOptimizer {
   constructor(options = {}) {
     this.batchSize = options.batchSize || 10;
     this.batchInterval = options.batchInterval || 1000;
     this.debounceDelay = options.debounceDelay || 1000;
-    
-    this.queue = [];
-    this.processing = false;
     this.pendingRequests = new Map();
     this.debounceTimers = new Map();
-    this.lastRequestTimes = new Map();
-    this.minRequestInterval = options.minRequestInterval || 5000; // 5 seconds minimum between same route requests
+  }
+
+  getCoordinates(point) {
+    if (!point) return null;
+
+    // Handle waypoint format
+    if (point.location) {
+      const loc = point.location;
+      return {
+        lat: typeof loc.lat === 'function' ? loc.lat() : loc.lat,
+        lng: typeof loc.lng === 'function' ? loc.lng() : loc.lng
+      };
+    }
+
+    // Handle direct coordinate format
+    return {
+      lat: typeof point.lat === 'function' ? point.lat() : point.lat,
+      lng: typeof point.lng === 'function' ? point.lng() : point.lng
+    };
   }
 
   generateRouteKey(origin, destination, waypoints = []) {
+    const originCoords = this.getCoordinates(origin);
+    const destCoords = this.getCoordinates(destination);
+    
+    if (!originCoords || !destCoords) {
+      throw new Error('Invalid origin or destination');
+    }
+
     const waypointString = waypoints
-      .map(wp => `${wp.location.lat()},${wp.location.lng()}`)
+      .map(wp => {
+        const coords = this.getCoordinates(wp);
+        if (!coords) return '';
+        return `${coords.lat},${coords.lng}`;
+      })
+      .filter(Boolean)
       .sort()
       .join('|');
-      
-    return `${origin.lat()},${origin.lng()}|${destination.lat()},${destination.lng()}|${waypointString}`;
+
+    return `${originCoords.lat},${originCoords.lng}|${destCoords.lat},${destCoords.lng}|${waypointString}`;
   }
 
   async getDirections(origin, destination, waypoints = [], options = {}) {
@@ -36,100 +55,99 @@ export class DirectionsOptimizer {
       throw new Error('Google Maps not loaded');
     }
 
-    const routeKey = this.generateRouteKey(origin, destination, waypoints);
-    const now = Date.now();
-
-    // Check if we've made this request recently
-    const lastRequestTime = this.lastRequestTimes.get(routeKey);
-    if (lastRequestTime && (now - lastRequestTime) < this.minRequestInterval) {
-      console.log('Skipping route calculation - too frequent');
-      return this.pendingRequests.get(routeKey) || Promise.reject(new Error('Too many requests'));
-    }
-
-    // Update last request time
-    this.lastRequestTimes.set(routeKey, now);
-
-    // Check for pending request
-    if (this.pendingRequests.has(routeKey)) {
-      return this.pendingRequests.get(routeKey);
-    }
-
-    // Clean up old request times
-    const tenMinutesAgo = now - (10 * 60 * 1000);
-    this.lastRequestTimes.forEach((time, key) => {
-      if (time < tenMinutesAgo) {
-        this.lastRequestTimes.delete(key);
+    try {
+      const routeKey = this.generateRouteKey(origin, destination, waypoints);
+      
+      if (this.pendingRequests.has(routeKey)) {
+        return this.pendingRequests.get(routeKey);
       }
-    });
 
-    const request = {
-      origin,
-      destination,
-      waypoints,
-      optimizeWaypoints: true,
-      travelMode: window.google.maps.TravelMode.DRIVING,
-      drivingOptions: {
-        departureTime: new Date(),
-        trafficModel: window.google.maps.TrafficModel.BEST_GUESS
-      },
-      ...options
-    };
+      apiTracker.trackApiCall('directions', 'GET');
 
-    const routePromise = new Promise((resolve, reject) => {
-      this.queue.push({
-        request,
-        resolve,
-        reject,
-        routeKey
+      const defaultOptions = {
+        travelMode: window.google.maps.TravelMode.DRIVING,
+        optimizeWaypoints: true
+      };
+
+      const routePromise = apiService.getDirections({
+        origin: this.getCoordinates(origin),
+        destination: this.getCoordinates(destination),
+        waypoints: waypoints.map(wp => ({
+          location: this.getCoordinates(wp),
+          stopover: wp.stopover ?? true
+        })),
+        options: { ...defaultOptions, ...options }
       });
 
-      if (!this.processing) {
-        this.processQueue();
-      }
-    });
+      this.pendingRequests.set(routeKey, routePromise);
 
-    this.pendingRequests.set(routeKey, routePromise);
-
-    routePromise.finally(() => {
+      const result = await routePromise;
       this.pendingRequests.delete(routeKey);
-    });
 
-    return routePromise;
+      return this.transformDirectionsResponse(result);
+
+    } catch (error) {
+      console.error('Error getting directions:', error);
+      throw error;
+    }
   }
 
-  async processQueue() {
-    if (this.processing || this.queue.length === 0 || !window.google) return;
-    
-    this.processing = true;
-    const directionsService = new window.google.maps.DirectionsService();
-
-    try {
-      while (this.queue.length > 0) {
-        const batch = this.queue.splice(0, this.batchSize);
-        
-        const results = await Promise.all(
-          batch.map(async ({ request, resolve, reject }) => {
-            try {
-              apiTracker.trackGoogleMapsCall('DirectionsService', 'route');
-              const result = await directionsService.route(request);
-              resolve(result);
-              return result;
-            } catch (error) {
-              reject(error);
-              throw error;
-            }
-          })
-        );
-
-        if (this.queue.length > 0) {
-          await new Promise(resolve => setTimeout(resolve, this.batchInterval));
-        }
-      }
-    } catch (error) {
-      console.error('Error processing directions batch:', error);
-    } finally {
-      this.processing = false;
+  transformDirectionsResponse(serverResponse) {
+    if (!window.google) {
+      throw new Error('Google Maps not loaded');
     }
+
+    if (!serverResponse || !serverResponse.routes || !serverResponse.routes.length) {
+      return {
+        routes: [],
+        status: 'ZERO_RESULTS'
+      };
+    }
+
+    return {
+      routes: serverResponse.routes.map(route => ({
+        ...route,
+        bounds: new window.google.maps.LatLngBounds(
+          new window.google.maps.LatLng(
+            route.bounds.south,
+            route.bounds.west
+          ),
+          new window.google.maps.LatLng(
+            route.bounds.north,
+            route.bounds.east
+          )
+        ),
+        legs: route.legs?.map(leg => ({
+          ...leg,
+          start_location: new window.google.maps.LatLng(
+            leg.start_location.lat, 
+            leg.start_location.lng
+          ),
+          end_location: new window.google.maps.LatLng(
+            leg.end_location.lat, 
+            leg.end_location.lng
+          ),
+          steps: leg.steps?.map(step => ({
+            ...step,
+            start_location: new window.google.maps.LatLng(
+              step.start_location.lat, 
+              step.start_location.lng
+            ),
+            end_location: new window.google.maps.LatLng(
+              step.end_location.lat, 
+              step.end_location.lng
+            ),
+            path: step.path?.map(point => 
+              new window.google.maps.LatLng(point.lat, point.lng)
+            )
+          }))
+        })),
+        overview_path: route.overview_path?.map(point =>
+          new window.google.maps.LatLng(point.lat, point.lng)
+        )
+      })),
+      status: serverResponse.status
+    };
   }
 
   getDebouncedDirections(origin, destination, waypoints = [], options = {}) {
@@ -155,24 +173,9 @@ export class DirectionsOptimizer {
   }
 
   cancelAll() {
-    this.queue = [];
     this.pendingRequests.clear();
     this.debounceTimers.forEach(timer => clearTimeout(timer));
     this.debounceTimers.clear();
-    this.lastRequestTimes.clear();
-    this.processing = false;
-  }
-
-  isGoogleMapsAvailable() {
-    return window.google && window.google.maps;
-  }
-
-  getQueueLength() {
-    return this.queue.length;
-  }
-
-  getPendingRequestsCount() {
-    return this.pendingRequests.size;
   }
 }
 

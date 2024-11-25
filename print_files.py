@@ -26,17 +26,19 @@ def print_file_contents(directory, file_extension, output, exclude_files=[], exc
                 output += "\n"
     return output
 
-if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description='Process project directory files.')
-    parser.add_argument('project_directory', nargs='?', default='src', help='Project directory to search (default: src)')
-    args = parser.parse_args()
-
+def collect_all_file_contents(directory="."):
     output = ""
-    project_directory = args.project_directory
-    output += "Here is my files' content:\n"
-    # Print the contents of all .js, .jsx, .css, .json files and the serverless.yml file
+    output += "here is my files' content:\n"
     output = print_file_contents(project_directory, '.js', output, exclude_files=['main.js', ".DS_Store"], exclude_directories=['node_modules'])
     output = print_file_contents(project_directory, '.jsx', output, exclude_files=[], exclude_directories=['node_modules'])
     output = print_file_contents(project_directory, '.css', output, exclude_files=['main.js', ".DS_Store"], exclude_directories=['node_modules'])
     output = print_file_contents(project_directory, '.json', output, exclude_files=[], exclude_directories=['node_modules'])
+    return output
+
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description='Process project directory files.')
+    parser.add_argument('project_directory', nargs='?', default='src', help='Project directory to search (default: src)')
+    args = parser.parse_args()
+    project_directory = args.project_directory
+    output = collect_all_file_contents(project_directory)
     pyperclip.copy(output)

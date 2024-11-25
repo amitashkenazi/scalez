@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Get the S3 bucket name and CloudFront distribution ID from serverless outputs
-STAGE=${1:-prod}
+STAGE=${1:-dev}
 BUCKET_NAME=$(aws cloudformation describe-stacks --stack-name scale-management-system-${STAGE} --query 'Stacks[0].Outputs[?OutputKey==`WebsiteBucketName`].OutputValue' --output text)
 DISTRIBUTION_ID=$(aws cloudformation describe-stacks --stack-name scale-management-system-${STAGE} --query 'Stacks[0].Outputs[?OutputKey==`CloudFrontDistributionId`].OutputValue' --output text)
 

@@ -1,6 +1,7 @@
 import React, { useState, useRef, useCallback } from 'react';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { LanguageProvider, useLanguage } from './contexts/LanguageContext';
+import { MapProvider } from './contexts/MapContext';
 import UnauthenticatedView from './components/UnauthenticatedView';
 import ProductsView from './components/products/ProductsView';
 import CustomersTableView from './components/customers/CustomersTableView';
@@ -88,7 +89,6 @@ function AppContent() {
     return language === 'he' ? `${baseStyles} right-4` : `${baseStyles} left-4`;
   };
 
-  // Render scale monitor component inside ScalesManagement instead of directly in main content
   const renderMainContent = () => {
     if (activeView === 'scalesManagement') {
       return (
@@ -168,7 +168,9 @@ function App() {
   return (
     <AuthProvider>
       <LanguageProvider>
-        <AppContent />
+        <MapProvider>
+          <AppContent />
+        </MapProvider>
       </LanguageProvider>
     </AuthProvider>
   );

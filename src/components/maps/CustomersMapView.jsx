@@ -1,66 +1,87 @@
-// src/components/maps/CustomersMapView.jsx
-
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { translations } from '../../translations/translations';
 import { Package, AlertCircle, Loader2, RefreshCw, List } from 'lucide-react';
 import apiService from '../../services/api';
-import { useLoadScript } from '@react-google-maps/api';
+import { useMap } from '../../contexts/MapContext';
 import Map from './Map';
 import RouteSteps from './RouteSteps';
 import CustomerCard from './components/CustomerCard';
 import { geocodeAddress } from './utils';
 import { DirectionsOptimizer } from '../../utils/DirectionsOptimizer';
 import ApiStats from '../ApiStats';
-
-
-const GOOGLE_MAPS_API_KEY = process.env.REACT_APP_GOOGLE_MAPS_API_KEY;
-const LIBRARIES = ['places'];
+import PersistentMapContainer from './PersistentMapContainer';
 
 const CustomersMapView = () => {
-  // State for data
+  // Map context
+  const { 
+    mapInstance, 
+    setMapInstance,
+    directionsResponse,
+    setDirectionsResponse,
+    selectedMarker,
+    setSelectedMarker,
+    isMapLoaded
+  } = useMap();
+
+  // Local state
   const [customers, setCustomers] = useState([]);
   const [orders, setOrders] = useState([]);
   const [measurements, setMeasurements] = useState({});
   const [selectedCustomers, setSelectedCustomers] = useState([]);
-  const [directionsResponse, setDirectionsResponse] = useState(null);
-  const [routeSummary, setRouteSummary] = useState(null);
-
-  // UI state
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [lastRefreshTime, setLastRefreshTime] = useState(new Date());
-  const [selectedMarker, setSelectedMarker] = useState(null);
-  const [mapInstance, setMapInstance] = useState(null);
   const [selectedAddresses, setSelectedAddresses] = useState([]);
   const [isCalculatingRoute, setIsCalculatingRoute] = useState(false);
 
-  // Initialize the optimizer
+  // Location state
+  const [startLocation, setStartLocation] = useState({
+    lat: 32.0853,
+    lng: 34.7818  // Tel Aviv default coordinates
+  });
+  const [startAddress, setStartAddress] = useState('Tel Aviv, Israel');
+  const [endLocation, setEndLocation] = useState(null);
+  const [endAddress, setEndAddress] = useState('');
+
+  // Initialize the directions optimizer
   const [directionsOptimizer] = useState(() => new DirectionsOptimizer({
     batchSize: 5,
     batchInterval: 1000,
     debounceDelay: 2500
   }));
 
-  // Location state with Tel Aviv as default
-  const [startLocation, setStartLocation] = useState({
-    lat: 32.0853,
-    lng: 34.7818
-  });
-  const [startAddress, setStartAddress] = useState('Tel Aviv, Israel');
-  const [endLocation, setEndLocation] = useState(null);
-  const [endAddress, setEndAddress] = useState('');
-
   const { language } = useLanguage();
   const t = translations[language];
   const isRTL = language === 'he';
 
-  // Initialize Google Maps
-  const { isLoaded, loadError } = useLoadScript({
-    googleMapsApiKey: GOOGLE_MAPS_API_KEY,
-    libraries: LIBRARIES
-  });
+  // Fetch measurements for scales
+  const fetchLatestMeasurements = async (scaleIds) => {
+    try {
+      const measurementPromises = scaleIds
+        .filter(id => id)
+        .map(scaleId => 
+          apiService.request(`measurements/scale/${scaleId}/latest`, {
+            method: 'GET'
+          }).catch(() => null)
+        );
+      
+      const measurementResults = await Promise.allSettled(measurementPromises);
+      const newMeasurements = {};
+      
+      measurementResults.forEach((result, index) => {
+        if (result.status === 'fulfilled' && result.value) {
+          newMeasurements[scaleIds[index]] = result.value;
+        }
+      });
+
+      setMeasurements(newMeasurements);
+      setLastRefreshTime(new Date());
+    } catch (err) {
+      console.error('Error fetching measurements:', err);
+    }
+  };
 
   // Fetch initial data
   const fetchData = async (showLoadingState = true) => {
@@ -75,29 +96,12 @@ const CustomersMapView = () => {
         apiService.request('orders', { method: 'GET' })
       ]);
 
-      // Get scale IDs from products
+      // Get scale IDs
       const scaleIds = [...new Set(productsResponse
         .filter(p => p.scale_id)
         .map(p => p.scale_id))];
-      
-      // Fetch measurements for scales
-      const measurementsMap = {};
-      if (scaleIds.length > 0) {
-        const measurementPromises = scaleIds.map(scaleId =>
-          apiService.request(`measurements/scale/${scaleId}/latest`, {
-            method: 'GET'
-          }).catch(() => null)
-        );
 
-        const measurementResults = await Promise.all(measurementPromises);
-        measurementResults.forEach((measurement, index) => {
-          if (measurement) {
-            measurementsMap[scaleIds[index]] = measurement;
-          }
-        });
-      }
-
-      // Enrich customers with geocoded coordinates and products
+      // Enrich customers with coordinates and products
       const enrichedCustomers = await Promise.all(
         customersResponse.map(async (customer) => {
           const coords = await geocodeAddress(customer.address);
@@ -105,7 +109,7 @@ const CustomersMapView = () => {
             .filter(p => p.customer_id === customer.customer_id)
             .map(product => ({
               ...product,
-              measurement: product.scale_id ? measurementsMap[product.scale_id] || null : null
+              measurement: null // Will be updated later
             }));
 
           return {
@@ -119,9 +123,8 @@ const CustomersMapView = () => {
 
       setCustomers(enrichedCustomers);
       setOrders(ordersResponse);
-      setMeasurements(measurementsMap);
-      setLastRefreshTime(new Date());
-
+      await fetchLatestMeasurements(scaleIds);
+      
       // Update map bounds if needed
       if (mapInstance && enrichedCustomers.length > 0) {
         const bounds = new window.google.maps.LatLngBounds();
@@ -146,9 +149,9 @@ const CustomersMapView = () => {
     }
   };
 
+  // Calculate route
   const calculateRoute = async () => {
-    console.log(new Error().stack);
-    if (!selectedCustomers.length || !startLocation || !window.google) return;
+    if (!selectedCustomers.length || !startLocation || !window.google || !mapInstance) return;
     
     setIsCalculatingRoute(true);
     setError(null);
@@ -164,7 +167,6 @@ const CustomersMapView = () => {
         stopover: true
       }));
 
-      // Use debounced directions to prevent rapid recalculation
       const result = await directionsOptimizer.getDebouncedDirections(
         origin,
         destination,
@@ -182,15 +184,13 @@ const CustomersMapView = () => {
 
       setDirectionsResponse(result);
       
-      if (mapInstance) {
-        const bounds = new window.google.maps.LatLngBounds();
-        bounds.extend(origin);
-        result.routes[0].legs.forEach(leg => {
-          bounds.extend(leg.start_location);
-          bounds.extend(leg.end_location);
-        });
-        mapInstance.fitBounds(bounds);
-      }
+      const bounds = new window.google.maps.LatLngBounds();
+      bounds.extend(origin);
+      result.routes[0].legs.forEach(leg => {
+        bounds.extend(leg.start_location);
+        bounds.extend(leg.end_location);
+      });
+      mapInstance.fitBounds(bounds);
 
     } catch (err) {
       console.error('Error calculating route:', err);
@@ -205,15 +205,12 @@ const CustomersMapView = () => {
     if (!addresses.length) return;
   
     try {
-      // Get coordinates for all addresses
       const coordsPromises = addresses.map(address => geocodeAddress(address));
       const coordinates = await Promise.all(coordsPromises);
   
-      // Set the first address as start location
       setStartLocation(coordinates[0]);
       setStartAddress(addresses[0]);
   
-      // If there are more addresses, calculate route through them
       if (coordinates.length > 1) {
         const waypoints = coordinates.slice(1).map(coords => ({
           location: new window.google.maps.LatLng(coords.lat, coords.lng),
@@ -228,7 +225,6 @@ const CustomersMapView = () => {
           lng: coordinates[index].lng,
           products: []
         })));
-        console.log('calculateRoute1');
         calculateRoute();
       }
     } catch (error) {
@@ -237,15 +233,43 @@ const CustomersMapView = () => {
     }
   };
 
-  // Handlers
-  const handleRefresh = useCallback(() => {
-    setIsRefreshing(true);
-    fetchData(false);
+  // Setup effects
+  useEffect(() => {
+    fetchData();
+    return () => {
+      directionsOptimizer.cancelAll();
+    };
   }, []);
 
-  const handleBoundsChanged = useCallback((bounds) => {
-    // Handle bounds change if needed
-  }, []);
+  useEffect(() => {
+    if (selectedCustomers.length > 0 && startLocation && isMapLoaded) {
+      calculateRoute();
+    }
+  }, [selectedCustomers, startLocation, endLocation, isMapLoaded]);
+
+  // Auto-refresh measurements
+  useEffect(() => {
+    if (!customers.length) return;
+    
+    const refreshInterval = setInterval(() => {
+      const scaleIds = [...new Set(
+        customers.flatMap(c => 
+          c.products
+            .filter(p => p.scale_id)
+            .map(p => p.scale_id)
+        )
+      )];
+      fetchLatestMeasurements(scaleIds);
+    }, 20000); // 20 seconds
+
+    return () => clearInterval(refreshInterval);
+  }, [customers]);
+
+  // Event handlers
+  const handleRefresh = () => {
+    setIsRefreshing(true);
+    fetchData(false);
+  };
 
   const handleCustomerClick = useCallback((customer) => {
     if (mapInstance) {
@@ -260,29 +284,15 @@ const CustomersMapView = () => {
       const isSelected = prev.some(c => c.customer_id === customer.customer_id);
       if (isSelected) {
         return prev.filter(c => c.customer_id !== customer.customer_id);
-      } else {
-        return [...prev, customer];
       }
+      return [...prev, customer];
     });
   }, []);
 
-  // Effects
-  useEffect(() => {
-    fetchData();
-    return () => {
-      directionsOptimizer.cancelAll();
-    };
+  const handleBoundsChanged = useCallback(() => {
+    // Handle bounds change if needed
   }, []);
 
-  useEffect(() => {
-    console.log('Selected customers:', selectedCustomers);
-    if (selectedCustomers.length > 0 && startLocation) {
-    console.log('calculateRoute2');
-      calculateRoute();
-    }
-  }, [selectedCustomers, startLocation, endLocation]);
-
-  // Format time helper
   const getLastRefreshTimeString = () => {
     return lastRefreshTime.toLocaleTimeString(language === 'he' ? 'he-IL' : 'en-US', {
       hour: '2-digit',
@@ -291,20 +301,9 @@ const CustomersMapView = () => {
     });
   };
 
-  if (loadError) {
+  if (isLoading) {
     return (
-      <div className="p-6 max-w-7xl mx-auto">
-        <div className="bg-red-50 border border-red-400 rounded-lg p-4 flex items-center">
-          <AlertCircle className="h-5 w-5 text-red-600 mr-2" />
-          <p className="text-red-700">Failed to load Google Maps</p>
-        </div>
-      </div>
-    );
-  }
-
-  if (!isLoaded || isLoading) {
-    return (
-      <div className="flex justify-center items-center h-[600px]">
+      <div className="flex justify-center items-center h-64">
         <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
       </div>
     );
@@ -325,14 +324,12 @@ const CustomersMapView = () => {
             </p>
           </div>
           <div className="flex items-center gap-4">
-            {lastRefreshTime && (
-              <span className="text-sm text-gray-500">
-                Last updated: {getLastRefreshTimeString()}
-              </span>
-            )}
+            <span className="text-sm text-gray-500">
+              Last updated: {getLastRefreshTimeString()}
+            </span>
             <button
               onClick={handleRefresh}
-              className="flex items-center gap-2 px-4 py-2 text-gray-600 hover:text-gray-800 disabled:opacity-50"
+              className="flex items-center gap-2 px-4 py-2 text-gray-600 hover:text-gray-800"
               disabled={isRefreshing}
             >
               <RefreshCw className={`h-5 w-5 ${isRefreshing ? 'animate-spin' : ''}`} />
@@ -377,21 +374,23 @@ const CustomersMapView = () => {
         {/* Map */}
         <div className="md:col-span-2">
           <div className="bg-white rounded-lg shadow-lg p-4">
-            <Map
-              customers={customers}
-              selectedMarker={selectedMarker}
-              setSelectedMarker={setSelectedMarker}
-              onMapLoad={setMapInstance}
-              selectedCustomers={selectedCustomers}
-              setSelectedCustomers={setSelectedCustomers}
-              directionsResponse={directionsResponse}
-              orders={orders}
-              startLocation={startLocation}
-              endLocation={endLocation}
-              onBoundsChanged={handleBoundsChanged}
-              calculateRoute={calculateRoute}
-              isCalculatingRoute={isCalculatingRoute}
-            />
+            <PersistentMapContainer>
+              <Map
+                customers={customers}
+                selectedMarker={selectedMarker}
+                setSelectedMarker={setSelectedMarker}
+                onMapLoad={setMapInstance}
+                selectedCustomers={selectedCustomers}
+                setSelectedCustomers={setSelectedCustomers}
+                directionsResponse={directionsResponse}
+                orders={orders}
+                startLocation={startLocation}
+                endLocation={endLocation}
+                onBoundsChanged={handleBoundsChanged}
+                calculateRoute={calculateRoute}
+                isCalculatingRoute={isCalculatingRoute}
+              />
+            </PersistentMapContainer>
           </div>
         </div>
       </div>
@@ -421,6 +420,7 @@ const CustomersMapView = () => {
           <p className="text-red-700">{error}</p>
         </div>
       )}
+
       <ApiStats />
     </div>
   );

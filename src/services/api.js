@@ -146,7 +146,7 @@ class ApiService {
     if (!scaleId) {
       throw new Error('Scale ID is required to fetch latest measurement');
     }
-    
+
     try {
       console.log('get latest measurement: scaleid: ', scaleId); // Debug log
       return await this.request(`measurements/scale/${scaleId}/latest`, {
@@ -441,6 +441,113 @@ class ApiService {
     } catch (error) {
       console.error('Health check failed:', error);
       return false;
+    }
+  }
+
+  /**
+   * Geocode an address to coordinates using server-side API
+   * @param {string} address - The address to geocode
+   * @returns {Promise<{lat: number, lng: number}>} Coordinates
+   */
+  async geocodeAddress(address) {
+    console.log('geocode address: ', address); // Debug log
+    try {
+      const response = await this.request('maps/geocode', {
+        method: 'POST',
+        body: JSON.stringify({ address })
+      });
+
+      if (!response || (!response.lat && !response.lng)) {
+        throw new Error('Invalid geocoding response');
+      }
+
+      return {
+        lat: parseFloat(response.lat),
+        lng: parseFloat(response.lng)
+      };
+    } catch (error) {
+      console.error('Geocoding error:', error);
+      throw error;
+    }
+  }
+
+  /**
+ * Get directions between points using server-side API
+ * @param {Object} params - Direction request parameters
+ * @param {Object} params.origin - Origin coordinates {lat, lng}
+ * @param {Object} params.destination - Destination coordinates {lat, lng}
+ * @param {Array} params.waypoints - Array of waypoint objects
+ * @param {Object} params.options - Additional options
+ * @returns {Promise<Object>} Directions response
+ */
+  async getDirections({ origin, destination, waypoints = [] }) {
+    // Validation and data normalization
+    const normalizeLocation = (location, name) => {
+      if (!location) {
+        throw new Error(`${name} is required`);
+      }
+      
+      // If it's a Google Maps LatLng object
+      if (typeof location.lat === 'function') {
+        return {
+          lat: location.lat(),
+          lng: location.lng()
+        };
+      }
+      
+      // If it's a plain object with numeric lat/lng
+      if (typeof location.lat === 'number' && typeof location.lng === 'number') {
+        return {
+          lat: location.lat,
+          lng: location.lng
+        };
+      }
+
+      // If it's a plain object with location property (waypoint format)
+      if (location.location && typeof location.location.lat === 'number' && typeof location.location.lng === 'number') {
+        return location.location;
+      }
+
+      throw new Error(`Invalid ${name} format: ${JSON.stringify(location)}`);
+    };
+
+    try {
+      console.log('Raw input:', { origin, destination, waypoints });
+
+      const normalizedOrigin = normalizeLocation(origin, 'origin');
+      const normalizedDestination = normalizeLocation(destination, 'destination');
+      
+      const normalizedWaypoints = waypoints.map((wp, index) => {
+        try {
+          return {
+            location: normalizeLocation(wp, `waypoint[${index}]`),
+            stopover: true
+          };
+        } catch (error) {
+          console.error(`Error processing waypoint ${index}:`, wp);
+          throw error;
+        }
+      });
+
+      console.log('Normalized data:', {
+        origin: normalizedOrigin,
+        destination: normalizedDestination,
+        waypoints: normalizedWaypoints
+      });
+
+      const response = await this.request('maps/directions', {
+        method: 'POST',
+        body: JSON.stringify({
+          origin: normalizedOrigin,
+          destination: normalizedDestination,
+          waypoints: normalizedWaypoints
+        })
+      });
+
+      return response;
+    } catch (error) {
+      console.error('Directions API error:', error);
+      throw error;
     }
   }
 }

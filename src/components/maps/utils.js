@@ -45,6 +45,7 @@ export const hasWaitingDelivery = (customer, orders) => {
   
   // Geocode an address to coordinates
   export const geocodeAddress = async (address) => {
+    console.log('Geocoding address:', address);
     const DEFAULT_COORDS = {
       tel_aviv: { lat: 32.0853, lng: 34.7818 },
       jerusalem: { lat: 31.7683, lng: 35.2137 },
