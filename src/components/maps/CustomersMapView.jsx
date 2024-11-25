@@ -389,6 +389,7 @@ const CustomersMapView = () => {
                 onBoundsChanged={handleBoundsChanged}
                 calculateRoute={calculateRoute}
                 isCalculatingRoute={isCalculatingRoute}
+                measurements={measurements}
               />
             </PersistentMapContainer>
           </div>

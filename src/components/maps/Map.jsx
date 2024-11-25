@@ -36,7 +36,8 @@ const Map = ({
   startLocation,
   endLocation,
   onBoundsChanged,
-  calculateRoute
+  calculateRoute,
+  measurements
 }) => {
   const mapRef = useRef();
   const [isCalculatingRoute, setIsCalculatingRoute] = useState(false);
@@ -75,9 +76,10 @@ const Map = ({
       const isPendingDelivery = hasWaitingDelivery(customer, orders);
       const firstProduct = customer.products?.[0];
       const weight = firstProduct?.scale_id
-        ? firstProduct?.measurement?.weight
+        ? measurements[firstProduct?.scale_id].weight
         : null;
       const thresholds = firstProduct?.thresholds;
+
       return createCustomMarkerIcon(weight, thresholds, isPendingDelivery);
     },
     [orders]
