@@ -2,6 +2,7 @@ import React, { useState, useRef, useCallback } from 'react';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { LanguageProvider, useLanguage } from './contexts/LanguageContext';
 import { MapProvider } from './contexts/MapContext';
+import { AccountProvider } from './contexts/AccountContext';
 import UnauthenticatedView from './components/UnauthenticatedView';
 import ProductsView from './components/products/ProductsView';
 import CustomersTableView from './components/customers/CustomersTableView';
@@ -29,17 +30,15 @@ function AppContent() {
   const menuRef = useRef(null);
   const minSwipeDistance = 50;
   
-  const handleTouchStart = (e) => {
+  const handleTouchStart = useCallback((e) => {
     touchStartX.current = e.touches[0].clientX;
     touchEndX.current = null;
-  };
+  }, []);
 
-  const handleTouchMove = (e) => {
+  const handleTouchMove = useCallback((e) => {
+    if (!touchStartX.current) return;
     touchEndX.current = e.touches[0].clientX;
-    if (touchStartX.current < 50 || isMenuOpen) {
-      e.preventDefault();
-    }
-  };
+  }, []);
 
   const handleTouchEnd = useCallback(() => {
     if (!touchStartX.current || !touchEndX.current) return;
@@ -168,9 +167,11 @@ function App() {
   return (
     <AuthProvider>
       <LanguageProvider>
-        <MapProvider>
-          <AppContent />
-        </MapProvider>
+        <AccountProvider>
+          <MapProvider>
+            <AppContent />
+          </MapProvider>
+        </AccountProvider>
       </LanguageProvider>
     </AuthProvider>
   );

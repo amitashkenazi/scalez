@@ -472,87 +472,47 @@ class ApiService {
   }
 
  /**
-   * Get directions between points using server-side API
-   * @param {Object} params - Direction request parameters
-   * @param {Object} params.origin - Origin coordinates {lat, lng}
-   * @param {Object} params.destination - Destination coordinates {lat, lng}
-   * @param {Array} params.waypoints - Array of waypoint objects
-   * @param {Object} params.options - Additional options
-   * @returns {Promise<Object>} Directions response
-   */
-  async getDirections({ origin, destination, waypoints = [], options = {} }) {
-    // Validation and data normalization
-    const normalizeLocation = (location, name) => {
-      if (!location) {
-        throw new Error(`${name} is required`);
-      }
-      
-      // If it's a Google Maps LatLng object
-      if (typeof location.lat === 'function') {
-        return {
-          lat: location.lat(),
-          lng: location.lng()
-        };
-      }
-      
-      // If it's a plain object with numeric lat/lng
-      if (typeof location.lat === 'number' && typeof location.lng === 'number') {
-        return {
-          lat: location.lat,
-          lng: location.lng
-        };
-      }
+ * Get optimized directions between points
+ * @param {Object} params - Direction request parameters
+ * @param {Object} params.origin - Origin coordinates {lat, lng}
+ * @param {Object} params.destination - Destination coordinates {lat, lng}
+ * @param {Array} params.waypoints - Array of waypoint objects
+ * @param {Object} params.options - Additional options
+ * @returns {Promise<Object>} Optimized directions response
+ */
+ async getDirections({ origin, destination, waypoints = [], options = {} }) {
+  try {
+    console.log('Requesting optimized route:', {
+      origin,
+      destination,
+      waypoints,
+      options
+    });
 
-      // If it's a plain object with location property (waypoint format)
-      if (location.location && typeof location.location.lat === 'number' && typeof location.location.lng === 'number') {
-        return location.location;
-      }
+    // Include all stops as waypoints except origin
+    const allWaypoints = waypoints.map(wp => ({
+      location: wp.location || wp,
+      stopover: true
+    }));
 
-      throw new Error(`Invalid ${name} format: ${JSON.stringify(location)}`);
-    };
+    const response = await this.request('maps/optimize-route', {
+      method: 'POST',
+      body: JSON.stringify({
+        origin,
+        destination: origin, // For round trip
+        waypoints: allWaypoints,
+        return_to_origin: true
+      })
+    });
 
-    try {
-      console.log('Raw input:', { origin, destination, waypoints, options });
-
-      const normalizedOrigin = normalizeLocation(origin, 'origin');
-      const normalizedDestination = normalizeLocation(destination, 'destination');
-      
-      const normalizedWaypoints = waypoints.map((wp, index) => {
-        try {
-          return {
-            location: normalizeLocation(wp, `waypoint[${index}]`),
-            stopover: wp.stopover ?? true
-          };
-        } catch (error) {
-          console.error(`Error processing waypoint ${index}:`, wp);
-          throw error;
-        }
-      });
-
-      console.log('Normalized data:', {
-        origin: normalizedOrigin,
-        destination: normalizedDestination,
-        waypoints: normalizedWaypoints
-      });
-
-      // Choose endpoint based on optimization flag
-      const endpoint = options.optimizeWaypoints ? 'maps/optimize-route' : 'maps/directions';
-
-      const response = await this.request(endpoint, {
-        method: 'POST',
-        body: JSON.stringify({
-          origin: normalizedOrigin,
-          destination: normalizedDestination,
-          waypoints: normalizedWaypoints
-        })
-      });
-      console.log('Directions API response:', response);
-      return response;
-    } catch (error) {
-      console.error('Directions API error:', error);
-      throw error;
-    }
+    console.log('Optimized route response:', response);
+    return response;
+  } catch (error) {
+    console.error('Error getting optimized route:', error);
+    throw error;
   }
+}
+
 }
 
 // Create a singleton instance

@@ -11,6 +11,8 @@ import { geocodeAddress } from './utils';
 import { DirectionsOptimizer } from '../../utils/DirectionsOptimizer';
 import ApiStats from '../ApiStats';
 import PersistentMapContainer from './PersistentMapContainer';
+import { useAccount } from '../../contexts/AccountContext';
+
 
 const CustomersMapView = () => {
   // Map context
@@ -35,16 +37,36 @@ const CustomersMapView = () => {
   const [lastRefreshTime, setLastRefreshTime] = useState(new Date());
   const [selectedAddresses, setSelectedAddresses] = useState([]);
   const [isCalculatingRoute, setIsCalculatingRoute] = useState(false);
-
-  // Location state
-  const [startLocation, setStartLocation] = useState({
-    lat: 32.0853,
-    lng: 34.7818  // Tel Aviv default coordinates
-  });
-  const [startAddress, setStartAddress] = useState('Tel Aviv, Israel');
+  const { accountInfo, isLoading: isLoadingAccount } = useAccount();
+  
+  // Update initial state to be null
+  const [startLocation, setStartLocation] = useState(null);
+  const [startAddress, setStartAddress] = useState('');
   const [endLocation, setEndLocation] = useState(null);
   const [endAddress, setEndAddress] = useState('');
+   // Add effect to set HQ location when account info is loaded
+   useEffect(() => {
+    const setHQLocation = async () => {
+      if (accountInfo?.address) {
+        try {
+          const coordinates = await geocodeAddress(accountInfo.address);
+          setStartLocation(coordinates);
+          setStartAddress(accountInfo.address);
+          setEndLocation(coordinates);
+          setEndAddress(accountInfo.address);
+        } catch (error) {
+          console.error('Error geocoding HQ address:', error);
+          // Fallback to Tel Aviv
+          setStartLocation({ lat: 32.0853, lng: 34.7818 });
+          setStartAddress('Tel Aviv, Israel');
+          setEndLocation({ lat: 32.0853, lng: 34.7818 });
+          setEndAddress('Tel Aviv, Israel');
+        }
+      }
+    };
 
+    setHQLocation();
+  }, [accountInfo]);
   // Initialize the directions optimizer
   const [directionsOptimizer] = useState(() => new DirectionsOptimizer({
     batchSize: 5,
@@ -282,12 +304,24 @@ const CustomersMapView = () => {
   const handleCustomerSelect = useCallback((customer) => {
     setSelectedCustomers(prev => {
       const isSelected = prev.some(c => c.customer_id === customer.customer_id);
-      if (isSelected) {
-        return prev.filter(c => c.customer_id !== customer.customer_id);
+      const newSelection = isSelected 
+        ? prev.filter(c => c.customer_id !== customer.customer_id)
+        : [...prev, customer];
+      
+      // Clear directions if no customers are selected
+      if (newSelection.length === 0) {
+        setDirectionsResponse(null);
       }
-      return [...prev, customer];
+      
+      return newSelection;
     });
-  }, []);
+  }, [setDirectionsResponse]);
+
+  useEffect(() => {
+    if (selectedCustomers.length === 0) {
+      setDirectionsResponse(null);
+    }
+  }, [selectedCustomers]);
 
   const handleBoundsChanged = useCallback(() => {
     // Handle bounds change if needed
