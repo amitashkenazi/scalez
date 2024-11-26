@@ -1,13 +1,11 @@
-import React, { useCallback, useEffect } from 'react';
+import React, { useEffect } from 'react';
 import {
   GoogleMap,
   MarkerF,
   InfoWindowF,
-  DirectionsRenderer,
 } from '@react-google-maps/api';
-import { PackageCheck } from 'lucide-react';
 import { createCustomMarkerIcon } from './markers';
-import { hasWaitingDelivery } from './utils';
+import { useMap } from '../../contexts/MapContext';
 
 const MAP_OPTIONS = {
   zoomControl: true,
@@ -27,46 +25,39 @@ const Map = ({
   customers = [],
   selectedMarker,
   setSelectedMarker,
-  onMapLoad,
   selectedCustomers = [],
-  directionsResponse,
-  orders = [],
-  startLocation,
-  endLocation,
-  onBoundsChanged,
-  calculateRoute,
   measurements = {}
 }) => {
-  // Debug logging
-  useEffect(() => {
-    console.log('Map Component Props:', {
-      customersCount: customers.length,
-      selectedCustomersCount: selectedCustomers.length,
-      hasDirections: !!directionsResponse,
-      startLocation,
-      endLocation,
-      measurements
-    });
+  const { setMapInstance, mapInstance } = useMap();
 
-    if (directionsResponse) {
-      console.log('Directions Response:', {
-        routes: directionsResponse.routes?.length,
-        legs: directionsResponse.routes?.[0]?.legs?.length,
-        waypoint_order: directionsResponse.routes?.[0]?.waypoint_order,
+  // Fit bounds to include all customers
+  useEffect(() => {
+    if (mapInstance && customers.length > 0) {
+      const bounds = new window.google.maps.LatLngBounds();
+      
+      customers.forEach(customer => {
+        if (customer.lat && customer.lng) {
+          bounds.extend({ lat: customer.lat, lng: customer.lng });
+        }
+      });
+
+      // Add some padding around the bounds
+      mapInstance.fitBounds(bounds, {
+        padding: {
+          top: 150,
+          right: 150,
+          bottom: 150,
+          left: 150
+        }
       });
     }
-  }, [customers, selectedCustomers, directionsResponse, startLocation, endLocation, measurements]);
+  }, [mapInstance, customers]);
 
-  // Handle bounds changes
-  const handleBoundsChanged = useCallback(() => {
-    if (onBoundsChanged) {
-      onBoundsChanged();
-    }
-  }, [onBoundsChanged]);
+  const handleMapLoad = (map) => {
+    setMapInstance(map);
+  };
 
-  // Render each customer's info window content
-  const renderCustomerInfo = useCallback((customer) => {
-    const isPendingDelivery = hasWaitingDelivery(customer, orders);
+  const renderCustomerInfo = (customer) => {
     const firstProduct = customer.products?.[0];
     const measurement = firstProduct?.scale_id ? measurements[firstProduct.scale_id] : null;
 
@@ -80,7 +71,6 @@ const Map = ({
             className="text-sm flex justify-between items-center"
           >
             <div className="flex items-center gap-2">
-              <PackageCheck className="h-4 w-4 text-gray-500" />
               <span>{product.name}</span>
             </div>
             {product.scale_id ? (
@@ -100,73 +90,24 @@ const Map = ({
             )}
           </div>
         ))}
-        {isPendingDelivery && (
-          <div className="mt-2 px-2 py-1 bg-purple-100 text-purple-800 text-sm font-medium rounded">
-            Pending Delivery
-          </div>
-        )}
       </div>
     );
-  }, [orders, measurements]);
+  };
 
   return (
     <GoogleMap
       mapContainerClassName="rounded-lg"
       mapContainerStyle={{ height: '600px', width: '100%' }}
-      center={startLocation}
-      zoom={13}
+      center={{ lat: 32.0853, lng: 34.7818 }} // Default center, will be overridden by bounds
+      zoom={13} // Default zoom, will be overridden by bounds
       options={MAP_OPTIONS}
-      onLoad={onMapLoad}
-      onBoundsChanged={handleBoundsChanged}
+      onLoad={handleMapLoad}
     >
-      {/* Start Location Marker */}
-      {startLocation && (
-        <MarkerF
-          position={startLocation}
-          icon={createCustomMarkerIcon(null, null, false, true)}
-          onClick={() => setSelectedMarker('start')}
-        >
-          {selectedMarker === 'start' && (
-            <InfoWindowF
-              position={startLocation}
-              onCloseClick={() => setSelectedMarker(null)}
-            >
-              <div className="p-2">
-                <p className="font-medium">Starting Point</p>
-                <p className="text-sm text-gray-600">Base Location</p>
-              </div>
-            </InfoWindowF>
-          )}
-        </MarkerF>
-      )}
-
-      {/* End Location Marker (if different from start) */}
-      {endLocation && endLocation !== startLocation && (
-        <MarkerF
-          position={endLocation}
-          icon={createCustomMarkerIcon(null, null, false, true)}
-          onClick={() => setSelectedMarker('end')}
-        >
-          {selectedMarker === 'end' && (
-            <InfoWindowF
-              position={endLocation}
-              onCloseClick={() => setSelectedMarker(null)}
-            >
-              <div className="p-2">
-                <p className="font-medium">End Point</p>
-                <p className="text-sm text-gray-600">Final Destination</p>
-              </div>
-            </InfoWindowF>
-          )}
-        </MarkerF>
-      )}
-
       {/* Customer Markers */}
       {customers.map((customer) => {
         const isSelected = selectedCustomers.some(c => c.customer_id === customer.customer_id);
         const firstProduct = customer.products?.[0];
         const measurement = firstProduct?.scale_id ? measurements[firstProduct.scale_id] : null;
-        const isPendingDelivery = hasWaitingDelivery(customer, orders);
 
         return (
           <MarkerF
@@ -176,7 +117,7 @@ const Map = ({
             icon={createCustomMarkerIcon(
               measurement?.weight,
               firstProduct?.thresholds,
-              isPendingDelivery,
+              false,
               false,
               isSelected
             )}
@@ -192,22 +133,6 @@ const Map = ({
           </MarkerF>
         );
       })}
-
-      {/* Directions Renderer */}
-      {directionsResponse?.routes?.[0] && (
-        <DirectionsRenderer
-          directions={directionsResponse}
-          options={{
-            suppressMarkers: true,
-            polylineOptions: {
-              strokeColor: '#4F46E5',
-              strokeWeight: 5,
-              strokeOpacity: 0.8
-            },
-            preserveViewport: true
-          }}
-        />
-      )}
     </GoogleMap>
   );
 };

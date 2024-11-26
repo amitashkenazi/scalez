@@ -2,8 +2,25 @@ import openai
 import json
 from extract_files_descriptions import scan_project
 import pyperclip
+import os
+from anthropic_helper import AnthropicHelper
+antropic_helper = AnthropicHelper(os.environ.get("ANTHROPIC_API_KEY"))
+
 client = openai.Client()
 
+def send_request_to_antropic(prompt):
+    """
+    Send the prepared prompt to Antropic and return the response.
+    """
+    try:
+        response = antropic_helper.inference(prompt)
+        response_text = response[0].text
+        print(f"Response from Antropic: {response_text}")
+        return response_text
+    except Exception as e:
+        print(f"Error communicating with Antropic: {e}")
+        return None
+    
 def parse_model_response(response_content):
     """Parse the JSON response from the model."""
     try:
@@ -38,7 +55,7 @@ def collect_project_data(directory):
     project_definitions = scan_project(directory)
     return project_definitions
 
-def prepare_openai_request(project_definitions, user_request):
+def prepare_llm_request(project_definitions, user_request):
     """
     Prepare the content to send to OpenAI.
     """
@@ -55,18 +72,19 @@ def prepare_openai_request(project_definitions, user_request):
     {
         "files_to_change": [
         {
-            "file": "file_name",
+            "file": "file_path including the name",
             "description": "description of changes"
         }
     ],
     "files_to_add": [
         {
-            "file": "file_name",
+            "file": "file_path including the name",
             "description": "description of new file"
         }
     ]
     }
     """
+    prompt += "write only the json object without any text before or after the json"
     return prompt
 
 def send_request_to_openai(prompt): 
@@ -100,11 +118,11 @@ def main():
     user_request = input("> ")
 
     # Prepare the prompt for OpenAI
-    prompt = prepare_openai_request(project_definitions, user_request)
+    prompt = prepare_llm_request(project_definitions, user_request)
     print(f"\nPrompt to send to OpenAI:\n{prompt}")
     # Send the prompt to OpenAI
     print("Sending request to OpenAI...")
-    response = send_request_to_openai(prompt)
+    response = send_request_to_antropic(prompt)
     parsed_res = parse_model_response(response)
     
     files_to_change = parsed_res.get("files_to_change", [])

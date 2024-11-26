@@ -4,20 +4,14 @@ const MapContext = createContext();
 
 export function MapProvider({ children }) {
   const [mapInstance, setMapInstance] = useState(null);
-  const [directionsResponse, setDirectionsResponse] = useState(null);
   const [selectedMarker, setSelectedMarker] = useState(null);
-  const [currentBounds, setCurrentBounds] = useState(null);
   const [isMapLoaded, setIsMapLoaded] = useState(false);
 
   const value = {
     mapInstance,
     setMapInstance,
-    directionsResponse,
-    setDirectionsResponse,
     selectedMarker,
     setSelectedMarker,
-    currentBounds,
-    setCurrentBounds,
     isMapLoaded,
     setIsMapLoaded
   };

@@ -3,7 +3,7 @@ import { useLanguage } from '../../../contexts/LanguageContext';
 import { translations } from '../../../translations/translations';
 import { hasWaitingDelivery } from '../utils';
 
-const CustomerCard = ({ customer, onLocationClick, isSelected, onSelect, orders }) => {
+const CustomerCard = ({ customer, onLocationClick, orders }) => {
   const { language } = useLanguage();
   const [hebrewName, englishName] = customer?.name?.split(' - ') || ['', ''];
   const displayName = language === 'he' ? hebrewName : englishName;
@@ -16,10 +16,8 @@ const CustomerCard = ({ customer, onLocationClick, isSelected, onSelect, orders 
 
   return (
     <div
-      className={`p-4 rounded-lg cursor-pointer hover:bg-gray-50 border-2 transition-colors
-        ${isSelected ? 'border-blue-500 bg-blue-50' : 'border-gray-200'}
-        ${isPendingDelivery ? 'border-purple-500 bg-purple-50' : ''}
-        ${isPendingDelivery && isSelected ? 'border-purple-700' : ''}`}
+      className={`p-4 rounded-lg border-2 transition-colors
+        ${isPendingDelivery ? 'border-purple-500 bg-purple-50' : 'border-gray-200'}`}
     >
       <div className="flex justify-between items-start mb-2">
         <div className="font-medium text-lg">
@@ -30,29 +28,15 @@ const CustomerCard = ({ customer, onLocationClick, isSelected, onSelect, orders 
             </span>
           )}
         </div>
-        <div className="flex items-center gap-2">
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              onSelect(customer);
-            }}
-            className={`px-3 py-1 rounded ${isSelected
-              ? 'bg-blue-500 text-white'
-              : 'bg-gray-100 hover:bg-gray-200'
-              }`}
-          >
-            {isSelected ? 'Selected' : 'Select'}
-          </button>
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              onLocationClick(customer);
-            }}
-            className="px-3 py-1 rounded bg-gray-100 hover:bg-gray-200"
-          >
-            View
-          </button>
-        </div>
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            onLocationClick(customer);
+          }}
+          className="px-3 py-1 rounded bg-gray-100 hover:bg-gray-200"
+        >
+          View
+        </button>
       </div>
       <div className="text-sm text-gray-600 mb-2">{customer.address || 'No address'}</div>
       {customer.products && customer.products.length > 0 && (

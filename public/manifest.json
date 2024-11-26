@@ -1,6 +1,6 @@
 {
-  "short_name": "Quantifys",
-  "name": "Quntifyz - weight for it",
+  "short_name": "Quantifyz",
+  "name": "Quantifyz - Weight For It",
   "icons": [
     {
       "src": "favicon.ico",
@@ -10,12 +10,12 @@
     {
       "src": "icons8-scale-fill-16.png",
       "type": "image/png",
-      "sizes": "192x192"
+      "sizes": "16x16"
     },
     {
       "src": "icons8-scale-fill-32.png",
       "type": "image/png",
-      "sizes": "512x512"
+      "sizes": "32x32"
     }
   ],
   "start_url": ".",
