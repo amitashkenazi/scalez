@@ -60,7 +60,13 @@ const Map = ({
   const renderCustomerInfo = (customer) => {
     const firstProduct = customer.products?.[0];
     const measurement = firstProduct?.scale_id ? measurements[firstProduct.scale_id] : null;
-
+  
+    const handleNavigate = (e) => {
+      e.stopPropagation();
+      const wazeUrl = `https://waze.com/ul?q=${encodeURIComponent(customer.address)}`;
+      window.open(wazeUrl, '_blank', 'noopener,noreferrer');
+    };
+  
     return (
       <div className="p-2 max-w-xs">
         <div className="font-bold mb-1">{customer.name}</div>
@@ -90,6 +96,24 @@ const Map = ({
             )}
           </div>
         ))}
+        <button
+          onClick={handleNavigate}
+          className="mt-3 w-full px-3 py-1.5 bg-blue-100 hover:bg-blue-200 text-blue-700 rounded flex items-center justify-center gap-2 transition-colors"
+        >
+          <svg
+            width="16"
+            height="16"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
+            <path d="M12 19V5M5 12l7-7 7 7"/>
+          </svg>
+          Navigate
+        </button>
       </div>
     );
   };

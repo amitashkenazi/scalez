@@ -2,6 +2,7 @@ import React from 'react';
 import { useLanguage } from '../../../contexts/LanguageContext';
 import { translations } from '../../../translations/translations';
 import { hasWaitingDelivery } from '../utils';
+import { Navigation } from 'lucide-react';
 
 const CustomerCard = ({ customer, onLocationClick, orders }) => {
   const { language } = useLanguage();
@@ -13,6 +14,13 @@ const CustomerCard = ({ customer, onLocationClick, orders }) => {
   if (!customer) {
     return null;
   }
+
+  const handleNavigate = (e) => {
+    e.stopPropagation();
+    // Try to open in Waze
+    const wazeUrl = `https://waze.com/ul?q=${encodeURIComponent(customer.address)}`;
+    window.open(wazeUrl, '_blank', 'noopener,noreferrer');
+  };
 
   return (
     <div
@@ -28,15 +36,25 @@ const CustomerCard = ({ customer, onLocationClick, orders }) => {
             </span>
           )}
         </div>
-        <button
-          onClick={(e) => {
-            e.stopPropagation();
-            onLocationClick(customer);
-          }}
-          className="px-3 py-1 rounded bg-gray-100 hover:bg-gray-200"
-        >
-          View
-        </button>
+        <div className="flex gap-2">
+          <button
+            onClick={handleNavigate}
+            className="px-3 py-1 rounded bg-blue-100 hover:bg-blue-200 flex items-center gap-1 text-blue-700"
+            title="Navigate with Waze"
+          >
+            <Navigation size={12} />
+            Navigate
+          </button>
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              onLocationClick(customer);
+            }}
+            className="px-3 py-1 rounded bg-gray-100 hover:bg-gray-200"
+          >
+            View
+          </button>
+        </div>
       </div>
       <div className="text-sm text-gray-600 mb-2">{customer.address || 'No address'}</div>
       {customer.products && customer.products.length > 0 && (
