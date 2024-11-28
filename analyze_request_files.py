@@ -6,7 +6,6 @@ import os
 from anthropic_helper import AnthropicHelper
 antropic_helper = AnthropicHelper(os.environ.get("ANTHROPIC_API_KEY"))
 
-client = openai.Client()
 
 def send_request_to_antropic(prompt):
     """
@@ -94,6 +93,7 @@ def send_request_to_openai(prompt):
     try:
         """Send the first prompt to the model to get relevant files."""
         print("Sending the first prompt to the model...")
+        client = openai.Client()
         response = client.chat.completions.create(
             model="o1-preview-2024-09-12",
             messages=[

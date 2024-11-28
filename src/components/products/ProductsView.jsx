@@ -8,6 +8,11 @@ import ProductDetailModal from './ProductDetailModal';
 // Helper Functions
 const sortProducts = (products, measurements) => {
   return [...products].sort((a, b) => {
+    // If a product doesn't have a scale, it should appear at the end
+    if (!a.scale_id && !b.scale_id) return 0;
+    if (!a.scale_id) return 1;
+    if (!b.scale_id) return -1;
+
     const aWeight = measurements[a.scale_id]?.weight;
     const bWeight = measurements[b.scale_id]?.weight;
     
@@ -61,19 +66,20 @@ const getStatusInfo = (weight, thresholds) => {
   };
 };
 
-
 const ProductCard = ({ product, scale, customers, latestMeasurement }) => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const { language } = useLanguage();
   const t = translations[language];
   const isRTL = language === 'he';
-
-  // Add safety checks
-  if (!product || !scale) {
+  console.log('product', product);
+  // Add safety checks for product
+  if (!product) {
     return null;
   }
 
-  const statusInfo = getStatusInfo(latestMeasurement?.weight, product.thresholds);
+  const statusInfo = product.scale_id ? 
+    getStatusInfo(latestMeasurement?.weight, product.thresholds) :
+    { color: 'text-gray-400', bgColor: 'bg-gray-50', status: 'unknown', distance: 0 };
 
   const formatDate = (timestamp) => {
     if (!timestamp) return t.noData;
@@ -135,25 +141,29 @@ const ProductCard = ({ product, scale, customers, latestMeasurement }) => {
               <div className="flex items-center gap-1 text-gray-400">
                 <Scale size={14} />
                 <span className="text-gray-500">
-                  {scale.scale_name || `Scale ${scale.scale_id}` || 'Unknown Scale'}
+                  {scale ? (scale.scale_name || `Scale ${scale.scale_id}`) : t.noScaleAssigned}
                 </span>
               </div>
-              <div className="flex items-center gap-1 text-gray-400">
-                <Clock size={14} />
-                <span className="text-gray-500">
-                  {formatDate(latestMeasurement?.timestamp)}
-                </span>
-              </div>
+              {product.scale_id && (
+                <div className="flex items-center gap-1 text-gray-400">
+                  <Clock size={14} />
+                  <span className="text-gray-500">
+                    {formatDate(latestMeasurement?.timestamp)}
+                  </span>
+                </div>
+              )}
             </div>
           </div>
 
           <div className="flex flex-col items-end gap-3">
-            <div className={`px-4 py-2 rounded-lg ${statusInfo.bgColor} transform transition-transform 
-              group-hover:scale-105`}>
-              <span className={`text-xl font-bold ${statusInfo.color}`}>
-                {latestMeasurement?.weight ? `${latestMeasurement.weight} kg` : t.noData}
-              </span>
-            </div>
+            {product.scale_id && (
+              <div className={`px-4 py-2 rounded-lg ${statusInfo.bgColor} transform transition-transform 
+                group-hover:scale-105`}>
+                <span className={`text-xl font-bold ${statusInfo.color}`}>
+                  {latestMeasurement?.weight ? `${latestMeasurement.weight} kg` : t.noData}
+                </span>
+              </div>
+            )}
 
             {getWhatsAppLink() && (
               <a
@@ -172,45 +182,48 @@ const ProductCard = ({ product, scale, customers, latestMeasurement }) => {
           </div>
         </div>
 
-        <div className="space-y-2">
-          <div className="flex justify-between items-center">
-            <span className="text-gray-600">{t.upperThreshold}:</span>
-            <span className="text-green-600 font-medium">{product.thresholds?.upper || 0} kg</span>
-          </div>
-          <div className="flex justify-between items-center">
-            <span className="text-gray-600">{t.lowerThreshold}:</span>
-            <span className="text-red-600 font-medium">{product.thresholds?.lower || 0} kg</span>
-          </div>
-        </div>
+        {product.scale_id && (
+          <>
+            <div className="space-y-2">
+              <div className="flex justify-between items-center">
+                <span className="text-gray-600">{t.upperThreshold}:</span>
+                <span className="text-green-600 font-medium">{product.thresholds?.upper || 0} kg</span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-gray-600">{t.lowerThreshold}:</span>
+                <span className="text-red-600 font-medium">{product.thresholds?.lower || 0} kg</span>
+              </div>
+            </div>
 
-        <div className="mt-4 h-2 bg-gray-200 rounded-full overflow-hidden">
-          <div 
-            className={`h-full ${
-              statusInfo.status === 'good' ? 'bg-green-600' :
-              statusInfo.status === 'warning' ? 'bg-orange-500' :
-              statusInfo.status === 'critical' ? 'bg-red-600' : 'bg-gray-400'
-            } transition-all duration-300`}
-            style={{
-              width: latestMeasurement?.weight ? 
-                `${Math.min(100, (latestMeasurement.weight / (product.thresholds?.upper || 100)) * 100)}%` : 
-                '0%'
-            }}
-          />
-        </div>
+            <div className="mt-4 h-2 bg-gray-200 rounded-full overflow-hidden">
+              <div 
+                className={`h-full ${
+                  statusInfo.status === 'good' ? 'bg-green-600' :
+                  statusInfo.status === 'warning' ? 'bg-orange-500' :
+                  statusInfo.status === 'critical' ? 'bg-red-600' : 'bg-gray-400'
+                } transition-all duration-300`}
+                style={{
+                  width: latestMeasurement?.weight ? 
+                    `${Math.min(100, (latestMeasurement.weight / (product.thresholds?.upper || 100)) * 100)}%` : 
+                    '0%'
+                }}
+              />
+            </div>
+          </>
+        )}
       </div>
 
       <ProductDetailModal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
         product={product}
-        scale_id={scale.scale_id}
+        scale={scale}
         latestMeasurement={latestMeasurement}
         customer={customerInfo?.fullData}
       />
     </>
   );
 };
-
 
 // Main ProductsView Component
 const ProductsView = () => {
@@ -230,13 +243,15 @@ const ProductsView = () => {
   // Fetch latest measurements for each scale
   const fetchLatestMeasurements = async (scaleIds) => {
     try {
+      console.log('Fetching latest measurements for scales:', scaleIds);
       const measurementPromises = scaleIds
         .filter(scaleId => scaleId !== null)
         .map(scaleId => 
-          apiService.request(`measurements/scale/${scaleId}/latest`, {
-        method: 'GET'
+          apiService.request(`measures/scale/${scaleId}/latest`, {
+            method: 'GET'
           })
         );
+      console.log('Measurement promises:', measurementPromises);
       
       const measurementResults = await Promise.allSettled(measurementPromises);
       
@@ -255,9 +270,11 @@ const ProductsView = () => {
 
   const fetchData = async (showLoadingState = true) => {
     try {
+      console.log('Fetching products, scales, and customers...');
       if (showLoadingState) {
         setIsLoading(true);
       }
+      console.log('Fetching products...');
       
       const [productsResponse, scalesResponse, customersResponse] = await Promise.all([
         apiService.getProducts(),
@@ -269,7 +286,7 @@ const ProductsView = () => {
       setScales(scalesResponse);
       setCustomers(customersResponse);
       
-      // Get unique scale IDs from products
+      // Get unique scale IDs from products that have scales
       const scaleIds = [...new Set(productsResponse
         .filter(p => p.scale_id)
         .map(p => p.scale_id))];
@@ -295,8 +312,8 @@ const ProductsView = () => {
   // Set up auto-refresh timer
   useEffect(() => {
     const refreshInterval = setInterval(() => {
-      // Only fetch measurements if we have products
-      if (products.length > 0) {
+      // Only fetch measurements if we have products with scales
+      if (products.some(p => p.scale_id)) {
         const scaleIds = [...new Set(products
           .filter(p => p.scale_id)
           .map(p => p.scale_id))];
@@ -304,13 +321,12 @@ const ProductsView = () => {
       }
     }, 20000); // 20 seconds
 
-    // Cleanup timer on component unmount
     return () => clearInterval(refreshInterval);
-  }, [products]); // Dependency on products to get updated scale IDs if products change
+  }, [products]);
 
   const handleRefresh = () => {
     setIsRefreshing(true);
-    fetchData(false); // Don't show loading state for manual refresh
+    fetchData(false);
   };
 
   const getLastRefreshTimeString = () => {

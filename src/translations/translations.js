@@ -36,6 +36,7 @@ export const translations = {
     scaleMonitorDashboard: "Scale Monitor Dashboard",
     latestWeight: "Latest Weight",
     noData: "No data available",
+    noScaleAssigned: "No Scale Assigned",
 
     // Notifications
     scaleAlerts: "Scale Alerts",
@@ -616,7 +617,7 @@ export const translations = {
     sharedProductsDesc: "צפה במוצרים ששותפו איתך",
     noSharedProducts: "טרם שותפו איתך מוצרים",
     setup: "הגדרות",
-    // In src/translations/translations.js, add these to both 'en' and 'he' objects:
+    noScaleAssigned: "לא הוקצה משקל",
 
   // ... existing translations ...
   landing: {

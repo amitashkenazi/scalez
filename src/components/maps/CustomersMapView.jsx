@@ -32,7 +32,7 @@ const CustomersMapView = () => {
       const measurementPromises = scaleIds
         .filter(id => id)
         .map(scaleId => 
-          apiService.request(`measurements/scale/${scaleId}/latest`, {
+          apiService.request(`measures/scale/${scaleId}/latest`, {
             method: 'GET'
           })
         );

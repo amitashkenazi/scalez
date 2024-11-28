@@ -191,7 +191,7 @@ const SharedProductsView = () => {
     console.log('Fetching latest measurements for scales:', scaleIds);
     try {
       const measurementPromises = scaleIds.map(scaleId => 
-        apiService.request(`measurements/scale/${scaleId}/latest`, {
+        apiService.request(`measures/scale/${scaleId}/latest`, {
           method: 'GET'
         })
       );

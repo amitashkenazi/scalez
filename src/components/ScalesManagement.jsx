@@ -36,7 +36,7 @@ const ScalesManagement = () => {
       const scalesResponse = await apiService.getScales();
 
       // Get latest measurements
-      const measurementsResponse = await apiService.request('measurements', {
+      const measurementsResponse = await apiService.request('measures', {
         method: 'GET'
       });
 

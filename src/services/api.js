@@ -20,6 +20,11 @@ class ApiService {
    * Adds an event listener for authentication required events.
    */
   constructor() {
+    console.log('Environment variables:', {
+      NODE_ENV: process.env.NODE_ENV,
+      REACT_APP_API_URL: process.env.REACT_APP_API_URL,
+      All_ENV: process.env
+    });
     this.baseUrl = process.env.REACT_APP_API_URL || 'http://localhost:5100';
     this.retryCount = 1;
     this.retryDelay = 1000;
@@ -90,6 +95,7 @@ class ApiService {
    */
   async request(endpoint, options = {}, retryCount = this.retryCount) {
     const url = `${this.baseUrl}/${endpoint.replace(/^\/+/, '')}`;
+    console.log('request: ', url, 'method', options.method); // Debug log
     apiTracker.trackApiCall(endpoint, options.method || 'GET');
     try {
       const idToken = await tokenService.refreshTokenIfNeeded();
@@ -100,6 +106,7 @@ class ApiService {
         ...options.headers,
       };
       const response = await fetch(url, { ...options, headers });
+      console.log('response: ', response); // Debug log
       if (response.status === 401) {
         console.log('Received 401, attempting token refresh...');
         try {
@@ -149,7 +156,7 @@ class ApiService {
 
     try {
       console.log('get latest measurement: scaleid: ', scaleId); // Debug log
-      return await this.request(`measurements/scale/${scaleId}/latest`, {
+      return await this.request(`measures/scale/${scaleId}/latest`, {
         method: 'GET'
       });
     } catch (error) {
@@ -425,7 +432,7 @@ class ApiService {
     if (startDate) queryParams.append('start_date', startDate);
     if (endDate) queryParams.append('end_date', endDate);
     console.log('get measurements: scaleid: ', scaleId); // Debug log  
-    return this.request(`measurements/scale/${scaleId}?${queryParams}`, {
+    return this.request(`measures/scale/${scaleId}?${queryParams}`, {
       method: 'GET'
     });
   }
