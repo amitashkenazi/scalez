@@ -33,12 +33,12 @@ const SideMenu = ({ activeView, onViewChange }) => {
       view: "products",
       description: t.productsDashboardDesc
     },
-    {
-      icon: MapIcon,
-      label: t.mapLabel,
-      view: "customersMap",
-      description: "View customers and products on a map"
-    },
+    // {
+    //   icon: MapIcon,
+    //   label: t.mapLabel,
+    //   view: "customersMap",
+    //   description: "View customers and products on a map"
+    // },
     {
       icon: FileText,
       label: t.orders,

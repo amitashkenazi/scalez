@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { useLanguage } from '../contexts/LanguageContext';
 import { translations } from '../translations/translations';
-import { X, Loader2, AlertCircle, UserPlus } from 'lucide-react';
-import useScaleData from '../hooks/useScaleData';
-import CustomerModal from './CustomerModal';
+import { X, Loader2, AlertCircle, Plus } from 'lucide-react';
 import apiService from '../services/api';
+import CustomerModal from './CustomerModal';
+import ScaleModal from './ScaleModal';
 
 const ProductModal = ({ 
   isOpen, 
@@ -14,7 +14,6 @@ const ProductModal = ({
   initialData = null,
   onCustomerAdded 
 }) => {
-  const { scales, isLoading: isLoadingScales, error: scalesError } = useScaleData();
   const [formData, setFormData] = useState({
     name: '',
     customer_id: '',
@@ -25,36 +24,33 @@ const ProductModal = ({
       lower: 8
     }
   });
+
   const [availableScales, setAvailableScales] = useState([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errors, setErrors] = useState({});
   const [isCustomerModalOpen, setIsCustomerModalOpen] = useState(false);
+  const [isScaleModalOpen, setIsScaleModalOpen] = useState(false);
 
   const { language } = useLanguage();
   const t = translations[language];
   const isRTL = language === 'he';
 
+  // Fetch available scales when modal opens
   useEffect(() => {
-    if (!isLoadingScales && scales) {
+    const fetchScales = async () => {
       try {
-        const mappedScales = scales.map(scale => {
-          let status = '';
-          if (scale.productName && initialData?.scale_id !== scale.id) {
-            status = ` (Currently assigned to: ${scale.productName})`;
-          }
-          return {
-            id: scale.scale_id,
-            displayName: `Scale ${scale.scale_id}${status}`
-          };
-        });
-
-        setAvailableScales(mappedScales);
+        const response = await apiService.getScales();
+        setAvailableScales(response);
       } catch (error) {
-        console.error('Error processing scales:', error);
-        setErrors(prev => ({ ...prev, scales: 'Error processing scales data' }));
+        console.error('Error fetching scales:', error);
+        setErrors(prev => ({ ...prev, scales: 'Error loading scales' }));
       }
+    };
+
+    if (isOpen) {
+      fetchScales();
     }
-  }, [scales, isLoadingScales, initialData]);
+  }, [isOpen]);
 
   useEffect(() => {
     if (isOpen) {
@@ -84,7 +80,7 @@ const ProductModal = ({
       }
       setErrors({});
     }
-  }, [isOpen, initialData]);
+  }, [isOpen, initialData, customers]);
 
   const validateForm = () => {
     const newErrors = {};
@@ -92,19 +88,8 @@ const ProductModal = ({
       newErrors.name = 'Product name is required';
     }
 
-    // Only validate thresholds if they've been modified or if we're editing an existing product
-    const initialUpper = initialData?.thresholds?.upper || 40;
-    const initialLower = initialData?.thresholds?.lower || 8;
-    const thresholdsChanged = formData.thresholds.upper !== initialUpper || 
-                             formData.thresholds.lower !== initialLower;
-
-    if (thresholdsChanged) {
-      if (formData.thresholds.upper <= formData.thresholds.lower) {
-        newErrors.thresholds = 'Upper threshold must be greater than lower threshold';
-      }
-      if (formData.thresholds.upper <= 0 || formData.thresholds.lower < 0) {
-        newErrors.thresholds = 'Thresholds must be positive numbers';
-      }
+    if (formData.thresholds.upper <= formData.thresholds.lower) {
+      newErrors.thresholds = 'Upper threshold must be greater than lower threshold';
     }
 
     setErrors(newErrors);
@@ -162,14 +147,11 @@ const ProductModal = ({
         onCustomerAdded(formattedCustomer);
       }
 
-      setFormData(prevData => {
-        const updatedData = {
-          ...prevData,
-          customer_id: customer_id,
-          customer_name: formattedCustomer.name
-        };
-        return updatedData;
-      });
+      setFormData(prevData => ({
+        ...prevData,
+        customer_id: customer_id,
+        customer_name: formattedCustomer.name
+      }));
 
       setIsCustomerModalOpen(false);
       setErrors(prev => {
@@ -180,6 +162,26 @@ const ProductModal = ({
     } catch (err) {
       console.error('Error creating customer:', err);
       setErrors({ customer: err.message || 'Failed to create customer' });
+    }
+  };
+
+  const handleScaleModalSubmit = async (scaleData) => {
+    try {
+      const newScale = await apiService.createScale(scaleData);
+      
+      // Add the new scale to available scales
+      setAvailableScales(prev => [...prev, newScale]);
+      
+      // Select the new scale
+      setFormData(prevData => ({
+        ...prevData,
+        scale_id: newScale.scale_id
+      }));
+
+      setIsScaleModalOpen(false);
+    } catch (err) {
+      console.error('Error creating scale:', err);
+      setErrors({ scale: err.message || 'Failed to create scale' });
     }
   };
 
@@ -208,6 +210,20 @@ const ProductModal = ({
         customer_name: ''
       }));
     }
+  };
+
+  const handleScaleChange = (e) => {
+    const selectedValue = e.target.value;
+    
+    if (selectedValue === 'new') {
+      setIsScaleModalOpen(true);
+      return;
+    }
+
+    setFormData(prevData => ({
+      ...prevData,
+      scale_id: selectedValue
+    }));
   };
 
   if (!isOpen) return null;
@@ -285,31 +301,28 @@ const ProductModal = ({
               {t.linkedScales}
             </label>
             <select
-              value={formData.scale_id}
-              onChange={(e) => setFormData(prevData => ({
-                ...prevData,
-                scale_id: e.target.value
-              }))}
+              value={formData.scale_id || ''}
+              onChange={handleScaleChange}
               className={`w-full p-2 border rounded-lg focus:ring-2 focus:ring-blue-500
                 ${errors.scale_id ? 'border-red-500' : 'border-gray-300'}`}
-              disabled={isSubmitting || isLoadingScales}
+              disabled={isSubmitting}
             >
-              <option value="">
-                {isLoadingScales ? 'Loading scales...' : 'None (Optional)'}
-              </option>
-              {!isLoadingScales && !scalesError && availableScales.map(scale => (
+              <option value="">{t.unassigned}</option>
+              {availableScales.map(scale => (
                 <option 
-                  key={scale.id} 
-                  value={scale.id}
-                  className={scale.displayName.includes('Currently assigned') ? 'text-orange-600' : ''}
+                  key={scale.scale_id} 
+                  value={scale.scale_id}
                 >
-                  {scale.displayName}
+                  {scale.name || `Scale ${scale.scale_id}`}
                 </option>
               ))}
+              <option value="" disabled className="border-t border-gray-200">
+                ────────────────
+              </option>
+              <option value="new" className="text-blue-600 font-medium">
+                + Add New Scale
+              </option>
             </select>
-            {errors.scale_id && (
-              <p className="text-red-500 text-sm mt-1">{errors.scale_id}</p>
-            )}
           </div>
 
           <div className="space-y-4">
@@ -394,6 +407,12 @@ const ProductModal = ({
         isOpen={isCustomerModalOpen}
         onClose={() => setIsCustomerModalOpen(false)}
         onSubmit={handleCustomerModalSubmit}
+      />
+
+      <ScaleModal
+        isOpen={isScaleModalOpen}
+        onClose={() => setIsScaleModalOpen(false)}
+        onSubmit={handleScaleModalSubmit}
       />
     </div>
   );
