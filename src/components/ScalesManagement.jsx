@@ -49,7 +49,7 @@ const ScalesManagement = () => {
           weight: measurement?.weight
         };
       });
-
+      console.log('Scales with measurements:', scalesWithMeasurements);
       setRegisteredScales(scalesWithMeasurements);
     } catch (err) {
       console.error('Error fetching data:', err);
@@ -175,7 +175,7 @@ const ScalesManagement = () => {
             {registeredScales.map((scale) => (
               <tr key={scale.scale_id} className="hover:bg-gray-50">
                 <td className="px-6 py-4 text-sm">{scale.scale_id}</td>
-                <td className="px-6 py-4 text-sm font-medium">{scale.scale_name || 'Unnamed Scale'}</td>
+                <td className="px-6 py-4 text-sm font-medium">{scale.name || 'Unnamed Scale'}</td>
                 <td className="px-6 py-4 text-sm">{formatDate(scale.lastMeasurement)}</td>
                 <td className="px-6 py-4">
                   <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full
