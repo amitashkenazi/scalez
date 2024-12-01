@@ -4,6 +4,8 @@ import { translations } from '../../translations/translations';
 import { Package, AlertCircle, Loader2, RefreshCw, Scale, MessageSquare, Clock, ChevronRight, ChartLine } from 'lucide-react';
 import apiService from '../../services/api';
 import ProductDetailModal from './ProductDetailModal';
+import NewProductCard from './NewProductCard';
+import ProductModal from '../ProductModal';
 
 // Helper Functions
 const sortProducts = (products, measurements) => {
@@ -225,6 +227,7 @@ const ProductCard = ({ product, scale, customers, latestMeasurement }) => {
   );
 };
 
+
 // Main ProductsView Component
 const ProductsView = () => {
   const [products, setProducts] = useState([]);
@@ -235,6 +238,10 @@ const ProductsView = () => {
   const [error, setError] = useState(null);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [lastRefreshTime, setLastRefreshTime] = useState(new Date());
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [selectedProduct, setSelectedProduct] = useState(null);
+  const [successMessage, setSuccessMessage] = useState('');
+
 
   const { language } = useLanguage();
   const t = translations[language];
@@ -266,6 +273,12 @@ const ProductsView = () => {
     } catch (err) {
       console.error('Error fetching measurements:', err);
     }
+  };
+
+  const showSuccessMessage = (message) => {
+    setSuccessMessage(message);
+    // Clear the message after 3 seconds
+    setTimeout(() => setSuccessMessage(''), 3000);
   };
 
   const fetchData = async (showLoadingState = true) => {
@@ -301,6 +314,17 @@ const ProductsView = () => {
         setIsLoading(false);
       }
       setIsRefreshing(false);
+    }
+  };
+
+  const handleAddProduct = async (productData) => {
+    try {
+      const newProduct = await apiService.createProduct(productData);
+      setProducts(prev => [...prev, newProduct]);
+      setIsModalOpen(false);
+      showSuccessMessage(t.productAdded || 'Product added successfully');
+    } catch (err) {
+      setError(err.message || 'Failed to add product');
     }
   };
 
@@ -378,8 +402,15 @@ const ProductsView = () => {
           <p className="text-red-700">{error}</p>
         </div>
       )}
+      
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <NewProductCard 
+          onClick={() => {
+            setSelectedProduct(null);
+            setIsModalOpen(true);
+          }} 
+        />
         {sortProducts(products, measurements).map(product => (
           <ProductCard
             key={product.product_id}
@@ -395,6 +426,21 @@ const ProductsView = () => {
         <div className="text-center py-12 bg-gray-50 rounded-lg">
           <Package className="h-12 w-12 mx-auto text-gray-400 mb-4" />
           <p className="text-gray-600">{t.noProducts}</p>
+        </div>
+      )}
+      <ProductModal
+        isOpen={isModalOpen}
+        onClose={() => {
+          setIsModalOpen(false);
+          setSelectedProduct(null);
+        }}
+        onSubmit={handleAddProduct}
+        customers={customers}
+        initialData={selectedProduct}
+      />
+      {successMessage && (
+        <div className="mb-6 bg-green-50 border border-green-400 rounded-lg p-4">
+          <p className="text-green-700">{successMessage}</p>
         </div>
       )}
     </div>
