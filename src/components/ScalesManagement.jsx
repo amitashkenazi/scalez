@@ -4,7 +4,7 @@ import { Plus, Trash2, Loader2, RefreshCw, AlertCircle } from 'lucide-react';
 import apiService from '../services/api';
 import ScaleModal from './ScaleModal';
 import DeleteConfirmationModal from './modals/DeleteConfirmationModal';
-import { translations } from '../translations/translations';
+// import { translations } from '../translations/translations';
 
 const formatDate = (timestamp) => {
   if (!timestamp) return 'N/A';
@@ -24,7 +24,7 @@ const ScalesManagement = () => {
   const [selectedScale, setSelectedScale] = useState(null);
 
   const { language } = useLanguage();
-  const t = translations[language];
+  // const t = translations[language];
   const isRTL = language === 'he';
 
   // Fetch initial data
