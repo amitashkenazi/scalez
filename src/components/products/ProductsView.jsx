@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { translations } from '../../translations/translations';
-import { Package, AlertCircle, Loader2, RefreshCw, Scale, MessageSquare, Clock, ChevronRight, ChartLine } from 'lucide-react';
+import { Package, AlertCircle, Loader2, RefreshCw, Scale, MessageSquare, Clock, Receipt } from 'lucide-react';
 import apiService from '../../services/api';
 import ProductDetailModal from './ProductDetailModal';
 import NewProductCard from './NewProductCard';
@@ -72,12 +72,38 @@ const ProductCard = ({ product, scale, customers, latestMeasurement }) => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const { language } = useLanguage();
   const t = translations[language];
+  const [lastOrder, setLastOrder] = useState(null);
+
   const isRTL = language === 'he';
   console.log('product', product);
+
+  useEffect(() => {
+    const fetchLastOrder = async () => {
+      console.log('Fetching last order for product:', product);
+      if (product.customer_id && product.item_id) {
+        try {
+          const response = await apiService.request(
+            `orders/customer/${product.customer_id}/last-order/${product.item_id}`,
+            { method: 'GET' }
+          );
+          console.log('Last order:', response);
+          setLastOrder(response);
+        } catch (error) {
+          console.error('Error fetching last order:', error);
+        }
+      }
+    };
+    
+    fetchLastOrder();
+  }, [product.customer_id, product.item_id]);
+  
+  console.log('lastOrder', lastOrder);
+
   // Add safety checks for product
   if (!product) {
     return null;
   }
+  
 
   const statusInfo = product.scale_id ? 
     getStatusInfo(latestMeasurement?.weight, product.thresholds) :
@@ -213,6 +239,46 @@ const ProductCard = ({ product, scale, customers, latestMeasurement }) => {
             </div>
           </>
         )}
+        {lastOrder && (
+        <div className="mt-2 border-t border-gray-100">
+          <div className="px-6 py-4 bg-gray-50">
+            <div className="flex justify-between items-center mb-3">
+              <div className="flex items-center gap-2">
+                <Receipt size={16} className="text-gray-500" />
+                <span className="text-sm font-medium text-gray-700">
+                  {t.lastOrder}
+                </span>
+              </div>
+              <span className="text text-gray-500">
+                {new Date(lastOrder.order_date).toLocaleDateString()}
+              </span>
+            </div>
+            <div className="grid grid-cols-3 gap-3">
+              <div className="bg-white rounded-md p-3 shadow-sm">
+                <span className="text-xs text-gray-500 block mb-1">{t.quantity}</span>
+                <span className="text-lg font-semibold">
+                  {lastOrder.quantity || 0}
+                  <span className="text-xs text-gray-500 ml-1">{t.units}</span>
+                </span>
+              </div>
+              <div className="bg-white rounded-md p-3 shadow-sm">
+                <span className="text-xs text-gray-500 block mb-1">{t.price}</span>
+                <span className="text-lg font-semibold">
+                  ₪{lastOrder.price || 0}
+                  <span className="text-xs text-gray-500 ml-1">/ {t.unit}</span>
+                </span>
+              </div>
+              <div className="bg-white rounded-md p-3 shadow-sm">
+                <span className="text-xs text-gray-500 block mb-1">{t.total}</span>
+                <span className="text-lg font-semibold">
+                  ₪{lastOrder.total || 0}
+                  <span className="text-xs text-gray-500 ml-1">{t.ils}</span>
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
       </div>
 
       <ProductDetailModal

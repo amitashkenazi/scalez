@@ -144,14 +144,18 @@ export const translations = {
     noSearchResults: "No customers match your search",
     customersTableDesc: "Manage and view all customer information",
     customersTable: "Customers",
-    orders: "Orders",
+    orders: "Invoices",
     loading: "Loading...",
     tryAgain: "Try Again",
     errorFetchingScales: "Failed to fetch scales data. Please try again later.",
     errorUpdatingScale: "Failed to update scale. Please try again later.",
     productsManagement: "My Products",
     addProduct: "Add Product",
-    
+    quantity: "Quantity",
+    unit: "Unit",
+    total: "Total",
+    lastOrder: "Last Order",
+    ils: "ִ₪",
     selectCustomer: "Select Customer",
     updateProduct: "Update Product",
     linkedScales: "Linked Scales",
@@ -162,7 +166,7 @@ export const translations = {
     customerNameEn: "Customer Name (English)",
     customerNameHe: "Customer Name (Hebrew)",
     scalesManagement: "Scales",
-    
+    price: "Price",
     phone: "Phone",
     address: "Address",
     cancel: "Cancel",
@@ -411,7 +415,7 @@ export const translations = {
     // Graph
     time: "זמן",
     // orders
-    orders: "הזמנות",
+    orders: "חשבוניות",
     // Notifications
     notificationSettings: "הגדרות התראות",
     phoneNumber: "מספר טלפון",

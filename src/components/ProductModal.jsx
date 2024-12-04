@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useLanguage } from '../contexts/LanguageContext';
 import { translations } from '../translations/translations';
-import { X, Loader2, AlertCircle, Plus } from 'lucide-react';
+import { X, Loader2, AlertCircle, Search, Plus } from 'lucide-react';
 import apiService from '../services/api';
 import CustomerModal from './CustomerModal';
 import ScaleModal from './ScaleModal';
@@ -19,24 +19,40 @@ const ProductModal = ({
     customer_id: '',
     customer_name: '',
     scale_id: '',
+    item_id: '',
     thresholds: {
       upper: 40,
       lower: 8
     }
   });
 
+  const [availableItems, setAvailableItems] = useState([]);
   const [availableScales, setAvailableScales] = useState([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errors, setErrors] = useState({});
   const [isCustomerModalOpen, setIsCustomerModalOpen] = useState(false);
   const [isScaleModalOpen, setIsScaleModalOpen] = useState(false);
+  const [itemSearchQuery, setItemSearchQuery] = useState('');
 
   const { language } = useLanguage();
   const t = translations[language];
   const isRTL = language === 'he';
 
-  // Fetch available scales when modal opens
+  // Fetch items when modal opens
   useEffect(() => {
+    const fetchItems = async () => {
+      try {
+        const response = await apiService.request('items', {
+          method: 'GET'
+        });
+        console.log('Fetched items:', response);
+        setAvailableItems(response);
+      } catch (error) {
+        console.error('Error fetching items:', error);
+        setErrors(prev => ({ ...prev, items: 'Error loading items' }));
+      }
+    };
+
     const fetchScales = async () => {
       try {
         const response = await apiService.getScales();
@@ -48,10 +64,12 @@ const ProductModal = ({
     };
 
     if (isOpen) {
+      fetchItems();
       fetchScales();
     }
   }, [isOpen]);
 
+  // Initialize form data when modal opens or receives initial data
   useEffect(() => {
     if (isOpen) {
       if (initialData) {
@@ -61,6 +79,7 @@ const ProductModal = ({
           customer_id: initialData.customer_id || '',
           customer_name: customer?.name || '',
           scale_id: initialData.scale_id || '',
+          item_id: initialData.item_id || '',
           thresholds: {
             upper: initialData.thresholds?.upper || 40,
             lower: initialData.thresholds?.lower || 8
@@ -72,6 +91,7 @@ const ProductModal = ({
           customer_id: '',
           customer_name: '',
           scale_id: '',
+          item_id: '',
           thresholds: {
             upper: 40,
             lower: 8
@@ -79,17 +99,22 @@ const ProductModal = ({
         });
       }
       setErrors({});
+      setItemSearchQuery('');
     }
   }, [isOpen, initialData, customers]);
 
   const validateForm = () => {
     const newErrors = {};
     if (!formData.name.trim()) {
-      newErrors.name = 'Product name is required';
+      newErrors.name = t.productNameRequired;
+    }
+
+    if (!formData.customer_id) {
+      newErrors.customer_id = t.customerRequired;
     }
 
     if (formData.thresholds.upper <= formData.thresholds.lower) {
-      newErrors.thresholds = 'Upper threshold must be greater than lower threshold';
+      newErrors.thresholds = t.thresholdError;
     }
 
     setErrors(newErrors);
@@ -102,86 +127,36 @@ const ProductModal = ({
 
     setIsSubmitting(true);
     try {
-      const productData = {
+      await onSubmit({
+        ...formData,
         name: formData.name.trim(),
-        customer_id: formData.customer_id || null,
-        customer_name: formData.customer_name,
-        scale_id: formData.scale_id || null,
         thresholds: {
           upper: Number(formData.thresholds.upper),
           lower: Number(formData.thresholds.lower)
-        },
-        ...(initialData?.product_id && { product_id: initialData.product_id })
-      };
-
-      await onSubmit(productData);
+        }
+      });
       onClose();
     } catch (err) {
-      setErrors({ submit: err.message || 'Failed to save product' });
+      setErrors({ submit: err.message || t.failedToSaveProduct });
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  const handleCustomerModalSubmit = async (customerData) => {
-    try {
-      const newCustomer = await apiService.createCustomer({
-        name: customerData.name,
-        email: customerData.email,
-        phone: customerData.phone,
-        address: customerData.address
-      });
-
-      const customer_id = newCustomer.customer_id || newCustomer.id;
-      if (!customer_id) {
-        throw new Error('Invalid customer ID from server response');
-      }
-
-      const formattedCustomer = {
-        ...newCustomer,
-        customer_id: customer_id,
-        name: newCustomer.name
-      };
-
-      if (onCustomerAdded) {
-        onCustomerAdded(formattedCustomer);
-      }
-
-      setFormData(prevData => ({
-        ...prevData,
-        customer_id: customer_id,
-        customer_name: formattedCustomer.name
-      }));
-
-      setIsCustomerModalOpen(false);
-      setErrors(prev => {
-        const newErrors = { ...prev };
-        delete newErrors.customer_id;
-        return newErrors;
-      });
-    } catch (err) {
-      console.error('Error creating customer:', err);
-      setErrors({ customer: err.message || 'Failed to create customer' });
+  const handleItemChange = (e) => {
+    const selectedItemId = e.target.value;
+    if (selectedItemId === 'new') {
+      // Handle new item creation if needed
+      return;
     }
-  };
 
-  const handleScaleModalSubmit = async (scaleData) => {
-    try {
-      const newScale = await apiService.createScale(scaleData);
-      
-      // Add the new scale to available scales
-      setAvailableScales(prev => [...prev, newScale]);
-      
-      // Select the new scale
-      setFormData(prevData => ({
-        ...prevData,
-        scale_id: newScale.scale_id
+    const selectedItem = availableItems.find(item => item.item_id === selectedItemId);
+    if (selectedItem) {
+      setFormData(prev => ({
+        ...prev,
+        item_id: selectedItem.item_id,
+        name: selectedItem.name // Pre-fill name but allow editing
       }));
-
-      setIsScaleModalOpen(false);
-    } catch (err) {
-      console.error('Error creating scale:', err);
-      setErrors({ scale: err.message || 'Failed to create scale' });
     }
   };
 
@@ -226,6 +201,13 @@ const ProductModal = ({
     }));
   };
 
+  const filteredItems = itemSearchQuery
+    ? availableItems.filter(item => 
+        item.name.toLowerCase().includes(itemSearchQuery.toLowerCase()) ||
+        item.itemCode.toLowerCase().includes(itemSearchQuery.toLowerCase())
+      )
+    : availableItems;
+
   if (!isOpen) return null;
 
   return (
@@ -236,7 +218,7 @@ const ProductModal = ({
       >
         <div className="flex justify-between items-center mb-4">
           <h2 className="text-xl font-bold">
-            {initialData ? t.updateProduct : t.addProduct}
+            {initialData ? t.editProduct : t.addProduct}
           </h2>
           <button 
             onClick={onClose}
@@ -247,6 +229,36 @@ const ProductModal = ({
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
+          {/* Item Selection */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              {t.selectItem}
+            </label>
+            <div className="relative">
+              <input
+                type="text"
+                value={itemSearchQuery}
+                onChange={(e) => setItemSearchQuery(e.target.value)}
+                placeholder={t.searchItems}
+                className="w-full p-2 pr-10 border rounded-lg mb-2"
+              />
+              <Search className="absolute right-3 top-2.5 text-gray-400" size={20} />
+            </div>
+            <select
+              value={formData.item_id}
+              onChange={handleItemChange}
+              className="w-full p-2 border rounded-lg"
+            >
+              <option value="">{t.selectItem}</option>
+              {filteredItems.map(item => (
+                <option key={item.item_id} value={item.item_id}>
+                  {item.name} ({item.itemCode})
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {/* Product Name */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
               {t.productName}
@@ -255,118 +267,94 @@ const ProductModal = ({
               type="text"
               value={formData.name}
               onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-              className={`w-full p-2 border rounded-lg focus:ring-2 focus:ring-blue-500
-                ${errors.name ? 'border-red-500' : 'border-gray-300'}`}
-              disabled={isSubmitting}
+              className={`w-full p-2 border rounded-lg ${errors.name ? 'border-red-500' : 'border-gray-300'}`}
             />
             {errors.name && (
               <p className="text-red-500 text-sm mt-1">{errors.name}</p>
             )}
           </div>
 
+          {/* Customer Selection */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              {t.selectCustomer}
+              {t.customer}
             </label>
             <select
-              value={formData.customer_id ? formData.customer_id.toString() : ''}
+              value={formData.customer_id}
               onChange={handleCustomerChange}
-              className={`w-full p-2 border rounded-lg focus:ring-2 focus:ring-blue-500
-                ${errors.customer_id ? 'border-red-500' : 'border-gray-300'}`}
-              disabled={isSubmitting}
+              className={`w-full p-2 border rounded-lg ${errors.customer_id ? 'border-red-500' : 'border-gray-300'}`}
             >
               <option value="">{t.selectCustomer}</option>
-              {customers.map(customer => {
-                const customerId = (customer.customer_id || customer.id).toString();
-                return (
-                  <option 
-                    key={customerId}
-                    value={customerId}
-                  >
-                    {customer.name}
-                  </option>
-                );
-              })}
-              <option value="" disabled className="border-t border-gray-200">
-                ────────────────
-              </option>
-              <option value="new" className="text-blue-600 font-medium">
-                + Create New Customer
-              </option>
+              {customers.map(customer => (
+                <option key={customer.customer_id} value={customer.customer_id}>
+                  {customer.name}
+                </option>
+              ))}
+              <option value="new">{t.addNewCustomer}</option>
             </select>
+            {errors.customer_id && (
+              <p className="text-red-500 text-sm mt-1">{errors.customer_id}</p>
+            )}
           </div>
 
+          {/* Scale Selection */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              {t.linkedScales}
+              {t.scale}
             </label>
             <select
-              value={formData.scale_id || ''}
+              value={formData.scale_id}
               onChange={handleScaleChange}
-              className={`w-full p-2 border rounded-lg focus:ring-2 focus:ring-blue-500
-                ${errors.scale_id ? 'border-red-500' : 'border-gray-300'}`}
-              disabled={isSubmitting}
+              className="w-full p-2 border rounded-lg border-gray-300"
             >
-              <option value="">{t.unassigned}</option>
+              <option value="">{t.noScale}</option>
               {availableScales.map(scale => (
-                <option 
-                  key={scale.scale_id} 
-                  value={scale.scale_id}
-                >
+                <option key={scale.scale_id} value={scale.scale_id}>
                   {scale.name || `Scale ${scale.scale_id}`}
                 </option>
               ))}
-              <option value="" disabled className="border-t border-gray-200">
-                ────────────────
-              </option>
-              <option value="new" className="text-blue-600 font-medium">
-                + Add New Scale
-              </option>
+              <option value="new">{t.addNewScale}</option>
             </select>
           </div>
 
+          {/* Thresholds */}
           <div className="space-y-4">
             <h3 className="text-lg font-medium text-gray-900">{t.thresholds}</h3>
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  {t.upperThresholdKg}
+                  {t.upperThreshold}
                 </label>
                 <input
                   type="number"
                   value={formData.thresholds.upper}
-                  onChange={(e) => setFormData(prevData => ({
-                    ...prevData,
+                  onChange={(e) => setFormData(prev => ({
+                    ...prev,
                     thresholds: {
-                      ...prevData.thresholds,
+                      ...prev.thresholds,
                       upper: Number(e.target.value)
                     }
                   }))}
-                  className="w-full p-2 border rounded-lg focus:ring-2 focus:ring-blue-500 border-gray-300"
+                  className="w-full p-2 border rounded-lg border-gray-300"
                   min="0"
-                  step="1"
-                  disabled={isSubmitting}
                 />
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  {t.lowerThresholdKg}
+                  {t.lowerThreshold}
                 </label>
                 <input
                   type="number"
                   value={formData.thresholds.lower}
-                  onChange={(e) => setFormData(prevData => ({
-                    ...prevData,
+                  onChange={(e) => setFormData(prev => ({
+                    ...prev,
                     thresholds: {
-                      ...prevData.thresholds,
+                      ...prev.thresholds,
                       lower: Number(e.target.value)
                     }
                   }))}
-                  className="w-full p-2 border rounded-lg focus:ring-2 focus:ring-blue-500 border-gray-300"
+                  className="w-full p-2 border rounded-lg border-gray-300"
                   min="0"
-                  max={formData.thresholds.upper - 1}
-                  step="1"
-                  disabled={isSubmitting}
                 />
               </div>
             </div>
@@ -377,26 +365,30 @@ const ProductModal = ({
 
           {errors.submit && (
             <div className="bg-red-50 border border-red-400 rounded-lg p-3">
-              <p className="text-red-700">{errors.submit}</p>
+              <div className="flex items-center">
+                <AlertCircle className="text-red-400 mr-2" size={20} />
+                <p className="text-red-700">{errors.submit}</p>
+              </div>
             </div>
           )}
 
-          <div className={`flex justify-end gap-3 ${isRTL ? 'flex-row-reverse' : ''}`}>
+          {/* Submit Buttons */}
+          <div className="flex justify-end space-x-3">
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2 text-gray-700 border rounded-lg hover:bg-gray-50"
+              className="px-4 py-2 text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50"
               disabled={isSubmitting}
             >
               {t.cancel}
             </button>
             <button
               type="submit"
-              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 
-                disabled:bg-blue-400 flex items-center gap-2"
+              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-blue-400
+                flex items-center gap-2"
               disabled={isSubmitting}
             >
-              {isSubmitting && <Loader2 className="h-4 w-4 animate-spin" />}
+              {isSubmitting && <Loader2 className="animate-spin" size={20} />}
               {isSubmitting ? t.saving : (initialData ? t.update : t.add)}
             </button>
           </div>
@@ -406,13 +398,32 @@ const ProductModal = ({
       <CustomerModal
         isOpen={isCustomerModalOpen}
         onClose={() => setIsCustomerModalOpen(false)}
-        onSubmit={handleCustomerModalSubmit}
+        onSubmit={async (customerData) => {
+          const newCustomer = await apiService.createCustomer(customerData);
+          if (onCustomerAdded) {
+            onCustomerAdded(newCustomer);
+          }
+          setFormData(prev => ({
+            ...prev,
+            customer_id: newCustomer.customer_id,
+            customer_name: newCustomer.name
+          }));
+          setIsCustomerModalOpen(false);
+        }}
       />
 
       <ScaleModal
         isOpen={isScaleModalOpen}
         onClose={() => setIsScaleModalOpen(false)}
-        onSubmit={handleScaleModalSubmit}
+        onSubmit={async (scaleData) => {
+          const newScale = await apiService.createScale(scaleData);
+          setAvailableScales(prev => [...prev, newScale]);
+          setFormData(prev => ({
+            ...prev,
+            scale_id: newScale.scale_id
+          }));
+          setIsScaleModalOpen(false);
+        }}
       />
     </div>
   );
