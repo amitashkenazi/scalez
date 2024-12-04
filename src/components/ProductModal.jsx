@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useLanguage } from '../contexts/LanguageContext';
 import { translations } from '../translations/translations';
-import { X, Loader2, AlertCircle, Search, Plus } from 'lucide-react';
+import { X, Loader2, AlertCircle, Search } from 'lucide-react';
 import apiService from '../services/api';
 import CustomerModal from './CustomerModal';
 import ScaleModal from './ScaleModal';
@@ -32,20 +32,26 @@ const ProductModal = ({
   const [errors, setErrors] = useState({});
   const [isCustomerModalOpen, setIsCustomerModalOpen] = useState(false);
   const [isScaleModalOpen, setIsScaleModalOpen] = useState(false);
+  const [customerSearchQuery, setCustomerSearchQuery] = useState('');
   const [itemSearchQuery, setItemSearchQuery] = useState('');
+  const [showCustomerDropdown, setShowCustomerDropdown] = useState(false);
+  const [showItemDropdown, setShowItemDropdown] = useState(false);
+  const [selectedItem, setSelectedItem] = useState(null); // New state for selected item
+  const [selectedCustomer, setSelectedCustomer] = useState(null);
+  const [productId, setProductId] = useState(null);
+
+
 
   const { language } = useLanguage();
   const t = translations[language];
   const isRTL = language === 'he';
 
-  // Fetch items when modal opens
   useEffect(() => {
     const fetchItems = async () => {
       try {
         const response = await apiService.request('items', {
           method: 'GET'
         });
-        console.log('Fetched items:', response);
         setAvailableItems(response);
       } catch (error) {
         console.error('Error fetching items:', error);
@@ -69,11 +75,12 @@ const ProductModal = ({
     }
   }, [isOpen]);
 
-  // Initialize form data when modal opens or receives initial data
   useEffect(() => {
     if (isOpen) {
       if (initialData) {
         const customer = customers.find(c => c.customer_id === initialData.customer_id);
+        const item = availableItems.find(i => i.item_id === initialData.item_id);
+        setProductId(initialData.product_id);
         setFormData({
           name: initialData.name || '',
           customer_id: initialData.customer_id || '',
@@ -85,6 +92,14 @@ const ProductModal = ({
             lower: initialData.thresholds?.lower || 8
           }
         });
+        if (item) {
+          setSelectedItem(item);
+          setItemSearchQuery(item.name);
+        }
+        if (customer) {
+          setSelectedCustomer(customer);
+          setCustomerSearchQuery(customer.name);
+        }
       } else {
         setFormData({
           name: '',
@@ -97,94 +112,112 @@ const ProductModal = ({
             lower: 8
           }
         });
+        setSelectedItem(null);
+        setSelectedCustomer(null);
+        setItemSearchQuery('');
       }
+      setCustomerSearchQuery('');
       setErrors({});
-      setItemSearchQuery('');
     }
-  }, [isOpen, initialData, customers]);
+  }, [isOpen, initialData, customers, availableItems]);
+
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (!event.target.closest('.dropdown-container')) {
+        setShowCustomerDropdown(false);
+        setShowItemDropdown(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   const validateForm = () => {
     const newErrors = {};
+    console.log('Validating form data:', formData);  // Add this log
+  
     if (!formData.name.trim()) {
       newErrors.name = t.productNameRequired;
     }
-
+  
     if (!formData.customer_id) {
       newErrors.customer_id = t.customerRequired;
     }
-
-    if (formData.thresholds.upper <= formData.thresholds.lower) {
-      newErrors.thresholds = t.thresholdError;
+  
+    // Fix the thresholds validation
+    if (formData.thresholds) {
+      const upperThreshold = Number(formData.thresholds.upper);
+      const lowerThreshold = Number(formData.thresholds.lower);
+      
+      if (isNaN(upperThreshold) || isNaN(lowerThreshold)) {
+        newErrors.thresholds = t.invalidThresholds;
+      } else if (upperThreshold <= lowerThreshold) {
+        newErrors.thresholds = t.thresholdError;
+      }
     }
-
+  
+    console.log('Validation errors:', newErrors);  // Add this log
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
-
+  
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!validateForm()) return;
-
+    console.log('Submit button clicked');
+    console.log('Current form data:', formData);
+  
+    if (!validateForm()) {
+      console.log('Form validation failed', errors);
+      return;
+    }
+  
     setIsSubmitting(true);
+    console.log('Starting submission...');
+  
     try {
-      await onSubmit({
+      const dataToSubmit = {
         ...formData,
+        product_id: productId,
         name: formData.name.trim(),
         thresholds: {
           upper: Number(formData.thresholds.upper),
           lower: Number(formData.thresholds.lower)
         }
-      });
+      };
+  
+      console.log('Data being submitted:', dataToSubmit);
+      await onSubmit(dataToSubmit);
+      console.log('Submission successful');
       onClose();
     } catch (err) {
+      console.error('Submission error:', err);
       setErrors({ submit: err.message || t.failedToSaveProduct });
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  const handleItemChange = (e) => {
-    const selectedItemId = e.target.value;
-    if (selectedItemId === 'new') {
-      // Handle new item creation if needed
-      return;
-    }
-
-    const selectedItem = availableItems.find(item => item.item_id === selectedItemId);
-    if (selectedItem) {
-      setFormData(prev => ({
-        ...prev,
-        item_id: selectedItem.item_id,
-        name: selectedItem.name // Pre-fill name but allow editing
-      }));
-    }
+  const handleCustomerSelect = (customer) => {
+    setSelectedCustomer(customer);
+    setFormData(prev => ({
+      ...prev,
+      customer_id: customer.customer_id,
+      customer_name: customer.name
+    }));
+    setCustomerSearchQuery(customer.name);
+    setShowCustomerDropdown(false);
   };
 
-  const handleCustomerChange = (e) => {
-    const selectedValue = e.target.value;
-    
-    if (selectedValue === 'new') {
-      setIsCustomerModalOpen(true);
-      return;
-    }
-
-    const selectedCustomer = customers.find(c => 
-      (c.customer_id || c.id).toString() === selectedValue
-    );
-    
-    if (selectedCustomer) {
-      setFormData(prevData => ({
-        ...prevData,
-        customer_id: selectedValue,
-        customer_name: selectedCustomer.name
-      }));
-    } else {
-      setFormData(prevData => ({
-        ...prevData,
-        customer_id: '',
-        customer_name: ''
-      }));
-    }
+  const handleItemSelect = (item) => {
+    setSelectedItem(item);
+    setFormData(prev => ({
+      ...prev,
+      item_id: item.item_id,
+      name: item.name
+    }));
+    setItemSearchQuery(item.name); // Update search query to show selected item
+    setShowItemDropdown(false);
   };
 
   const handleScaleChange = (e) => {
@@ -201,10 +234,16 @@ const ProductModal = ({
     }));
   };
 
+  const filteredCustomers = customerSearchQuery
+    ? customers.filter(customer =>
+        customer.name.toLowerCase().includes(customerSearchQuery.toLowerCase())
+      )
+    : customers;
+
   const filteredItems = itemSearchQuery
-    ? availableItems.filter(item => 
+    ? availableItems.filter(item =>
         item.name.toLowerCase().includes(itemSearchQuery.toLowerCase()) ||
-        item.itemCode.toLowerCase().includes(itemSearchQuery.toLowerCase())
+        item.itemCode?.toLowerCase().includes(itemSearchQuery.toLowerCase())
       )
     : availableItems;
 
@@ -229,8 +268,8 @@ const ProductModal = ({
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
-          {/* Item Selection */}
-          <div>
+          {/* Item Selection with Search */}
+          <div className="relative dropdown-container">
             <label className="block text-sm font-medium text-gray-700 mb-1">
               {t.selectItem}
             </label>
@@ -238,24 +277,50 @@ const ProductModal = ({
               <input
                 type="text"
                 value={itemSearchQuery}
-                onChange={(e) => setItemSearchQuery(e.target.value)}
+                onChange={(e) => {
+                  setItemSearchQuery(e.target.value);
+                  setShowItemDropdown(true);
+                  if (!e.target.value) {
+                    setSelectedItem(null);
+                    setFormData(prev => ({
+                      ...prev,
+                      item_id: '',
+                      name: ''
+                    }));
+                  }
+                }}
+                onFocus={() => setShowItemDropdown(true)}
                 placeholder={t.searchItems}
-                className="w-full p-2 pr-10 border rounded-lg mb-2"
+                className="w-full p-2 pr-10 border rounded-lg"
               />
               <Search className="absolute right-3 top-2.5 text-gray-400" size={20} />
             </div>
-            <select
-              value={formData.item_id}
-              onChange={handleItemChange}
-              className="w-full p-2 border rounded-lg"
-            >
-              <option value="">{t.selectItem}</option>
-              {filteredItems.map(item => (
-                <option key={item.item_id} value={item.item_id}>
-                  {item.name} ({item.itemCode})
-                </option>
-              ))}
-            </select>
+            {showItemDropdown && (
+              <div className="absolute z-10 w-full mt-1 bg-white border rounded-lg shadow-lg max-h-60 overflow-y-auto">
+                {filteredItems.length > 0 ? (
+                  filteredItems.map(item => (
+                    <div
+                      key={item.item_id}
+                      onClick={() => handleItemSelect(item)}
+                      className={`p-2 cursor-pointer ${
+                        selectedItem?.item_id === item.item_id 
+                          ? 'bg-blue-50 text-blue-600' 
+                          : 'hover:bg-gray-100'
+                      }`}
+                    >
+                      {item.name} ({item.itemCode})
+                    </div>
+                  ))
+                ) : (
+                  <div className="p-2 text-gray-500">{t.noItemsFound}</div>
+                )}
+              </div>
+            )}
+            {selectedItem && (
+              <div className="mt-1 text-sm text-gray-500">
+                Selected: {selectedItem.name} ({selectedItem.itemCode})
+              </div>
+            )}
           </div>
 
           {/* Product Name */}
@@ -274,24 +339,72 @@ const ProductModal = ({
             )}
           </div>
 
-          {/* Customer Selection */}
-          <div>
+          {/* Customer Selection with Search */}
+          <div className="relative dropdown-container">
             <label className="block text-sm font-medium text-gray-700 mb-1">
               {t.customer}
             </label>
-            <select
-              value={formData.customer_id}
-              onChange={handleCustomerChange}
-              className={`w-full p-2 border rounded-lg ${errors.customer_id ? 'border-red-500' : 'border-gray-300'}`}
-            >
-              <option value="">{t.selectCustomer}</option>
-              {customers.map(customer => (
-                <option key={customer.customer_id} value={customer.customer_id}>
-                  {customer.name}
-                </option>
-              ))}
-              <option value="new">{t.addNewCustomer}</option>
-            </select>
+            <div className="relative">
+            <input
+              type="text"
+              value={customerSearchQuery}
+              onChange={(e) => {
+                setCustomerSearchQuery(e.target.value);
+                setShowCustomerDropdown(true);
+                if (!e.target.value) {
+                  setSelectedCustomer(null);
+                  setFormData(prev => ({
+                    ...prev,
+                    customer_id: '',
+                    customer_name: ''
+                  }));
+                }
+              }}
+              onFocus={() => setShowCustomerDropdown(true)}
+              placeholder={t.searchCustomers}
+              className={`w-full p-2 pr-10 border rounded-lg ${
+                errors.customer_id ? 'border-red-500' : 'border-gray-300'
+              }`}
+            />
+              <Search className="absolute right-3 top-2.5 text-gray-400" size={20} />
+            </div>
+            {showCustomerDropdown && (
+              <div className="absolute z-10 w-full mt-1 bg-white border rounded-lg shadow-lg max-h-60 overflow-y-auto">
+                {filteredCustomers.length > 0 ? (
+                  <>
+                    {filteredCustomers.map(customer => (
+                      <div
+                        key={customer.customer_id}
+                        onClick={() => handleCustomerSelect(customer)}
+                        className={`p-2 cursor-pointer ${
+                          selectedCustomer?.customer_id === customer.customer_id 
+                            ? 'bg-blue-50 text-blue-600' 
+                            : 'hover:bg-gray-100'
+                        }`}
+                      >
+                        {customer.name}
+                      </div>
+                    ))}
+                    <div
+                      onClick={() => {
+                        setIsCustomerModalOpen(true);
+                        setShowCustomerDropdown(false);
+                      }}
+                      className="p-2 hover:bg-blue-50 cursor-pointer text-blue-600 border-t"
+                    >
+                      + {t.addNewCustomer}
+                    </div>
+                  </>
+                ) : (
+                  <div className="p-2 text-gray-500">{t.noCustomersFound}</div>
+                )}
+              </div>
+            )}
+            {selectedCustomer && (
+              <div className="mt-1 text-sm text-gray-500">
+                Selected: {selectedCustomer.name}
+              </div>
+            )}
             {errors.customer_id && (
               <p className="text-red-500 text-sm mt-1">{errors.customer_id}</p>
             )}
@@ -384,6 +497,7 @@ const ProductModal = ({
             </button>
             <button
               type="submit"
+              onClick={handleSubmit}  // Add this explicitly
               className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-blue-400
                 flex items-center gap-2"
               disabled={isSubmitting}
@@ -393,38 +507,40 @@ const ProductModal = ({
             </button>
           </div>
         </form>
+
+        {/* Customer Modal */}
+        <CustomerModal
+          isOpen={isCustomerModalOpen}
+          onClose={() => setIsCustomerModalOpen(false)}
+          onSubmit={async (customerData) => {
+            const newCustomer = await apiService.createCustomer(customerData);
+            if (onCustomerAdded) {
+              onCustomerAdded(newCustomer);
+            }
+            setFormData(prev => ({
+              ...prev,
+              customer_id: newCustomer.customer_id,
+              customer_name: newCustomer.name
+            }));
+            setIsCustomerModalOpen(false);
+          }}
+        />
+
+        {/* Scale Modal */}
+        <ScaleModal
+          isOpen={isScaleModalOpen}
+          onClose={() => setIsScaleModalOpen(false)}
+          onSubmit={async (scaleData) => {
+            const newScale = await apiService.createScale(scaleData);
+            setAvailableScales(prev => [...prev, newScale]);
+            setFormData(prev => ({
+              ...prev,
+              scale_id: newScale.scale_id
+            }));
+            setIsScaleModalOpen(false);
+          }}
+        />
       </div>
-
-      <CustomerModal
-        isOpen={isCustomerModalOpen}
-        onClose={() => setIsCustomerModalOpen(false)}
-        onSubmit={async (customerData) => {
-          const newCustomer = await apiService.createCustomer(customerData);
-          if (onCustomerAdded) {
-            onCustomerAdded(newCustomer);
-          }
-          setFormData(prev => ({
-            ...prev,
-            customer_id: newCustomer.customer_id,
-            customer_name: newCustomer.name
-          }));
-          setIsCustomerModalOpen(false);
-        }}
-      />
-
-      <ScaleModal
-        isOpen={isScaleModalOpen}
-        onClose={() => setIsScaleModalOpen(false)}
-        onSubmit={async (scaleData) => {
-          const newScale = await apiService.createScale(scaleData);
-          setAvailableScales(prev => [...prev, newScale]);
-          setFormData(prev => ({
-            ...prev,
-            scale_id: newScale.scale_id
-          }));
-          setIsScaleModalOpen(false);
-        }}
-      />
     </div>
   );
 };

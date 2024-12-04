@@ -4,7 +4,7 @@ import { translations } from '../../translations/translations';
 import { Scale, MessageSquare, Clock, Receipt, TrendingUp, ChartBar } from 'lucide-react';
 import apiService from '../../services/api';
 import ProductDetailModal from './ProductDetailModal';
-
+import { getStatusInfo } from '../../utils/statusUtils';
 
 const ProductCard = ({ product, scale, customers, latestMeasurement }) => {
     const [isModalOpen, setIsModalOpen] = useState(false);
@@ -84,40 +84,6 @@ const ProductCard = ({ product, scale, customers, latestMeasurement }) => {
       
       fetchOrders();
     }, [product.customer_id, product.item_id, product.item_external_id]);
-    const getStatusInfo = (weight, thresholds) => {
-        if (!weight || !thresholds) return { 
-          color: 'text-gray-400',
-          bgColor: 'bg-gray-50',
-          status: 'unknown',
-          distance: 0 
-        };
-      
-        const value = parseFloat(weight);
-        const upper = parseFloat(thresholds.upper);
-        const lower = parseFloat(thresholds.lower);
-      
-        if (value >= upper) {
-          return {
-            color: 'text-green-600',
-            bgColor: 'bg-green-50',
-            status: 'good',
-            distance: value - upper
-          };
-        } else if (value >= lower) {
-          return {
-            color: 'text-orange-500',
-            bgColor: 'bg-orange-50',
-            status: 'warning',
-            distance: value - lower
-          };
-        }
-        return {
-          color: 'text-red-600',
-          bgColor: 'bg-red-50',
-          status: 'critical',
-          distance: lower - value
-        };
-      };
     if (!product) return null;
   
     const getDangerClassNames = (type, value) => {
@@ -152,12 +118,14 @@ const ProductCard = ({ product, scale, customers, latestMeasurement }) => {
     };
   
     const getCustomerInfo = () => {
+        
       if (!customers || !product.customer_id) return null;
       const customer = customers.find(c => c.customer_id === product.customer_id);
+      console.log('Customer:', customer);
       if (!customer) return null;
       const [hebrewName, englishName] = (customer.name || '').split(' - ');
       return {
-        displayName: language === 'he' ? hebrewName : englishName,
+        displayName: (customer.name || '').split(' - '),
         phone: customer.phone,
         fullData: customer
       };

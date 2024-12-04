@@ -7,36 +7,7 @@ import ProductDetailModal from './ProductDetailModal';
 import NewProductCard from './NewProductCard';
 import ProductModal from '../ProductModal';
 import ProductCard from './ProductCard';
-
-// Helper Functions
-const sortProducts = (products, measurements) => {
-  return [...products].sort((a, b) => {
-    // If a product doesn't have a scale, it should appear at the end
-    if (!a.scale_id && !b.scale_id) return 0;
-    if (!a.scale_id) return 1;
-    if (!b.scale_id) return -1;
-
-    const aWeight = measurements[a.scale_id]?.weight;
-    const bWeight = measurements[b.scale_id]?.weight;
-    
-    const aStatus = ProductCard.getStatusInfo(aWeight, a.thresholds);
-    const bStatus = ProductCard.getStatusInfo(bWeight, b.thresholds);
-
-    // Sort by status priority: red (critical) -> orange (warning) -> green (good)
-    const statusPriority = { critical: 0, warning: 1, good: 2, unknown: 3 };
-    
-    if (statusPriority[aStatus.status] !== statusPriority[bStatus.status]) {
-      return statusPriority[aStatus.status] - statusPriority[bStatus.status];
-    }
-
-    // Within the same status, sort by distance from threshold
-    return bStatus.distance - aStatus.distance;
-  });
-};
-
-
-
-
+import { sortProducts } from '../../utils/statusUtils';
 
 // Main ProductsView Component
 const ProductsView = () => {
