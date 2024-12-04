@@ -175,6 +175,7 @@ export const translations = {
     editCustomer: "Edit Customer",
     deleteCustomer: "Delete Customer",
     customerNameEn: "Customer Name (English)",
+    customerName: "Customer Name",
     customerNameHe: "Customer Name (Hebrew)",
     scalesManagement: "Scales",
     price: "Price",

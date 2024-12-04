@@ -135,9 +135,7 @@ const CustomerModal = ({ isOpen, onClose, onSubmit, initialData = null }) => {
   const validateForm = () => {
     const newErrors = {};
     
-    if (!formData.name_en.trim()) {
-      newErrors.name_en = 'English name is required';
-    }
+    
     
     if (!formData.name_he.trim()) {
       newErrors.name_he = 'Hebrew name is required';
@@ -206,7 +204,7 @@ const CustomerModal = ({ isOpen, onClose, onSubmit, initialData = null }) => {
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              {t.customerNameHe}
+              {t.customerName}
             </label>
             <input
               type="text"
@@ -221,22 +219,7 @@ const CustomerModal = ({ isOpen, onClose, onSubmit, initialData = null }) => {
             )}
           </div>
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              {t.customerNameEn}
-            </label>
-            <input
-              type="text"
-              value={formData.name_en}
-              onChange={(e) => setFormData({ ...formData, name_en: e.target.value })}
-              className={`w-full p-2 border rounded-lg focus:ring-2 focus:ring-blue-500
-                ${errors.name_en ? 'border-red-500' : 'border-gray-300'}`}
-              dir="ltr"
-            />
-            {errors.name_en && (
-              <p className="text-red-500 text-sm mt-1">{errors.name_en}</p>
-            )}
-          </div>
+          
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
