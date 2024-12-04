@@ -1,10 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { translations } from '../../translations/translations';
-import { X, Loader2, Scale, MessageSquare } from 'lucide-react';
+import { X, Loader2, Scale } from 'lucide-react';
 import ScaleGraph from '../ScaleGraph';
 import DateRangeSelector from '../DateRangeSelector';
-import { getDefaultDateRange } from '../../utils/dateFilterUtils';
 import apiService from '../../services/api';
 
 const ProductDetailModal = ({ 
@@ -18,6 +17,8 @@ const ProductDetailModal = ({
   const { language } = useLanguage();
   const t = translations[language];
   const isRTL = language === 'he';
+
+  console.log('ProductDetailModal rendered:', { isOpen, scale_id }); // Initial render log
 
   // State for measurements data
   const [measurements, setMeasurements] = useState([]);
@@ -35,66 +36,7 @@ const ProductDetailModal = ({
     };
   });
 
-  // Fetch measurements only when necessary conditions are met
-  useEffect(() => {
-    let isMounted = true;
-    
-    const fetchMeasurements = async () => {
-      // Only proceed if modal is open and we have a scale_id
-      if (!isOpen || !scale_id) return;
-
-      setIsLoadingMeasurements(true);
-      setError(null);
-
-      try {
-        const start = new Date(dateRange.startDate).toISOString();
-        const end = new Date(dateRange.endDate).toISOString();
-
-        const response = await apiService.request(
-          `measurements/scale/${scale_id}`, 
-          { 
-            method: 'GET',
-            params: {
-              start_date: start,
-              end_date: end
-            }
-          }
-        );
-
-        // Only update state if component is still mounted
-        if (isMounted) {
-          const transformedData = Array.isArray(response) ? response
-            .map(measurement => ({
-              timestamp: measurement.timestamp,
-              weight: parseFloat(measurement.weight)
-            }))
-            .sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp)) 
-            : [];
-
-          setMeasurements(transformedData);
-          setError(null);
-        }
-      } catch (err) {
-        if (isMounted) {
-          console.error('Error fetching measurements:', err);
-          setError(t.failedToFetchMeasurements || 'Failed to fetch measurements');
-        }
-      } finally {
-        if (isMounted) {
-          setIsLoadingMeasurements(false);
-        }
-      }
-    };
-
-    fetchMeasurements();
-
-    // Cleanup function to prevent updates on unmounted component
-    return () => {
-      isMounted = false;
-    };
-  }, [isOpen, scale_id, dateRange.startDate, dateRange.endDate, t]);
-
-  // Memoize date formatter
+  // Define formatDate function
   const formatDate = React.useCallback((timestamp) => {
     if (!timestamp) return 'N/A';
     return new Date(timestamp).toLocaleString(language === 'he' ? 'he-IL' : 'en-US', {
@@ -107,7 +49,92 @@ const ProductDetailModal = ({
     });
   }, [language]);
 
-  if (!isOpen) return null;
+
+
+  // Add separate useEffect for monitoring prop changes
+  useEffect(() => {
+    console.log('Props changed:', { isOpen, scale_id });
+  }, [isOpen, scale_id]);
+
+  // Fetch measurements
+  useEffect(() => {
+    let isMounted = true;
+    
+    const fetchMeasurements = async () => {
+      console.log('Fetch measurements triggered:', { isOpen, scale_id });
+
+      if (!isOpen) {
+        console.log('Modal is closed, skipping fetch');
+        return;
+      }
+
+      if (!scale_id) {
+        console.log('No scale_id provided, skipping fetch ', scale_id);
+        return;
+      }
+
+      setIsLoadingMeasurements(true);
+      setError(null);
+
+      try {
+        const start = new Date(dateRange.startDate).toISOString();
+        const end = new Date(dateRange.endDate).toISOString();
+
+        console.log('Making API request for scale:', scale_id);
+
+        const response = await apiService.request(
+          `measures/scale/${scale_id}`, 
+          { 
+            method: 'GET',
+            params: {
+              start_date: start,
+              end_date: end
+            }
+          }
+        );
+
+        console.log('API response received:', response);
+
+        if (isMounted) {
+          const transformedData = Array.isArray(response) ? response
+            .map(measurement => ({
+              timestamp: new Date(measurement.timestamp).toISOString(),
+              weight: parseFloat(measurement.weight)
+            }))
+            .sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp))
+            : [];
+
+          console.log('Setting measurements:', transformedData);
+          setMeasurements(transformedData);
+        }
+      } catch (err) {
+        console.error('Error in fetch:', err);
+        if (isMounted) {
+          setError(t.failedToFetchMeasurements || 'Failed to fetch measurements');
+        }
+      } finally {
+        if (isMounted) {
+          setIsLoadingMeasurements(false);
+        }
+      }
+    };
+
+    console.log('useEffect running');
+    fetchMeasurements();
+
+    return () => {
+      console.log('Cleanup running');
+      isMounted = false;
+    };
+  }, [isOpen, scale_id, dateRange.startDate, dateRange.endDate, t]);
+
+  // Early return if modal is not open
+  if (!isOpen) {
+    console.log('Modal not open, returning null');
+    return null;
+  }
+
+  console.log('Rendering modal content');
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4 overflow-y-auto">
@@ -118,12 +145,12 @@ const ProductDetailModal = ({
         {/* Header */}
         <div className="flex justify-between items-start mb-6">
           <div>
-            <h2 className="text-2xl font-bold">{product.name}</h2>
+            <h2 className="text-2xl font-bold">{product?.name}</h2>
             {customer && (
               <p className="text-gray-600">
                 {language === 'he' ? 
-                  customer.name.split(' - ')[0] : 
-                  customer.name.split(' - ')[1]}
+                  customer.name?.split(' - ')[0] : 
+                  customer.name?.split(' - ')[1]}
               </p>
             )}
           </div>
@@ -144,11 +171,11 @@ const ProductDetailModal = ({
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <span className="block text-sm text-gray-500 mb-1">{t.upperThreshold}</span>
-              <span className="text-green-600 font-medium">{product.thresholds.upper} kg</span>
+              <span className="text-green-600 font-medium">{product?.thresholds?.upper} kg</span>
             </div>
             <div>
               <span className="block text-sm text-gray-500 mb-1">{t.lowerThreshold}</span>
-              <span className="text-red-600 font-medium">{product.thresholds.lower} kg</span>
+              <span className="text-red-600 font-medium">{product?.thresholds?.lower} kg</span>
             </div>
           </div>
         </div>
@@ -157,8 +184,14 @@ const ProductDetailModal = ({
         <DateRangeSelector
           startDate={dateRange.startDate}
           endDate={dateRange.endDate}
-          onStartDateChange={(date) => setDateRange(prev => ({ ...prev, startDate: date }))}
-          onEndDateChange={(date) => setDateRange(prev => ({ ...prev, endDate: date }))}
+          onStartDateChange={(date) => {
+            console.log('Start date changed:', date);
+            setDateRange(prev => ({ ...prev, startDate: date }));
+          }}
+          onEndDateChange={(date) => {
+            console.log('End date changed:', date);
+            setDateRange(prev => ({ ...prev, endDate: date }));
+          }}
         />
 
         {/* Weight History Graph */}
@@ -177,7 +210,7 @@ const ProductDetailModal = ({
           ) : measurements.length > 0 ? (
             <ScaleGraph
               data={measurements}
-              thresholds={product.thresholds}
+              thresholds={product?.thresholds}
               dateRange={dateRange}
             />
           ) : (
@@ -196,4 +229,4 @@ const ProductDetailModal = ({
   );
 };
 
-export default React.memo(ProductDetailModal);
+export default ProductDetailModal;

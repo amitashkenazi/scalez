@@ -12,21 +12,29 @@ const ProductCard = ({ product, scale, customers, latestMeasurement }) => {
     const t = translations[language];
     const [lastOrder, setLastOrder] = useState(null);
     const [consumptionStats, setConsumptionStats] = useState(null);
+    const [scaleId, setScaleId] = useState(null);
     const isRTL = language === 'he';
     const quantityLeftPrecentage = 0.25;
     const dayFromLastPrderPrecentage = 0.3;
     
+    const handleOpenModal = () => {
+        console.log('Opening modal with:', {
+            productId: product?.product_id,
+            scaleId: product?.scale_id,
+            scale: scale
+        });
+        setIsModalOpen(true);
+    };
+
     useEffect(() => {
       const fetchOrders = async () => {
         if (product.customer_id && product.item_id) {
           try {
             // Fetch latest order
-            console.log('aasdasdasdFetching orders for product:', product);
             const lastOrderResponse = await apiService.request(
               `orders/customer/${product.customer_id}/last-order/${product.item_id}`,
               { method: 'GET' }
             );
-            console.log('1111Last order:', lastOrderResponse);
             setLastOrder(lastOrderResponse);
   
             // Fetch all orders for consumption calculation
@@ -34,9 +42,7 @@ const ProductCard = ({ product, scale, customers, latestMeasurement }) => {
               `orders/customer/${product.customer_id}/item-history/${lastOrderResponse.item_external_id}`,
               { method: 'GET' }
             );
-            console.log('Orders:', orders);
             try {
-              console.log('Orders:', orders);
               if (orders && orders.length > 1) {
                 // Sort the orders array by order_date
                 const sortedOrders = orders.sort((a, b) => {
@@ -62,7 +68,6 @@ const ProductCard = ({ product, scale, customers, latestMeasurement }) => {
                 const dailyAverage = (totalQuantity / daysDiff);
                 const estimationQuntityLeft = quntityLastOrder - (dailyAverage * daysFromLastOrder);
                 const averageDaysBetweenOrders = daysDiff / (sortedOrders.length - 1);
-                console.log('Total quantity:', firstDate, lastDate, totalQuantity, daysDiff);
             
                 // Set the consumption stats
                 setConsumptionStats({
@@ -121,7 +126,6 @@ const ProductCard = ({ product, scale, customers, latestMeasurement }) => {
         
       if (!customers || !product.customer_id) return null;
       const customer = customers.find(c => c.customer_id === product.customer_id);
-      console.log('Customer:', customer);
       if (!customer) return null;
       const [hebrewName, englishName] = (customer.name || '').split(' - ');
       return {
@@ -148,9 +152,9 @@ const ProductCard = ({ product, scale, customers, latestMeasurement }) => {
     return (
       <>
         <div 
-          className={`bg-white rounded-lg shadow-lg p-6 hover:shadow-xl transition-all duration-300 
-            cursor-pointer group ${statusInfo.bgColor} relative overflow-hidden`}
-          onClick={() => setIsModalOpen(true)}
+            className={`bg-white rounded-lg shadow-lg p-6 hover:shadow-xl transition-all duration-300 
+            cursor-pointer group ${statusInfo?.bgColor} relative overflow-hidden`}
+            onClick={handleOpenModal}
         >
           <div className="flex justify-between items-start mb-4">
             <div className="space-y-1">
@@ -233,7 +237,7 @@ const ProductCard = ({ product, scale, customers, latestMeasurement }) => {
             </>
           )}
   
-          {lastOrder && (
+          {/* {lastOrder && (
             <div className="mt-4 border-t border-gray-100 pt-4">
               <div className="flex justify-between items-center mb-3">
                 <div className="flex items-center gap-2">
@@ -273,95 +277,102 @@ const ProductCard = ({ product, scale, customers, latestMeasurement }) => {
                 </div>
               </div>
             </div>
-          )}
+          )} */}
   
-          {consumptionStats && (
-          <div className="mt-4 border-t border-gray-100 pt-4">
+        <div className="mt-4 border-t border-gray-100 pt-4">
             <div className="flex justify-between items-center mb-3">
-              <div className="flex items-center gap-2">
-                <TrendingUp size={16} className="text-gray-500" />
-                <h4 className="text-base font-semibold text-gray-700">
-                  Consumption Analytics
-                </h4>
-              </div>
-              <div className="flex items-center gap-1 text-sm text-gray-500">
-                <ChartBar size={14} />
-                <span>Historical Data</span>
-              </div>
+                <div className="flex items-center gap-2">
+                    <TrendingUp size={16} className="text-gray-500" />
+                    <h4 className="text-base font-semibold text-gray-700">
+                        {t.ConsumptionAnalytics}
+                    </h4>
+                </div>
+                <div className="flex items-center gap-1 text-sm text-gray-500">
+                    <ChartBar size={14} />
+                    <span>Historical Data</span>
+                </div>
             </div>
-            
-            <div className="grid grid-cols-4 gap-4">
-              <div className="bg-white rounded-md p-3 shadow-sm">
-                <div className="flex flex-col h-full justify-between">
-                  <span className="text-xs text-gray-500 font-medium">
-                    Average Consumption
-                  </span>
-                  <div className="mt-1">
-                    <span className="text-lg font-semibold">
-                      {consumptionStats.dailyAverage}
-                    </span>
-                    <span className="text-xs text-gray-500 ml-1">{t.unitsPerDay}</span>
-                  </div>
+
+            {consumptionStats ? (
+                <div className="grid grid-cols-4 gap-4">
+                    <div className="bg-white rounded-md p-3 shadow-sm">
+                        <div className="flex flex-col h-full justify-between">
+                            <span className="text-xs text-gray-500 font-medium">
+                                Average Consumption
+                            </span>
+                            <div className="mt-1">
+                                <span className="text-lg font-semibold">
+                                    {consumptionStats.dailyAverage}
+                                </span>
+                                <span className="text-xs text-gray-500 ml-1">{t.unitsPerDay}</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="bg-white rounded-md p-3 shadow-sm">
+                        <div className="flex flex-col h-full justify-between">
+                            <span className="text-xs text-gray-500 font-medium">
+                                {t.averageDaysBetweenOrders}
+                            </span>
+                            <div className="mt-1">
+                                <span className="text-lg font-semibold">
+                                    {consumptionStats.averageDaysBetweenOrders}
+                                </span>
+                                <span className="text-xs text-gray-500 ml-1">{t.days}</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className={`rounded-md p-3 shadow-sm transition-colors duration-300 ${
+                        getDangerClassNames('days', consumptionStats.daysFromLastOrder)
+                    }`}>
+                        <div className="flex flex-col h-full justify-between">
+                            <span className="text-xs text-gray-500 font-medium">
+                                {t.daysFromLastOrder}
+                            </span>
+                            <div className="mt-1">
+                                <span className="text-lg font-semibold">
+                                    {consumptionStats.daysFromLastOrder}
+                                </span>
+                                <span className="text-xs text-gray-500 ml-1">{t.days}</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className={`rounded-md p-3 shadow-sm transition-colors duration-300 ${
+                        getDangerClassNames('quantity', consumptionStats.estimationQuntityLeft)
+                    }`}>
+                        <div className="flex flex-col h-full justify-between">
+                            <span className="text-xs text-gray-500 font-medium">
+                                {t.estimationQuntityLeft}
+                            </span>
+                            <div className="mt-1">
+                                <span className="text-lg font-semibold">
+                                    {consumptionStats.estimationQuntityLeft}
+                                </span>
+                                <span className="text-xs text-gray-500 ml-1">{t.units}</span>
+                            </div>
+                        </div>
+                    </div>
                 </div>
-              </div>
-              
-              <div className="bg-white rounded-md p-3 shadow-sm">
-                <div className="flex flex-col h-full justify-between">
-                  <span className="text-xs text-gray-500 font-medium">
-                    {t.averageDaysBetweenOrders}
-                  </span>
-                  <div className="mt-1">
-                    <span className="text-lg font-semibold">
-                      {consumptionStats.averageDaysBetweenOrders}
-                    </span>
-                    <span className="text-xs text-gray-500 ml-1">{t.days}</span>
-                  </div>
+            ) : (
+                <div className="text-gray-500 text-sm">
+                    {t.noStatsAvailable}
                 </div>
-              </div>
-              
-              <div className={`rounded-md p-3 shadow-sm transition-colors duration-300 ${
-                getDangerClassNames('days', consumptionStats.daysFromLastOrder)
-              }`}>
-                <div className="flex flex-col h-full justify-between">
-                  <span className="text-xs text-gray-500 font-medium">
-                    {t.daysFromLastOrder}
-                  </span>
-                  <div className="mt-1">
-                    <span className="text-lg font-semibold">
-                      {consumptionStats.daysFromLastOrder}
-                    </span>
-                    <span className="text-xs text-gray-500 ml-1">{t.days}</span>
-                  </div>
-                </div>
-              </div>
-              
-              <div className={`rounded-md p-3 shadow-sm transition-colors duration-300 ${
-                getDangerClassNames('quantity', consumptionStats.estimationQuntityLeft)
-              }`}>
-                <div className="flex flex-col h-full justify-between">
-                  <span className="text-xs text-gray-500 font-medium">
-                    {t.estimationQuntityLeft}
-                  </span>
-                  <div className="mt-1">
-                    <span className="text-lg font-semibold">
-                      {consumptionStats.estimationQuntityLeft}
-                    </span>
-                    <span className="text-xs text-gray-500 ml-1">{t.units}</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
+            )}
+        </div>
         </div>
   
         <ProductDetailModal
-          isOpen={isModalOpen}
-          onClose={() => setIsModalOpen(false)}
-          product={product}
-          scale={scale}
-          latestMeasurement={latestMeasurement}
-          customer={customerInfo?.fullData}
+            isOpen={isModalOpen}
+            onClose={() => {
+            console.log('Closing modal');
+            setIsModalOpen(false);
+            }}
+            product={product}
+            scale_id={product?.scale_id} // Ensure we're using the correct property
+            latestMeasurement={latestMeasurement}
+            customer={customerInfo?.fullData}
         />
       </>
     );
