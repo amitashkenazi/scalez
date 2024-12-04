@@ -50,51 +50,38 @@ export class DirectionsOptimizer {
     return `${originCoords.lat},${originCoords.lng}|${destCoords.lat},${destCoords.lng}|${waypointString}`;
   }
 
-  async getDirections(origin, destination, waypoints = [], options = {}) {
-    if (!window.google) {
-      throw new Error('Google Maps not loaded');
-    }
+  async getDirections({ origin, destination, waypoints = [], options = {} }) {
+  try {
+    console.log('Requesting optimized route:', {
+      origin,
+      destination,
+      waypoints,
+      options
+    });
 
-    try {
-      const routeKey = this.generateRouteKey(origin, destination, waypoints);
-      
-      if (this.pendingRequests.has(routeKey)) {
-        return this.pendingRequests.get(routeKey);
-      }
+    // Include all stops as waypoints except origin
+    const allWaypoints = waypoints.map(wp => ({
+      location: wp.location || wp,
+      stopover: true
+    }));
 
-      apiTracker.trackApiCall('directions', 'GET');
+    const response = await this.request('maps/optimize-route', {
+      method: 'POST',
+      body: JSON.stringify({
+        origin,
+        destination: origin, // For round trip
+        waypoints: allWaypoints,
+        return_to_origin: true
+      })
+    });
 
-      const defaultOptions = {
-        travelMode: window.google.maps.TravelMode.DRIVING,
-        optimizeWaypoints: true
-      };
-
-      const routePromise = apiService.getDirections({
-        origin: this.getCoordinates(origin),
-        destination: this.getCoordinates(destination),
-        waypoints: waypoints.map(wp => ({
-          location: this.getCoordinates(wp),
-          stopover: wp.stopover ?? true
-        })),
-        options: { ...defaultOptions, ...options }
-      });
-
-      this.pendingRequests.set(routeKey, routePromise);
-
-      const result = await routePromise;
-      this.pendingRequests.delete(routeKey);
-
-      return this.transformDirectionsResponse(result, {
-        origin: this.getCoordinates(origin),
-        destination: this.getCoordinates(destination),
-        travelMode: window.google.maps.TravelMode.DRIVING
-      });
-
-    } catch (error) {
-      console.error('Error getting directions:', error);
-      throw error;
-    }
+    console.log('Optimized route response:', response);
+    return response;
+  } catch (error) {
+    console.error('Error getting optimized route:', error);
+    throw error;
   }
+}
 
   transformDirectionsResponse(serverResponse, request) {
     if (!window.google || !serverResponse || !serverResponse.routes || !serverResponse.routes.length) {

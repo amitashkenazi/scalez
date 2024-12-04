@@ -32,19 +32,19 @@ export class ApiTracker {
     }
   
     logApiStats() {
-      console.group('API Call Statistics');
+      // console.group('API Call Statistics');
       
-      console.log('\nServer API Calls:', this.totalApiCalls);
-      this.apiCalls.forEach((count, endpoint) => {
-        console.log(`  ${endpoint}: ${count}`);
-      });
+      // console.log('\nServer API Calls:', this.totalApiCalls);
+      // this.apiCalls.forEach((count, endpoint) => {
+      //   console.log(`  ${endpoint}: ${count}`);
+      // });
   
-      console.log('\nGoogle Maps API Calls:', this.totalGoogleMapsCalls);
-      this.googleMapsCalls.forEach((count, service) => {
-        console.log(`  ${service}: ${count}`);
-      });
+      // console.log('\nGoogle Maps API Calls:', this.totalGoogleMapsCalls);
+      // this.googleMapsCalls.forEach((count, service) => {
+      //   console.log(`  ${service}: ${count}`);
+      // });
   
-      console.groupEnd();
+      // console.groupEnd();
     }
   
     getStats() {

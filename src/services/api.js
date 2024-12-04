@@ -3,7 +3,7 @@ import { tokenService } from './tokenService';
 import { AuthenticationException } from './exceptions';
 import { apiTracker } from '../utils/ApiTracker';
 
-/**
+/** 
  * ApiService class provides methods to interact with the backend API.
  * It handles authentication, retries on failure, and parsing responses.
  * It includes methods for CRUD operations on customers, products, scales, and vendors,
