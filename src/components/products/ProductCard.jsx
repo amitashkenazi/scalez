@@ -14,7 +14,7 @@ const ProductCard = ({ product, scale, customers, latestMeasurement }) => {
     const [consumptionStats, setConsumptionStats] = useState(null);
     const [scaleId, setScaleId] = useState(null);
     const isRTL = language === 'he';
-    const quantityLeftPrecentage = 0.25;
+    const quantityLeftPrecentage = 0.75;
     const dayFromLastPrderPrecentage = 0.3;
     
     const handleOpenModal = () => {
@@ -158,10 +158,12 @@ const ProductCard = ({ product, scale, customers, latestMeasurement }) => {
         >
           <div className="flex justify-between items-start mb-4">
             <div className="space-y-1">
-              <h3 className="text-2xl font-bold">{product.name || 'Unnamed Product'}</h3>
-              {customerInfo && (
-                <p className="text-gray-600">{customerInfo.displayName}</p>
+            {customerInfo && (
+                <h3 className="text-2xl font-bold">{customerInfo.displayName}</h3>
               )}
+             <p className="text-gray-600">{product.name || 'Unnamed Product'}</p>
+              
+              
               <div className="flex flex-col gap-1 text-sm">
                 <div className="flex items-center gap-1 text-gray-400">
                   <Scale size={14} />

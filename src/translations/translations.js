@@ -151,6 +151,8 @@ export const translations = {
     errorUpdatingScale: "Failed to update scale. Please try again later.",
     productsManagement: "My Products",
     unitsPerDay: "Units/Day",
+    selectItem: "Select Item",
+    scaleSelection: "Scale Selection",
     ConsumptionAnalytics: "Consumption Analytics",
     units: "Units",
     noStatsAvailable: "No stats available",

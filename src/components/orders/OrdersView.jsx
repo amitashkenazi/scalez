@@ -1,12 +1,13 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { translations } from '../../translations/translations';
-import { Package, AlertCircle, Loader2, RefreshCw, Search, ChevronDown, ChevronUp } from 'lucide-react';
+import { Package, AlertCircle, Loader2, RefreshCw, Search, ChevronDown, ChevronUp, Plus } from 'lucide-react';
 import apiService from '../../services/api';
+import ProductModal from '../ProductModal';
 import debounce from 'lodash/debounce';
 
 const ITEMS_PER_PAGE = 20;
-const DEBOUNCE_DELAY = 500; // Reduced from 2000 to 500ms for better responsiveness
+const DEBOUNCE_DELAY = 500;
 
 const OrderStatus = {
   OPEN: 'פתוחה',
@@ -38,25 +39,101 @@ const StatusBadge = ({ status }) => {
   );
 };
 
-const OrderDetails = ({ items }) => {
+const OrderDetails = ({ items, customerName }) => {
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [selectedItem, setSelectedItem] = useState(null);
+  const [customers, setCustomers] = useState([]);
+  const [successMessage, setSuccessMessage] = useState('');
+  const { language } = useLanguage();
+  const t = translations[language];
+
+  useEffect(() => {
+    const fetchCustomers = async () => {
+      try {
+        const response = await apiService.getCustomers();
+        setCustomers(response);
+      } catch (error) {
+        console.error('Error fetching customers:', error);
+      }
+    };
+    fetchCustomers();
+  }, []);
+
+  const handleCreateProduct = (item) => {
+    console.log('Creating product from item:', item);
+    setSelectedItem(item);
+    setIsModalOpen(true);
+  };
+
+  const handleAddProduct = async (productData) => {
+    try {
+      await apiService.createProduct(productData);
+      setSuccessMessage(t.productAdded || 'Product created successfully');
+      setIsModalOpen(false);
+      setTimeout(() => setSuccessMessage(''), 3000);
+    } catch (error) {
+      console.error('Error creating product:', error);
+      throw error;
+    }
+  };
+
+  const handleCustomerAdded = (newCustomer) => {
+    setCustomers(prev => [...prev, newCustomer]);
+  };
+
   if (!Array.isArray(items)) return null;
   
   return (
-    <div className="p-4 bg-gray-50 rounded-lg">
-      <h4 className="font-medium mb-2">Order Items:</h4>
-      <div className="space-y-2">
-        {items.map((item, index) => (
-          <div key={index} className="flex justify-between text-sm">
-            <span>{item.item_code} - {item.item_name || 'Unknown Item'}</span>
-            <div className="space-x-4">
-              <span>Price: ₪{item.price || 0}</span>
-              <span>Quantity: {item.quantity || 0}</span>
-              <span className="font-medium">Total: ₪{item.total || 0}</span>
-            </div>
+    <>
+      <div className="p-4 bg-gray-50 rounded-lg">
+        {successMessage && (
+          <div className="mb-4 bg-green-50 border border-green-400 rounded-lg p-3">
+            <p className="text-green-700">{successMessage}</p>
           </div>
-        ))}
+        )}
+        <h4 className="font-medium mb-2">Order Items:</h4>
+        <div className="space-y-2">
+          {items.map((item, index) => (
+            <div key={index} className="flex justify-between items-center bg-white p-3 rounded-lg shadow-sm">
+              <div className="flex-1">
+                <span className="font-medium">{item.item_external_id} - {item.item_name || 'Unknown Item'}</span>
+                <div className="text-sm text-gray-500 space-x-4">
+                  <span>Price: ₪{item.price || 0}</span>
+                  <span>Quantity: {item.quantity || 0}</span>
+                  <span className="font-medium">Total: ₪{item.total || 0}</span>
+                </div>
+              </div>
+              <button
+                onClick={() => handleCreateProduct(item)}
+                className="px-3 py-1.5 bg-blue-100 text-blue-700 hover:bg-blue-200 
+                  rounded-lg flex items-center gap-1 transition-colors"
+              >
+                <Plus size={16} />
+                Create Product
+              </button>
+            </div>
+          ))}
+        </div>
       </div>
-    </div>
+
+      {isModalOpen && (
+        <ProductModal
+          isOpen={isModalOpen}
+          onClose={() => {
+            setIsModalOpen(false);
+            setSelectedItem(null);
+          }}
+          customers={customers}
+          initialData={{
+            name: selectedItem.item_name,
+            item_id: selectedItem.item_external_id,
+          }}
+          preSelectedCustomerName={customerName}
+          onSubmit={handleAddProduct}
+          onCustomerAdded={handleCustomerAdded}
+        />
+      )}
+    </>
   );
 };
 
@@ -73,17 +150,16 @@ const OrdersView = () => {
   const [hasMore, setHasMore] = useState(true);
 
   const { language } = useLanguage();
+  const t = translations[language];
   const isRTL = language === 'he';
 
   const fetchOrders = async (showLoadingState = true, pageToken = null, filters = { status: statusFilter, search: searchTerm }) => {
-    console.log('fetchOrders called with:', { showLoadingState, pageToken, filters });
-    
     if (showLoadingState) {
       if (pageToken) {
         setIsLoading(true);
       } else {
         setIsFilterLoading(true);
-        setOrders([]); // Clear existing orders
+        setOrders([]);
       }
     }
     setError(null);
@@ -107,21 +183,13 @@ const OrdersView = () => {
         }
       }
 
-      console.log('Fetching orders with URL:', `orders?${queryParams.toString()}`);
-
       const response = await apiService.request(`orders?${queryParams.toString()}`, { 
         method: 'GET' 
       });
 
-      console.log('Received response:', response);
-
       if (pageToken) {
-        setOrders(prev => {
-          console.log('Updating orders with pageToken, prev:', prev);
-          return [...prev, ...response.orders];
-        });
+        setOrders(prev => [...prev, ...response.orders]);
       } else {
-        console.log('Setting new orders:', response.orders);
         setOrders(response.orders || []);
       }
       
@@ -139,52 +207,32 @@ const OrdersView = () => {
     }
   };
 
-  // Create a new function for initial load
-  const initialLoad = useCallback(() => {
-    console.log('Initial load called');
-    fetchOrders(true, null, { status: 'all', search: '' });
-  }, []);
-
   const handleFiltersChange = useCallback((newFilters) => {
-    console.log('Filters changed to:', newFilters);
-    setOrders([]); // Clear orders immediately when filters change
+    setOrders([]);
     return fetchOrders(true, null, newFilters);
   }, []);
 
   const debouncedFilterChange = useCallback(
     debounce((filters) => {
-      console.log('Debounced filter change called with:', filters);
       handleFiltersChange(filters);
     }, DEBOUNCE_DELAY),
     [handleFiltersChange]
   );
-  // Effect for initial load
-  useEffect(() => {
-    console.log('Filter effect triggered:', { statusFilter, searchTerm });
-    debouncedFilterChange({ status: statusFilter, search: searchTerm });
-  }, [statusFilter, searchTerm, debouncedFilterChange]);
-  
 
   useEffect(() => {
-    initialLoad();
-    // Cleanup function
+    debouncedFilterChange({ status: statusFilter, search: searchTerm });
     return () => {
       debouncedFilterChange.cancel();
     };
-  }, [initialLoad, debouncedFilterChange]);
-
-  
+  }, [statusFilter, searchTerm, debouncedFilterChange]);
 
   const handleRefresh = () => {
-    console.log('Refresh triggered');
     setIsRefreshing(true);
     setNextPageToken(null);
     fetchOrders(false, null, { status: statusFilter, search: searchTerm });
   };
 
-
   const handleLoadMore = () => {
-    console.log('Load more triggered');
     if (nextPageToken && !isLoading) {
       fetchOrders(false, nextPageToken, { status: statusFilter, search: searchTerm });
     }
@@ -330,8 +378,7 @@ const OrdersView = () => {
                       {formatDate(order.order_date)}
                     </td>
                     <td className="px-6 py-4 text-sm text-gray-500 max-w-xs truncate">
-                      {order.notes || ''}
-                    </td>
+                      {order.notes || ''}</td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                       <button
                         onClick={() => setExpandedOrder(expandedOrder === order.order_id ? null : order.order_id)}
@@ -348,7 +395,10 @@ const OrdersView = () => {
                   {expandedOrder === order.order_id && (
                     <tr>
                       <td colSpan="8" className="px-6 py-4">
-                        <OrderDetails items={order.items || []} />
+                        <OrderDetails 
+                          items={order.items || []} 
+                          customerName={order.customer_name}
+                        />
                       </td>
                     </tr>
                   )}
