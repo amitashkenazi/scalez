@@ -8,6 +8,7 @@ import {
   Share,
   UserCircle,
   MapIcon,
+  Plug,
   LayoutDashboard,
   Settings,
   FileText
@@ -71,6 +72,12 @@ const SideMenu = ({ activeView, onViewChange }) => {
       label: t.scalesManagement,
       view: 'scalesManagement',
       description: 'Manage and monitor all scales in the system'
+    },
+    {
+      icon: Plug,
+      label: "Integrations",
+      view: "integrations",
+      description: "Connect external services and tools"
     },
     {
       icon: UserCircle,

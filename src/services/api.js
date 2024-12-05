@@ -84,6 +84,27 @@ class ApiService {
   sleep(ms) {
     return new Promise(resolve => setTimeout(resolve, ms));
   }
+  
+  // Get all integrations
+  getIntegrations() {
+    return this.request('integrations', {
+      method: 'GET'
+    });
+  }
+  
+  connectIntegration(integrationId, credentials) {
+    return this.request(`integrations/${integrationId}/connect`, {
+      method: 'POST',
+      body: JSON.stringify(credentials)
+    });
+  }
+
+  // Disconnect an integration
+  disconnectIntegration(integrationId) {
+    return this.request(`integrations/${integrationId}/disconnect`, {
+      method: 'POST'
+    });
+  }
 
   /**
    * Makes an API request with optional retry logic.
@@ -477,6 +498,7 @@ class ApiService {
       throw error;
     }
   }
+  
 
  /**
  * Get optimized directions between points
