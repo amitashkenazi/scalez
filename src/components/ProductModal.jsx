@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useRef } from 'react';
 import { useLanguage } from '../contexts/LanguageContext';
 import { translations } from '../translations/translations';
 import { X, Loader2, AlertCircle, Search, Plus } from 'lucide-react';
@@ -15,6 +16,8 @@ const ProductModal = ({
   preSelectedCustomerName = null,
   onCustomerAdded 
 }) => {
+  const itemsCache = useRef(null);
+  
   const [formData, setFormData] = useState({
     name: '',
     customer_id: '',
@@ -45,20 +48,55 @@ const ProductModal = ({
   const t = translations[language];
   const isRTL = language === 'he';
 
+  const fetchItems = async () => {
+    try {
+      // If we have cached items, use them
+      if (itemsCache.current) {
+        console.log('Using cached items');
+        setAvailableItems(itemsCache.current);
+        
+        // Set selected item if we have initialData
+        if (initialData?.item_id) {
+          const matchingItem = itemsCache.current.find(
+            item => item.external_id === initialData.item_code
+          );
+          if (matchingItem) {
+            setSelectedItem(matchingItem);
+            setItemSearchQuery(matchingItem.name);
+          }
+        }
+        return;
+      }
+
+      // If no cache, fetch from server
+      console.log('Fetching items from server');
+      const response = await apiService.request('items', {
+        method: 'GET'
+      });
+      
+      // Store in cache and state
+      itemsCache.current = response;
+      setAvailableItems(response);
+      
+      // Set selected item if we have initialData
+      if (initialData?.item_id && response) {
+        const matchingItem = response.find(
+          item => item.external_id === initialData.item_code
+        );
+        if (matchingItem) {
+          setSelectedItem(matchingItem);
+          setItemSearchQuery(matchingItem.name);
+        }
+      }
+    } catch (error) {
+      console.error('Error fetching items:', error);
+      setErrors(prev => ({ ...prev, items: 'Error loading items' }));
+    }
+  };
+
+
   // Fetch available items and scales when modal opens
   useEffect(() => {
-    const fetchItems = async () => {
-      try {
-        const response = await apiService.request('items', {
-          method: 'GET'
-        });
-        setAvailableItems(response);
-      } catch (error) {
-        console.error('Error fetching items:', error);
-        setErrors(prev => ({ ...prev, items: 'Error loading items' }));
-      }
-    };
-
     const fetchScales = async () => {
       try {
         const response = await apiService.getScales();
@@ -73,25 +111,25 @@ const ProductModal = ({
       fetchItems();
       fetchScales();
     }
-  }, [isOpen]);
+  }, [isOpen, initialData]);
+
 
   // Initialize or reset form data when modal opens
   useEffect(() => {
     if (isOpen) {
-      console.log('Initializing form data:', initialData);
       if (initialData) {
-        // Find customer by name if preSelectedCustomerName is provided
+        // Find customer either by preSelectedCustomerName or from initialData
         let customer = null;
         if (preSelectedCustomerName) {
           customer = customers.find(c => {
             const [hebrewName, englishName] = c.name.split(' - ');
             return hebrewName === preSelectedCustomerName || englishName === preSelectedCustomerName;
           });
+        } else if (initialData.customer_id) {
+          customer = customers.find(c => c.customer_id === initialData.customer_id);
         }
-        console.log('availableItems', availableItems);
-        const item = availableItems.find(i => i.external_id === initialData.item_id);
-        setProductId(initialData.product_id);
-        
+
+        // Set form data
         setFormData({
           name: initialData.name || '',
           customer_id: customer?.customer_id || initialData.customer_id || '',
@@ -104,10 +142,10 @@ const ProductModal = ({
           }
         });
 
-        if (item) {
-          setSelectedItem(item);
-          setItemSearchQuery(item.name);
-        }
+        // Set product ID
+        setProductId(initialData.product_id);
+
+        // Set customer data
         if (customer) {
           setSelectedCustomer(customer);
           setCustomerSearchQuery(customer.name);
@@ -127,10 +165,13 @@ const ProductModal = ({
         });
         setSelectedItem(null);
         setSelectedCustomer(null);
+        setCustomerSearchQuery('');
+        setItemSearchQuery('');
       }
       setErrors({});
     }
-  }, [isOpen, initialData, customers, availableItems, preSelectedCustomerName]);
+  }, [isOpen, initialData, customers, preSelectedCustomerName]);
+
 
   // Handle clicks outside dropdowns
   useEffect(() => {
