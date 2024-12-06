@@ -1,7 +1,8 @@
+// src/components/orders/OrdersView.jsx
 import React, { useState, useEffect, useCallback } from 'react';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { translations } from '../../translations/translations';
-import { Package, AlertCircle, Loader2, RefreshCw, Search, ChevronDown, ChevronUp, Plus } from 'lucide-react';
+import { Package, AlertCircle, Loader2, RefreshCw, Search, ChevronDown, ChevronUp } from 'lucide-react';
 import apiService from '../../services/api';
 import ProductModal from '../ProductModal';
 import debounce from 'lodash/debounce';
@@ -108,8 +109,7 @@ const OrderDetails = ({ items, customerName }) => {
                 className="px-3 py-1.5 bg-blue-100 text-blue-700 hover:bg-blue-200 
                   rounded-lg flex items-center gap-1 transition-colors"
               >
-                <Plus size={16} />
-                Create Product
+                + Create Product
               </button>
             </div>
           ))}
@@ -378,7 +378,8 @@ const OrdersView = () => {
                       {formatDate(order.order_date)}
                     </td>
                     <td className="px-6 py-4 text-sm text-gray-500 max-w-xs truncate">
-                      {order.notes || ''}</td>
+                      {order.notes || ''}
+                    </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                       <button
                         onClick={() => setExpandedOrder(expandedOrder === order.order_id ? null : order.order_id)}
@@ -408,21 +409,33 @@ const OrdersView = () => {
           </table>
         )}
 
-        {!isFilterLoading && orders.length === 0 && (
-          <div className="text-center py-8">
-            <Package className="mx-auto h-12 w-12 text-gray-400" />
+        {/* If no orders and not loading filters */}
+        {!isFilterLoading && orders.length === 0 && !error && (
+          <div className="text-center py-12">
+            <Package className="mx-auto h-12 w-12 text-gray-400 mb-4" />
             <h3 className="mt-2 text-sm font-medium text-gray-900">No orders found</h3>
             <p className="mt-1 text-sm text-gray-500">
               {searchTerm || statusFilter !== 'all'
                 ? 'Try adjusting your filters'
-                : 'New orders will appear here'}
+                : 'No invoices are available. Please add an integration to start receiving orders.'}
             </p>
-          </div>
-        )}
-
-        {isFilterLoading && (
-          <div className="flex justify-center items-center h-64">
-            <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
+            <div className="mt-4">
+              <button
+                onClick={() => {
+                  // Replace this with the navigation logic you use to switch to the integrations tab
+                  // For example, if you have a context or prop function like onViewChange:
+                  // onViewChange('integrations');
+                  
+                  // If you're using React Router:
+                  // navigate('/integrations');
+                  
+                  // Adjust according to your app's routing or view change logic.
+                }}
+                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+              >
+                Add Integration
+              </button>
+            </div>
           </div>
         )}
 
