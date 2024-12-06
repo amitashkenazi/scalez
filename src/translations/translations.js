@@ -196,6 +196,8 @@ export const translations = {
     selectItem: "Select Item",
     scaleSelection: "Scale Selection",
     ConsumptionAnalytics: "Consumption Analytics",
+    lastOrderQuantity: "Last Order Quantity",
+    dailyConsumptionRate: "Daily Consumption Rate",
     units: "Units",
     noStatsAvailable: "No stats available",
     estimationQuntityLeft: "Estimation Quantity Left",

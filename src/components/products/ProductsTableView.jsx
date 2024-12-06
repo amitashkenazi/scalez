@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useLanguage } from '../../contexts/LanguageContext';
+import { useProductAnalytics } from './useProductAnalytics';
+
 import { translations } from '../../translations/translations';
 import { 
   Package, 
@@ -87,81 +89,11 @@ const ProductsTableView = ({
   const t = translations[language];
   const isRTL = language === 'he';
   const [expandedRow, setExpandedRow] = useState(null);
-  const [analytics, setAnalytics] = useState({});
-  const [isLoadingAnalytics, setIsLoadingAnalytics] = useState(false);
+  const { analytics, isLoading: isLoadingAnalytics } = useProductAnalytics(products);
   const [sortConfig, setSortConfig] = useState({
     key: 'estimationQuantityLeft',
     direction: 'desc'
   });
-
-  useEffect(() => {
-    if (!Array.isArray(products) || products.length === 0) return;
-
-    const fetchAnalytics = async () => {
-      setIsLoadingAnalytics(true);
-      const analyticsData = {};
-      
-      try {
-        for (const product of products) {
-          if (product?.customer_id && product?.item_id) {
-            try {
-              const lastOrder = await apiService.request(
-                `orders/customer/${product.customer_id}/last-order/${product.item_id}`,
-                { method: 'GET' }
-              );
-
-              if (!lastOrder) continue;
-
-              const orders = await apiService.request(
-                `orders/customer/${product.customer_id}/item-history/${lastOrder.item_external_id}`,
-                { method: 'GET' }
-              );
-
-              if (orders && Array.isArray(orders) && orders.length > 1) {
-                const sortedOrders = orders.sort((a, b) => {
-                  const [dayA, monthA, yearA] = a.order_date.split("-");
-                  const [dayB, monthB, yearB] = b.order_date.split("-");
-                  const dateA = new Date(20 + yearA, monthA - 1, dayA);
-                  const dateB = new Date(20 + yearB, monthB - 1, dayB);
-                  return dateA - dateB;
-                });
-
-                const firstDateParts = sortedOrders[0].order_date.split("-");
-                const firstDate = new Date(20 + firstDateParts[2], firstDateParts[1] - 1, firstDateParts[0]);
-                const lastDateParts = sortedOrders[sortedOrders.length - 1].order_date.split("-");
-                const lastDate = new Date(20 + lastDateParts[2], lastDateParts[1] - 1, lastDateParts[0]);
-                const daysFromLastOrder = (new Date() - lastDate) / (1000 * 60 * 60 * 24);
-                const daysDiff = (lastDate - firstDate) / (1000 * 60 * 60 * 24);
-                const quantityLastOrder = sortedOrders[sortedOrders.length - 1].quantity;
-                const totalQuantity = sortedOrders.reduce((sum, order) => sum + parseFloat(order.quantity || 0), 0);
-                const dailyAverage = (totalQuantity / daysDiff);
-                const estimationQuantityLeft = quantityLastOrder - (dailyAverage * daysFromLastOrder);
-                const averageDaysBetweenOrders = daysDiff / (sortedOrders.length - 1);
-
-                analyticsData[product.product_id] = {
-                  dailyAverage: dailyAverage.toFixed(2),
-                  quantityLastOrder,
-                  daysFromLastOrder: daysFromLastOrder.toFixed(0),
-                  estimationQuantityLeft: estimationQuantityLeft.toFixed(2),
-                  averageDaysBetweenOrders: averageDaysBetweenOrders.toFixed(2)
-                };
-              }
-            } catch (error) {
-              console.error('Error fetching analytics for product:', product.product_id, error);
-            }
-          }
-        }
-      } catch (error) {
-        console.error('Error in fetchAnalytics:', error);
-      } finally {
-        setAnalytics(analyticsData);
-        setIsLoadingAnalytics(false);
-      }
-    };
-
-    fetchAnalytics();
-  }, [products]);
-
   const sortProducts = (productsToSort) => {
     if (!sortConfig.key) return productsToSort;
 
@@ -324,7 +256,7 @@ const ProductsTableView = ({
             const productAnalytics = analytics[product.product_id];
             const quantityWarning = getAnalyticsWarningLevel('quantity', productAnalytics);
             const daysWarning = getAnalyticsWarningLevel('days', productAnalytics);
-
+            console.log('Product analytics:', productAnalytics);
             return (
               <React.Fragment key={product.product_id}>
                 <tr className={`group hover:bg-gray-50`}>
