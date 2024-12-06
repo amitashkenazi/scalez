@@ -23,7 +23,6 @@ const PAGE_SIZE = 20;
 
 const ProductsView = () => {
   const [viewType, setViewType] = useState('table');
-  const [allProducts, setAllProducts] = useState([]);
   const [products, setProducts] = useState([]);
   const [scales, setScales] = useState([]);
   const [customers, setCustomers] = useState([]);
@@ -41,7 +40,6 @@ const ProductsView = () => {
   const [nextCursor, setNextCursor] = useState(null);
   const [hasMore, setHasMore] = useState(true);
   const [isInitialLoad, setIsInitialLoad] = useState(true);
-  
 
   const { language } = useLanguage();
   const t = translations[language];
@@ -50,6 +48,31 @@ const ProductsView = () => {
   const showSuccessMessage = (message) => {
     setSuccessMessage(message);
     setTimeout(() => setSuccessMessage(''), 3000);
+  };
+
+  const fetchProducts = async (cursor) => {
+    const params = new URLSearchParams();
+    params.append('limit', PAGE_SIZE);
+    if (cursor) {
+      params.append('cursor', cursor);
+    }
+    const response = await apiService.request(`products?${params.toString()}`, { method: 'GET' });
+    return response;
+  };
+  
+
+  const fetchInitialData = async () => {
+    try {
+      const [scalesResponse, customersResponse] = await Promise.all([
+        apiService.getScales(),
+        apiService.getCustomers()
+      ]);
+      setScales(scalesResponse);
+      setCustomers(customersResponse);
+    } catch (err) {
+      console.error('Error fetching initial data:', err);
+      setError('Failed to load initial data');
+    }
   };
 
   const fetchMeasurements = async (allProds) => {
@@ -101,42 +124,46 @@ const ProductsView = () => {
       if (isInitialLoad) {
         setIsInitialLoad(false);
       }
+
+      await fetchMeasurements(productsResponse.items);
+      setError(null);
     } catch (err) {
+      console.error('Error fetching data:', err);
       setError(t.failedToFetchProducts);
     } finally {
       setIsLoading(false);
       setIsLoadingMore(false);
+      setIsRefreshing(false);
     }
   };
-  useEffect(() => {
-    if (!searchTerm) {
-      fetchData();
-    } else {
-      debouncedFilterChange(searchTerm);
-    }
-  }, [searchTerm]);
-
 
   const handleRefresh = () => {
     setIsRefreshing(true);
+    setIsInitialLoad(true);
     fetchData(false);
+  };
+
+  const loadMore = async () => {
+    if (!hasMore || isLoadingMore) return;
+    setIsLoadingMore(true);
+    await fetchData(false, nextCursor);
   };
 
   const filterProducts = useCallback((term) => {
     if (!term.trim()) {
-      setProducts(allProducts);
+      fetchData();
       return;
     }
 
     const lowerTerm = term.trim().toLowerCase();
-    const filtered = allProducts.filter(product => {
-      const productName = product.name?.toLowerCase() || '';
-      const customerName = product.customer_name?.toLowerCase() || '';
-      return productName.includes(lowerTerm) || customerName.includes(lowerTerm);
-    });
-
-    setProducts(filtered);
-  }, [allProducts]);
+    setProducts(prev => 
+      prev.filter(product => {
+        const productName = product.name?.toLowerCase() || '';
+        const customerName = product.customer_name?.toLowerCase() || '';
+        return productName.includes(lowerTerm) || customerName.includes(lowerTerm);
+      })
+    );
+  }, []);
 
   const debouncedFilterChange = useCallback(
     debounce((term) => {
@@ -147,19 +174,13 @@ const ProductsView = () => {
     [filterProducts]
   );
 
-  const loadMore = async () => {
-    if (!hasMore || isLoadingMore) return;
-    setIsLoadingMore(true);
-    await fetchData(false, nextCursor);
-  };
-
   const handleScroll = useCallback(() => {
     if (window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - 100) {
-      if (!isLoadingMore && hasMore) {
+      if (!isLoadingMore && hasMore && !searchTerm) {
         loadMore();
       }
     }
-  }, [isLoadingMore, hasMore]);
+  }, [isLoadingMore, hasMore, searchTerm]);
 
   useEffect(() => {
     window.addEventListener('scroll', handleScroll);
@@ -167,64 +188,26 @@ const ProductsView = () => {
   }, [handleScroll]);
 
   useEffect(() => {
-    debouncedFilterChange(searchTerm);
-    return () => debouncedFilterChange.cancel();
-  }, [searchTerm, debouncedFilterChange]);
+    if (!searchTerm) {
+      fetchData();
+    } else {
+      debouncedFilterChange(searchTerm);
+    }
+  }, [searchTerm]);
 
   useEffect(() => {
-    const fetchInitialData = async () => {
-      try {
-        setIsLoading(true);
-        const [scalesResponse, customersResponse] = await Promise.all([
-          apiService.getScales(),
-          apiService.getCustomers()
-        ]);
-        setScales(scalesResponse);
-        setCustomers(customersResponse);
-        await fetchData(false);
-      } catch (err) {
-        console.error('Error fetching initial data:', err);
-        setError(err.message || 'Failed to load initial data');
-        setIsLoading(false);
-      }
-    };
-
-    fetchInitialData();
+    fetchData();
   }, []);
-
-  const fetchInitialData = async () => {
-    try {
-      const [scalesResponse, customersResponse] = await Promise.all([
-        apiService.getScales(),
-        apiService.getCustomers()
-      ]);
-      setScales(scalesResponse);
-      setCustomers(customersResponse);
-    } catch (err) {
-      console.error('Error fetching initial data:', err);
-      setError('Failed to load initial data');
-    }
-  };
-
-  const fetchProducts = async (cursor) => {
-    const params = new URLSearchParams();
-    params.append('limit', PAGE_SIZE);
-    if (cursor) {
-      params.append('cursor', cursor);
-    }
-    return apiService.request(`products?${params.toString()}`, { method: 'GET' });
-  };
 
   const handleAddProduct = async (productData) => {
     try {
       const newProduct = await apiService.createProduct(productData);
-      setAllProducts(prev => [newProduct, ...prev]);
-      filterProducts(searchTerm);
+      setProducts(prev => [newProduct, ...prev]);
       setIsModalOpen(false);
-      showSuccessMessage(t.productAdded || 'Product added successfully');
+      showSuccessMessage(t.productAdded);
     } catch (err) {
       console.error('Error adding product:', err);
-      setError(err.message || 'Failed to add product');
+      setError(err.message || t.failedToAddProduct);
     }
   };
 
@@ -278,7 +261,7 @@ const ProductsView = () => {
             <button
               onClick={handleRefresh}
               className="flex items-center gap-2 px-4 py-2 text-gray-600 hover:text-gray-800"
-              disabled={isRefreshing || isFilterLoading}
+              disabled={isRefreshing}
             >
               <RefreshCw className={`h-5 w-5 ${isRefreshing ? 'animate-spin' : ''}`} />
               {t.refresh}
@@ -390,7 +373,7 @@ const ProductsView = () => {
             </div>
           )}
 
-          {!isLoadingMore && hasMore && (
+          {!isLoadingMore && hasMore && !searchTerm && (
             <div className="flex justify-center mt-6">
               <button
                 onClick={loadMore}
