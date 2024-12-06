@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from 'react';
+// src/components/products/ProductsView.jsx
+import React, { useState, useEffect, useCallback } from 'react';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { translations } from '../../translations/translations';
 import { 
@@ -8,54 +9,63 @@ import {
   RefreshCw, 
   TableIcon,
   LayoutGrid,
-  Plus 
+  Plus,
+  Search
 } from 'lucide-react';
 import apiService from '../../services/api';
-import ProductDetailModal from './ProductDetailModal';
-import NewProductCard from './NewProductCard';
 import ProductModal from '../ProductModal';
+import NewProductCard from './NewProductCard';
 import ProductCard from './ProductCard';
 import ProductsTableView from './ProductsTableView';
-import { sortProducts } from '../../utils/statusUtils';
+import debounce from 'lodash/debounce';
+
+const DEBOUNCE_DELAY = 300; // shorter delay since it's client-side filtering
 
 const ProductsView = () => {
   const [viewType, setViewType] = useState('table'); // 'cards' or 'table'
-  const [products, setProducts] = useState([]);
+  const [allProducts, setAllProducts] = useState([]); // store all products
+  const [products, setProducts] = useState([]); // displayed products
   const [scales, setScales] = useState([]);
   const [customers, setCustomers] = useState([]);
   const [measurements, setMeasurements] = useState({});
   const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState(null);
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [error, setError] = useState(null);
   const [lastRefreshTime, setLastRefreshTime] = useState(new Date());
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState(null);
   const [successMessage, setSuccessMessage] = useState('');
+  const [searchTerm, setSearchTerm] = useState('');
+  const [isFilterLoading, setIsFilterLoading] = useState(false);
 
   const { language } = useLanguage();
   const t = translations[language];
   const isRTL = language === 'he';
 
-  // Fetch latest measurements for each scale
-  const fetchLatestMeasurements = async (scaleIds) => {
+  const showSuccessMessage = (message) => {
+    setSuccessMessage(message);
+    setTimeout(() => setSuccessMessage(''), 3000);
+  };
+
+  const fetchMeasurements = async (allProds) => {
+    const scaleIds = [...new Set(allProds.filter(p => p.scale_id).map(p => p.scale_id))];
+    if (scaleIds.length === 0) {
+      setLastRefreshTime(new Date());
+      return;
+    }
+
     try {
-      const measurementPromises = scaleIds
-        .filter(scaleId => scaleId !== null)
-        .map(scaleId => 
-          apiService.request(`measures/scale/${scaleId}/latest`, {
-            method: 'GET'
-          })
-        );
-      
+      const measurementPromises = scaleIds.map(scaleId =>
+        apiService.request(`measures/scale/${scaleId}/latest`, { method: 'GET' })
+      );
+
       const measurementResults = await Promise.allSettled(measurementPromises);
       const newMeasurements = {};
-      
       measurementResults.forEach((result, index) => {
         if (result.status === 'fulfilled' && result.value) {
           newMeasurements[scaleIds[index]] = result.value;
         }
       });
-      
       setMeasurements(newMeasurements);
       setLastRefreshTime(new Date());
     } catch (err) {
@@ -63,100 +73,121 @@ const ProductsView = () => {
     }
   };
 
-  const showSuccessMessage = (message) => {
-    setSuccessMessage(message);
-    setTimeout(() => setSuccessMessage(''), 3000);
-  };
+  const fetchData = async (showLoading = true) => {
+    if (showLoading) {
+      setIsLoading(true);
+      setProducts([]);
+      setAllProducts([]);
+    }
 
-  const fetchData = async (showLoadingState = true) => {
+    setError(null);
+
     try {
-      if (showLoadingState) {
-        setIsLoading(true);
-      }
-      
-      const [productsResponse, scalesResponse, customersResponse] = await Promise.all([
-        apiService.getProducts(),
-        apiService.getScales(),
-        apiService.getCustomers()
-      ]);
+      console.log('Fetching products...');
+      const response = await apiService.getProducts();
+      console.log('Fetch products response:', response);
 
-      setProducts(productsResponse);
-      setScales(scalesResponse);
-      setCustomers(customersResponse);
-      
-      // Get unique scale IDs from products that have scales
-      const scaleIds = [...new Set(productsResponse
-        .filter(p => p.scale_id)
-        .map(p => p.scale_id))];
-      await fetchLatestMeasurements(scaleIds);
-      
+      const fetchedProducts = Array.isArray(response) ? response : [];
+      setAllProducts(fetchedProducts);
+      // initially, products = allProducts (no filter)
+      setProducts(fetchedProducts);
+
+      await fetchMeasurements(fetchedProducts);
       setError(null);
     } catch (err) {
-      console.error('Error fetching data:', err);
-      setError(t.failedToFetchProducts);
+      console.error('Error fetching products:', err);
+      setError(t.failedToFetchProducts || 'Failed to fetch products data');
     } finally {
-      if (showLoadingState) {
-        setIsLoading(false);
-      }
+      setIsLoading(false);
+      setIsFilterLoading(false);
       setIsRefreshing(false);
     }
   };
-
-  const handleAddProduct = async (productData) => {
-    try {
-      const newProduct = await apiService.createProduct(productData);
-      setProducts(prev => [...prev, newProduct]);
-      setIsModalOpen(false);
-      showSuccessMessage(t.productAdded || 'Product added successfully');
-    } catch (err) {
-      setError(err.message || 'Failed to add product');
-    }
-  };
-
-  // Initial data fetch
-  useEffect(() => {
-    fetchData();
-  }, []);
-
-  // Set up auto-refresh timer
-  // useEffect(() => {
-  //   const refreshInterval = setInterval(() => {
-  //     if (products.some(p => p.scale_id)) {
-  //       const scaleIds = [...new Set(products
-  //         .filter(p => p.scale_id)
-  //         .map(p => p.scale_id))];
-  //       fetchLatestMeasurements(scaleIds);
-  //     }
-  //   }, 20000); // 20 seconds
-
-  //   return () => clearInterval(refreshInterval);
-  // }, [products]);
 
   const handleRefresh = () => {
     setIsRefreshing(true);
     fetchData(false);
   };
 
-  const handleMessageClick = (product) => {
-    const customer = customers.find(c => c.customer_id === product.customer_id);
-    if (!customer?.phone) return;
-    
-    const message = encodeURIComponent(
-      `${t.runningLowMessage} ${product.name}\n${t.productLeft}: ${measurements[product.scale_id]?.weight || 0}kg\n${t.pleaseResupply}`
-    );
-    const phone = customer.phone.replace(/\D/g, '');
-    window.open(`https://wa.me/${phone}?text=${message}`, '_blank');
+  // Client-side filtering function
+  const filterProducts = useCallback((term) => {
+    if (!term.trim()) {
+      // no search => show all
+      setProducts(allProducts);
+      return;
+    }
+
+    const lowerTerm = term.trim().toLowerCase();
+    const filtered = allProducts.filter(product => {
+      const productName = product.name?.toLowerCase() || '';
+      const customerName = product.customer_name?.toLowerCase() || '';
+      return productName.includes(lowerTerm) || customerName.includes(lowerTerm);
+    });
+
+    setProducts(filtered);
+  }, [allProducts]);
+
+  const debouncedFilterChange = useCallback(
+    debounce((term) => {
+      console.log('Debounced search:', term);
+      setIsFilterLoading(true);
+      filterProducts(term);
+      setIsFilterLoading(false);
+    }, DEBOUNCE_DELAY),
+    [filterProducts]
+  );
+
+  useEffect(() => {
+    debouncedFilterChange(searchTerm);
+    return () => {
+      debouncedFilterChange.cancel();
+    };
+  }, [searchTerm, debouncedFilterChange]);
+
+  useEffect(() => {
+    const fetchInitialData = async () => {
+      try {
+        setIsLoading(true);
+        const [scalesResponse, customersResponse] = await Promise.all([
+          apiService.getScales(),
+          apiService.getCustomers()
+        ]);
+        setScales(scalesResponse);
+        setCustomers(customersResponse);
+
+        await fetchData(false);
+      } catch (err) {
+        console.error('Error fetching initial data:', err);
+        setError(err.message || 'Failed to load initial data');
+        setIsLoading(false);
+      }
+    };
+
+    fetchInitialData();
+  }, []);
+
+  const handleAddProduct = async (productData) => {
+    try {
+      const newProduct = await apiService.createProduct(productData);
+      setAllProducts(prev => [newProduct, ...prev]);
+      filterProducts(searchTerm); // re-filter after adding new product
+      setIsModalOpen(false);
+      showSuccessMessage(t.productAdded || 'Product added successfully');
+    } catch (err) {
+      console.error('Error adding product:', err);
+      setError(err.message || 'Failed to add product');
+    }
   };
 
-  const getLastRefreshTimeString = () => {
-    return lastRefreshTime.toLocaleTimeString(language === 'he' ? 'he-IL' : 'en-US', {
+  const formatTime = (date) => {
+    return date.toLocaleTimeString(language === 'he' ? 'he-IL' : 'en-US', {
       hour: '2-digit',
       minute: '2-digit',
       second: '2-digit'
     });
   };
 
-  if (isLoading) {
+  if (isLoading && products.length === 0 && !error && !isFilterLoading) {
     return (
       <div className="flex justify-center items-center h-64">
         <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
@@ -177,7 +208,7 @@ const ProductsView = () => {
           </div>
           <div className="flex items-center gap-4">
             <span className="text-sm text-gray-500">
-              {t.lastUpdated}: {getLastRefreshTimeString()}
+              {t.lastUpdated}: {formatTime(lastRefreshTime)}
             </span>
             <button
               onClick={() => setViewType(viewType === 'cards' ? 'table' : 'cards')}
@@ -198,7 +229,7 @@ const ProductsView = () => {
             <button
               onClick={handleRefresh}
               className="flex items-center gap-2 px-4 py-2 text-gray-600 hover:text-gray-800"
-              disabled={isRefreshing}
+              disabled={isRefreshing || isFilterLoading}
             >
               <RefreshCw className={`h-5 w-5 ${isRefreshing ? 'animate-spin' : ''}`} />
               {t.refresh}
@@ -220,41 +251,70 @@ const ProductsView = () => {
         </div>
       )}
 
-      {!error && (
-        viewType === 'cards' ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            <NewProductCard 
-              onClick={() => {
-                setSelectedProduct(null);
-                setIsModalOpen(true);
-              }} 
-            />
-            {sortProducts(products, measurements).map(product => (
-              <ProductCard
-                key={product.product_id}
-                product={product}
-                scale={scales.find(s => s.scale_id === product.scale_id)}
-                customers={customers}
-                latestMeasurement={measurements[product.scale_id]}
-              />
-            ))}
-          </div>
-        ) : (
-          <>
-            <div className="mb-6">
-              <button
+      {/* Search bar */}
+      <div className="mb-6 relative">
+        <input
+          type="text"
+          placeholder={t.searchCustomers || 'Search products or customers...'}
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          className="w-full pl-10 pr-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
+          disabled={isFilterLoading}
+        />
+        <div className="absolute left-3 top-2.5">
+          {isFilterLoading ? (
+            <Loader2 className="h-5 w-5 animate-spin text-gray-400" />
+          ) : (
+            <Search className="h-5 w-5 text-gray-400" />
+          )}
+        </div>
+      </div>
+
+      <div className="mb-6">
+        <button
+          onClick={() => {
+            setSelectedProduct(null);
+            setIsModalOpen(true);
+          }}
+          className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+        >
+          <Plus size={20} />
+          {t.addProduct}
+        </button>
+      </div>
+
+      {/* If no products and not loading */}
+      {!isLoading && products.length === 0 && !error && !isFilterLoading && (
+        <div className="text-center py-12 bg-gray-50 rounded-lg">
+          <Package className="h-12 w-12 mx-auto text-gray-400 mb-4" />
+          <p className="text-gray-600">No products found.</p>
+          <p className="text-gray-500 text-sm">Try adjusting your search or add a new product.</p>
+        </div>
+      )}
+
+      {!error && products.length > 0 && (
+        <>
+          {viewType === 'cards' ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              <NewProductCard 
                 onClick={() => {
                   setSelectedProduct(null);
                   setIsModalOpen(true);
-                }}
-                className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
-              >
-                <Plus size={20} />
-                {t.addProduct}
-              </button>
+                }} 
+              />
+              {products.map(product => (
+                <ProductCard
+                  key={product.product_id}
+                  product={product}
+                  scale={scales.find(s => s.scale_id === product.scale_id)}
+                  customers={customers}
+                  latestMeasurement={measurements[product.scale_id]}
+                />
+              ))}
             </div>
+          ) : (
             <ProductsTableView
-              products={sortProducts(products, measurements)}
+              products={products}
               scales={scales}
               customers={customers}
               measurements={measurements}
@@ -262,17 +322,18 @@ const ProductsView = () => {
                 setSelectedProduct(product);
                 setIsModalOpen(true);
               }}
-              onMessageClick={handleMessageClick}
+              onMessageClick={(product) => {
+                const customer = customers.find(c => c.customer_id === product.customer_id);
+                if (!customer?.phone) return;
+                const message = encodeURIComponent(
+                  `${t.runningLowMessage} ${product.name}\n${t.productLeft}: ${measurements[product.scale_id]?.weight || 0}kg\n${t.pleaseResupply}`
+                );
+                const phone = customer.phone.replace(/\D/g, '');
+                window.open(`https://wa.me/${phone}?text=${message}`, '_blank');
+              }}
             />
-          </>
-        )
-      )}
-
-      {products.length === 0 && !error && (
-        <div className="text-center py-12 bg-gray-50 rounded-lg">
-          <Package className="h-12 w-12 mx-auto text-gray-400 mb-4" />
-          <p className="text-gray-600">{t.noProducts}</p>
-        </div>
+          )}
+        </>
       )}
 
       <ProductModal
