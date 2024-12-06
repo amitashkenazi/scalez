@@ -35,6 +35,18 @@ class ApiService {
   }
 
   /**
+   * Generate products for an item
+   * @param {string} itemId - The ID of the item to generate products for
+   * @returns {Promise<Object>} A promise that resolves to the generation result
+   */
+  async generateProductsForItem(itemId) {
+    return this.request(`items/${itemId}/generate-products`, {
+      method: 'POST'
+    });
+  }
+  
+
+  /**
    * Handles the authentication required event.
    * Clears tokens, removes user data from local storage, and redirects to the login page.
    */
@@ -77,6 +89,37 @@ class ApiService {
   }
 
   /**
+   * Gets all items
+   * @returns {Promise<Object[]>} A promise that resolves to an array of item objects
+   */
+  async getItems() {
+    return this.request('items', {
+      method: 'GET'
+    });
+  }
+  /**
+   * Gets a specific item by ID
+   * @param {string} itemId - The ID of the item to retrieve
+   * @returns {Promise<Object>} A promise that resolves to the item object
+   */
+  async getItem(itemId) {
+    return this.request(`items/${itemId}`, {
+      method: 'GET'
+    });
+  }
+
+  /**
+   * Generate products for an item
+   * @param {string} itemId - The ID of the item to generate products for
+   * @returns {Promise<Object>} A promise that resolves to the generation result
+   */
+  async generateProducts(itemId) {
+    return this.request(`items/${itemId}/generate-products`, {
+      method: 'POST'
+    });
+  }
+
+  /**
    * Sleeps for a specified duration.
    * @param {number} ms - The duration to sleep in milliseconds.
    * @returns {Promise<void>} A promise that resolves after the specified duration.
@@ -84,7 +127,7 @@ class ApiService {
   sleep(ms) {
     return new Promise(resolve => setTimeout(resolve, ms));
   }
-  
+
   // Get all integrations
   getIntegrations() {
     return this.request('integrations', {

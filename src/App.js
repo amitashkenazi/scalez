@@ -19,6 +19,8 @@ import MyAccountView from './components/MyAccountView';
 import { Menu as MenuIcon } from 'lucide-react';
 import CustomersMapView from './components/maps/CustomersMapView';
 import ScaleMonitor from './components/ScaleMonitor';
+import ItemsView from './components/ItemsView';
+
 
 function AppContent() {
   const { user } = useAuth();
@@ -111,6 +113,7 @@ function AppContent() {
         {activeView === 'products' && <ProductsView />}
         {activeView === 'customersTable' && <CustomersTableView />}
         {activeView === 'productsMng' && <ProductsManagementView />}
+        {activeView === 'items' && <ItemsView />}  {/* Add this line */}
         {activeView === 'sharedProducts' && <SharedProductsView />}
         {activeView === 'myAccount' && <MyAccountView />}
         {activeView === 'orders' && <OrdersView />}

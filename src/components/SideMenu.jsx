@@ -8,6 +8,7 @@ import {
   Share,
   UserCircle,
   MapIcon,
+  Database,
   Plug,
   LayoutDashboard,
   Settings,
@@ -18,6 +19,7 @@ import { translations } from '../translations/translations';
 import AuthModal from './auth/AuthModal';
 import { useAuth } from '../contexts/AuthContext';
 import UserAccountButton from './auth/UserAccountButton';
+
 
 const SideMenu = ({ activeView, onViewChange }) => {
   const { user, isAdmin } = useAuth();
@@ -66,6 +68,12 @@ const SideMenu = ({ activeView, onViewChange }) => {
       label: t.customersTable,
       view: "customersTable",
       description: t.customersTableDesc
+    },
+    {
+      icon: Database,
+      label: "Items",
+      view: "items",
+      description: "Manage system items and generate products"
     },
     {
       icon: Scale,

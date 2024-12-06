@@ -1,4 +1,3 @@
-// src/components/products/ProductsView.jsx
 import React, { useState, useEffect, useCallback } from 'react';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { translations } from '../../translations/translations';
@@ -19,12 +18,13 @@ import ProductCard from './ProductCard';
 import ProductsTableView from './ProductsTableView';
 import debounce from 'lodash/debounce';
 
-const DEBOUNCE_DELAY = 300; // shorter delay since it's client-side filtering
+const DEBOUNCE_DELAY = 300;
+const PAGE_SIZE = 20;
 
 const ProductsView = () => {
-  const [viewType, setViewType] = useState('table'); // 'cards' or 'table'
-  const [allProducts, setAllProducts] = useState([]); // store all products
-  const [products, setProducts] = useState([]); // displayed products
+  const [viewType, setViewType] = useState('table');
+  const [allProducts, setAllProducts] = useState([]);
+  const [products, setProducts] = useState([]);
   const [scales, setScales] = useState([]);
   const [customers, setCustomers] = useState([]);
   const [measurements, setMeasurements] = useState({});
@@ -37,6 +37,11 @@ const ProductsView = () => {
   const [successMessage, setSuccessMessage] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
   const [isFilterLoading, setIsFilterLoading] = useState(false);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
+  const [nextCursor, setNextCursor] = useState(null);
+  const [hasMore, setHasMore] = useState(true);
+  const [isInitialLoad, setIsInitialLoad] = useState(true);
+  
 
   const { language } = useLanguage();
   const t = translations[language];
@@ -73,46 +78,52 @@ const ProductsView = () => {
     }
   };
 
-  const fetchData = async (showLoading = true) => {
-    if (showLoading) {
+  const fetchData = async (showLoading = true, cursor = null) => {
+    if (showLoading && isInitialLoad) {
       setIsLoading(true);
-      setProducts([]);
-      setAllProducts([]);
     }
-
-    setError(null);
 
     try {
-      console.log('Fetching products...');
-      const response = await apiService.getProducts();
-      console.log('Fetch products response:', response);
+      const [productsResponse, ...otherData] = await Promise.all([
+        fetchProducts(cursor),
+        isInitialLoad ? fetchInitialData() : Promise.resolve()
+      ]);
 
-      const fetchedProducts = Array.isArray(response) ? response : [];
-      setAllProducts(fetchedProducts);
-      // initially, products = allProducts (no filter)
-      setProducts(fetchedProducts);
-
-      await fetchMeasurements(fetchedProducts);
-      setError(null);
+      if (cursor) {
+        setProducts(prev => [...prev, ...productsResponse.items]);
+      } else {
+        setProducts(productsResponse.items);
+      }
+      
+      setNextCursor(productsResponse.next_cursor);
+      setHasMore(!!productsResponse.next_cursor);
+      
+      if (isInitialLoad) {
+        setIsInitialLoad(false);
+      }
     } catch (err) {
-      console.error('Error fetching products:', err);
-      setError(t.failedToFetchProducts || 'Failed to fetch products data');
+      setError(t.failedToFetchProducts);
     } finally {
       setIsLoading(false);
-      setIsFilterLoading(false);
-      setIsRefreshing(false);
+      setIsLoadingMore(false);
     }
   };
+  useEffect(() => {
+    if (!searchTerm) {
+      fetchData();
+    } else {
+      debouncedFilterChange(searchTerm);
+    }
+  }, [searchTerm]);
+
 
   const handleRefresh = () => {
     setIsRefreshing(true);
     fetchData(false);
   };
 
-  // Client-side filtering function
   const filterProducts = useCallback((term) => {
     if (!term.trim()) {
-      // no search => show all
       setProducts(allProducts);
       return;
     }
@@ -129,7 +140,6 @@ const ProductsView = () => {
 
   const debouncedFilterChange = useCallback(
     debounce((term) => {
-      console.log('Debounced search:', term);
       setIsFilterLoading(true);
       filterProducts(term);
       setIsFilterLoading(false);
@@ -137,11 +147,28 @@ const ProductsView = () => {
     [filterProducts]
   );
 
+  const loadMore = async () => {
+    if (!hasMore || isLoadingMore) return;
+    setIsLoadingMore(true);
+    await fetchData(false, nextCursor);
+  };
+
+  const handleScroll = useCallback(() => {
+    if (window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - 100) {
+      if (!isLoadingMore && hasMore) {
+        loadMore();
+      }
+    }
+  }, [isLoadingMore, hasMore]);
+
+  useEffect(() => {
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, [handleScroll]);
+
   useEffect(() => {
     debouncedFilterChange(searchTerm);
-    return () => {
-      debouncedFilterChange.cancel();
-    };
+    return () => debouncedFilterChange.cancel();
   }, [searchTerm, debouncedFilterChange]);
 
   useEffect(() => {
@@ -154,7 +181,6 @@ const ProductsView = () => {
         ]);
         setScales(scalesResponse);
         setCustomers(customersResponse);
-
         await fetchData(false);
       } catch (err) {
         console.error('Error fetching initial data:', err);
@@ -166,11 +192,34 @@ const ProductsView = () => {
     fetchInitialData();
   }, []);
 
+  const fetchInitialData = async () => {
+    try {
+      const [scalesResponse, customersResponse] = await Promise.all([
+        apiService.getScales(),
+        apiService.getCustomers()
+      ]);
+      setScales(scalesResponse);
+      setCustomers(customersResponse);
+    } catch (err) {
+      console.error('Error fetching initial data:', err);
+      setError('Failed to load initial data');
+    }
+  };
+
+  const fetchProducts = async (cursor) => {
+    const params = new URLSearchParams();
+    params.append('limit', PAGE_SIZE);
+    if (cursor) {
+      params.append('cursor', cursor);
+    }
+    return apiService.request(`products?${params.toString()}`, { method: 'GET' });
+  };
+
   const handleAddProduct = async (productData) => {
     try {
       const newProduct = await apiService.createProduct(productData);
       setAllProducts(prev => [newProduct, ...prev]);
-      filterProducts(searchTerm); // re-filter after adding new product
+      filterProducts(searchTerm);
       setIsModalOpen(false);
       showSuccessMessage(t.productAdded || 'Product added successfully');
     } catch (err) {
@@ -217,12 +266,12 @@ const ProductsView = () => {
               {viewType === 'cards' ? (
                 <>
                   <TableIcon className="h-5 w-5" />
-                  Table View
+                  {t.tableView}
                 </>
               ) : (
                 <>
                   <LayoutGrid className="h-5 w-5" />
-                  Card View
+                  {t.cardView}
                 </>
               )}
             </button>
@@ -251,11 +300,10 @@ const ProductsView = () => {
         </div>
       )}
 
-      {/* Search bar */}
       <div className="mb-6 relative">
         <input
           type="text"
-          placeholder={t.searchCustomers || 'Search products or customers...'}
+          placeholder={t.searchProducts}
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
           className="w-full pl-10 pr-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
@@ -283,12 +331,11 @@ const ProductsView = () => {
         </button>
       </div>
 
-      {/* If no products and not loading */}
       {!isLoading && products.length === 0 && !error && !isFilterLoading && (
         <div className="text-center py-12 bg-gray-50 rounded-lg">
           <Package className="h-12 w-12 mx-auto text-gray-400 mb-4" />
-          <p className="text-gray-600">No products found.</p>
-          <p className="text-gray-500 text-sm">Try adjusting your search or add a new product.</p>
+          <p className="text-gray-600">{t.noProductsFound}</p>
+          <p className="text-gray-500 text-sm">{t.tryAdjustingSearch}</p>
         </div>
       )}
 
@@ -300,7 +347,8 @@ const ProductsView = () => {
                 onClick={() => {
                   setSelectedProduct(null);
                   setIsModalOpen(true);
-                }} 
+                }}
+                t={t}
               />
               {products.map(product => (
                 <ProductCard
@@ -309,6 +357,7 @@ const ProductsView = () => {
                   scale={scales.find(s => s.scale_id === product.scale_id)}
                   customers={customers}
                   latestMeasurement={measurements[product.scale_id]}
+                  t={t}
                 />
               ))}
             </div>
@@ -331,7 +380,25 @@ const ProductsView = () => {
                 const phone = customer.phone.replace(/\D/g, '');
                 window.open(`https://wa.me/${phone}?text=${message}`, '_blank');
               }}
+              t={t}
             />
+          )}
+
+          {isLoadingMore && (
+            <div className="flex justify-center mt-6">
+              <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
+            </div>
+          )}
+
+          {!isLoadingMore && hasMore && (
+            <div className="flex justify-center mt-6">
+              <button
+                onClick={loadMore}
+                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+              >
+                {t.loadMore}
+              </button>
+            </div>
           )}
         </>
       )}
@@ -345,6 +412,7 @@ const ProductsView = () => {
         onSubmit={handleAddProduct}
         customers={customers}
         initialData={selectedProduct}
+        t={t}
       />
     </div>
   );
