@@ -13,7 +13,7 @@ export const useProductAnalytics = (products) => {
   };
 
   const calculateAnalytics = (orders, productId) => {
-    if (!Array.isArray(orders) || orders.length === 0) return null;
+    if (!Array.isArray(orders) || orders.length <= 3) return null;
 
     try {
       console.log(`[Analytics] Input orders for product ${productId}:`, orders);
@@ -41,9 +41,9 @@ export const useProductAnalytics = (products) => {
       // Calculate time periods
       const daysFromLastOrder = Math.floor((now - lastDate) / (1000 * 60 * 60 * 24));
       const daysBetweenOrders = Math.max(1, Math.floor((lastDate - firstDate) / (1000 * 60 * 60 * 24)));
-      const totalPeriod = daysBetweenOrders + 1; // Include both start and end dates
+      const totalPeriod = daysBetweenOrders + 1;
 
-      // Extract quantities, ensuring proper numeric parsing
+      // Extract quantities
       const quantities = sortedOrders.map(order => {
         const qty = parseFloat(order.quantity || 0);
         return isNaN(qty) ? 0 : qty;
@@ -51,14 +51,6 @@ export const useProductAnalytics = (products) => {
 
       const quantityLastOrder = quantities[quantities.length - 1];
       const totalQuantity = quantities.reduce((sum, qty) => sum + qty, 0);
-
-      console.log(`[Analytics] Quantity calculations:`, {
-        quantities,
-        quantityLastOrder,
-        totalQuantity,
-        daysFromLastOrder,
-        totalPeriod
-      });
 
       // Calculate order intervals
       const orderIntervals = [];
@@ -76,15 +68,13 @@ export const useProductAnalytics = (products) => {
         ? orderIntervals.reduce((sum, interval) => sum + interval, 0) / orderIntervals.length
         : totalPeriod;
 
-      // Calculate daily average based on the pattern of orders
       const dailyAverage = sortedOrders.length > 1
         ? quantities.reduce((sum, qty) => sum + qty, 0) / totalPeriod
         : quantityLastOrder / averageDaysBetweenOrders;
-
-      // Calculate estimated quantity left
-      const estimationQuantityLeft = quantityLastOrder - (dailyAverage * daysFromLastOrder);
-
-      // Calculate consumption percentage per day
+        var estimationQuantityLeft = "No enough dataa";
+        if (orderIntervals.length > 3) {
+            estimationQuantityLeft = quantityLastOrder - (dailyAverage * daysFromLastOrder);
+        }
       const dailyConsumptionPercentage = (dailyAverage / quantityLastOrder) * 100;
 
       const result = {
@@ -97,6 +87,7 @@ export const useProductAnalytics = (products) => {
         totalOrders: sortedOrders.length,
         totalQuantity: totalQuantity.toFixed(2),
         dailyConsumptionPercentage: dailyConsumptionPercentage.toFixed(1),
+        hasEnoughData: true,
         orderHistory: sortedOrders.map(order => ({
           date: order.order_date,
           quantity: parseFloat(order.quantity || 0),
@@ -148,7 +139,7 @@ export const useProductAnalytics = (products) => {
               customer_id,
               item_id
             }));
-            console.log('[Batch] Requesting orders for chunk:', requestItems);
+
             if (requestItems.length === 0) continue;
 
             const response = await apiService.request('orders/customers/item-history', {
@@ -179,7 +170,6 @@ export const useProductAnalytics = (products) => {
           }
         }
 
-        console.log('[Batch] Setting final analytics data:', analyticsData);
         setAnalytics(analyticsData);
       } catch (error) {
         console.error('[Batch] Error in fetchBatchAnalytics:', error);

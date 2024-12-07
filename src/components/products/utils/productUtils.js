@@ -61,12 +61,15 @@ export const getStatusColor = (measurement, thresholds) => {
     const quantityLastOrder = quantities[quantities.length - 1];
     const totalQuantity = quantities.reduce((sum, qty) => sum + qty, 0);
     const dailyAverage = totalQuantity / totalPeriod;
-    
+    var estimationQuantityLeft = "Not enough data";
+    if (orders.length > 3) {
+        estimationQuantityLeft = (quantityLastOrder - (dailyAverage * daysFromLastOrder)).toFixed(2);
+    }
     return {
       dailyAverage: dailyAverage.toFixed(2),
       quantityLastOrder,
       daysFromLastOrder: daysFromLastOrder.toString(),
-      estimationQuantityLeft: (quantityLastOrder - (dailyAverage * daysFromLastOrder)).toFixed(2),
+      estimationQuantityLeft: estimationQuantityLeft,
       averageDaysBetweenOrders: (totalPeriod / (sortedOrders.length - 1)).toFixed(2),
       lastOrderDate: sortedOrders[sortedOrders.length - 1].order_date,
       totalOrders: sortedOrders.length,

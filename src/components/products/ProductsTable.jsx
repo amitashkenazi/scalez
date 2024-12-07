@@ -15,7 +15,8 @@ import {
   Calendar,
   Loader2
 } from 'lucide-react';
-import ProductAnalytics from './ProductAnalytics';
+import { ProductAnalytics } from './ProductAnalytics';
+
 import OrderHistory from './OrderHistory';
 import { getStatusColor, getAnalyticsWarningLevel, calculateAnalytics } from './utils/productUtils';
 import useSortableData from './hooks/useSortableData';
@@ -236,7 +237,7 @@ const ProductsTable = ({
                       <ShoppingBag className="h-4 w-4" />
                       {analyticsData ? (
                         <span>
-                          {analyticsData.estimationQuantityLeft} {t('units')}
+                          {analyticsData.estimationQuantityLeft} 
                         </span>
                       ) : (
                         <span className="text-gray-400">{t('noData')}</span>

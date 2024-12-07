@@ -1054,6 +1054,9 @@ export const translations = {
   orderID: {
     en: "Invoice ID",
     he: "מספר חשבונית"
+  },
+  perDay: {
+    en: "per day",
+    he: "ליום"
   }
-
-};
+}
