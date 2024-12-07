@@ -1,22 +1,22 @@
 import { useState, useCallback, useMemo } from 'react';
 import debounce from 'lodash/debounce';
 
-export const useProductSearch = (products) => {
+export const useProductSearch = (products, customers) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [isSearching, setIsSearching] = useState(false);
 
-  const debouncedSearch = useMemo(
-    () => debounce((term) => {
+  const debouncedSetSearching = useMemo(
+    () => debounce(() => {
       setIsSearching(false);
     }, 300),
     []
   );
 
   const handleSearchChange = useCallback((term) => {
-    setSearchTerm(term);
     setIsSearching(true);
-    debouncedSearch(term);
-  }, [debouncedSearch]);
+    setSearchTerm(term);
+    debouncedSetSearching();
+  }, [debouncedSetSearching]);
 
   const filteredProducts = useMemo(() => {
     if (!searchTerm.trim()) {
@@ -24,11 +24,18 @@ export const useProductSearch = (products) => {
     }
 
     const normalizedSearch = searchTerm.toLowerCase();
-    return products.filter(product => 
-      product.name?.toLowerCase().includes(normalizedSearch) ||
-      product.itemCode?.toLowerCase().includes(normalizedSearch)
-    );
-  }, [products, searchTerm]);
+    return products.filter(product => {
+      // Find the customer for this product
+      const customer = customers.find(c => c.customer_id === product.customer_id);
+      const customerName = customer?.name?.toLowerCase() || '';
+      
+      return (
+        product.name?.toLowerCase().includes(normalizedSearch) ||
+        product.itemCode?.toLowerCase().includes(normalizedSearch) ||
+        customerName.includes(normalizedSearch)
+      );
+    });
+  }, [products, customers, searchTerm]);
 
   return {
     searchTerm,

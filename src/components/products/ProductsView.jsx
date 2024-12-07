@@ -41,7 +41,7 @@ const ProductsView = () => {
     isSearching,
     handleSearchChange,
     filteredProducts
-  } = useProductSearch(products);
+  } = useProductSearch(products, customers);
 
   const handleAddProduct = async (productData) => {
     try {
@@ -147,8 +147,8 @@ const ProductsView = () => {
           placeholder={t.searchProducts}
           value={searchTerm}
           onChange={(e) => handleSearchChange(e.target.value)}
-          className="w-full pl-10 pr-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
-          disabled={isSearching}
+          className="w-full pl-10 pr-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+          autoComplete="off"
         />
         <div className="absolute left-3 top-2.5">
           {isSearching ? (
@@ -158,7 +158,6 @@ const ProductsView = () => {
           )}
         </div>
       </div>
-
       {/* Add Product Button */}
       <div className="mb-6">
         <button
