@@ -1058,5 +1058,13 @@ export const translations = {
   perDay: {
     en: "per day",
     he: "ליום"
+  },
+  noScale: {
+    en: "No scale selected",
+    he: "לא נבחר משקל"
+  },
+  addNewScale: {
+    en: "Add New Scale",
+    he: "הוסף משקל חדש"
   }
 }
