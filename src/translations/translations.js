@@ -17,19 +17,19 @@ export const translations = {
   },
   date: {
     en: "Date",
-    he: "#missing value#"
+    he: "תאריך"
   },
   replace: {
     en: "Replace",
-    he: "#missing value#"
+    he: "החלף"
   },
   orderHistory: {
     en: "Order History",
-    he: "#missing value#"
+    he: "היסטוריית הזמנות"
   },
   estimationQuantityLeft: {
     en: "Estimation Quantity Left",
-    he: "#missing value#"
+    he: "כמות משוער שנותרה"
   },
   dashboard: {
     en: "Dashboard",
@@ -461,7 +461,7 @@ export const translations = {
   },
   unknownCustomer: {
     en: "Unknown Customer",
-    he: "#missing value#"
+    he: "לקוח לא ידוע"
   },
   saving: {
     en: "Saving...",
@@ -557,39 +557,39 @@ export const translations = {
   },
   unitsPerDay: {
     en: "Units/Day",
-    he: "#missing value#"
+    he: "יחידות/יום"
   },
   selectItem: {
     en: "Select Item",
-    he: "#missing value#"
+    he: "בחר פריט"
   },
   scaleSelection: {
     en: "Scale Selection",
-    he: "#missing value#"
+    he: "בחר משקל"
   },
   ConsumptionAnalytics: {
     en: "Consumption Analytics",
-    he: "#missing value#"
+    he: "אנליטיקות צריכה"
   },
   lastOrderQuantity: {
     en: "Last Order Quantity",
-    he: "#missing value#"
+    he: "כמות הזמנה אחרונה"
   },
   dailyConsumptionRate: {
     en: "Daily Consumption Rate",
-    he: "#missing value#"
+    he: "שיעור צריכה יומי"
   },
   units: {
     en: "Units",
-    he: "#missing value#"
+    he: "יחידות"
   },
   noStatsAvailable: {
     en: "No stats available",
-    he: "#missing value#"
+    he: "אין נתונים זמינים"
   },
   estimationQuntityLeft: {
     en: "Estimation Quantity Left",
-    he: "#missing value#"
+    he: "כמות משוער שנותרה"
   },
   addProduct: {
     en: "Add Product",
@@ -597,39 +597,39 @@ export const translations = {
   },
   quantity: {
     en: "Quantity",
-    he: "#missing value#"
+    he: "כמות"
   },
   unit: {
     en: "Unit",
-    he: "#missing value#"
+    he: "יחידה"
   },
   total: {
     en: "Total",
-    he: "#missing value#"
+    he: "סך הכל"
   },
   lastOrder: {
     en: "Last Order",
-    he: "#missing value#"
+    he: "הזמנה אחרונה"
   },
   days: {
     en: "Days",
-    he: "#missing value#"
+    he: "ימים"
   },
   averageDaysBetweenOrders: {
     en: "Average Days Between Orders",
-    he: "#missing value#"
+    he: "ממוצע ימים בין הזמנות"
   },
   daysFromLastOrder: {
     en: "Days from Last Order",
-    he: "#missing value#"
+    he: "ימים מההזמנה האחרונה"
   },
   averageConsumption: {
     en: "Average Consumption",
-    he: "#missing value#"
+    he: "צריכה ממוצעת"
   },
   ils: {
     en: "ִ₪",
-    he: "#missing value#"
+    he: "₪"
   },
   selectCustomer: {
     en: "Select Customer",
@@ -669,7 +669,7 @@ export const translations = {
   },
   price: {
     en: "Price",
-    he: "#missing value#"
+    he: "מחיר"
   },
   phone: {
     en: "Phone",
@@ -990,5 +990,54 @@ export const translations = {
   backToHome: {
     en: "← Back to home",
     he: "← חזרה לדף הבית"
+  },
+  connect: {
+    en: "Connect",
+    he: "התחבר"
+  },
+  disconnect: {
+    en: "Disconnect",
+    he: "התנתק"
+  },
+  connecting: {
+    en: "Connecting...",
+    he: "מתחבר..."
+  } ,
+  connectedInstance: {
+    en: "Connected to:",
+    he: "מחובר ל:"
+  },
+  connected: {
+    en: "Connected",
+    he: "מחובר"
+  },
+  totalOrders: {
+    en: "Total Orders",
+    he: "סך כל ההזמנות"
+  },
+  totalQuantity: {
+    en: "Total Quantity",
+    he: "סך כל הכמויות"
+  },
+  totalAmount: {
+    en: "Total Amount",
+    he: "סך כל הסכומים"
+  },
+  integrations: {
+    en: "Integrations",
+    he: "אינטגרציות"
+  },
+  myaccount: {
+    en: "My Account",
+    he: "החשבון שלי"
+  },
+  searchProducts: {
+    en: "Search product...",
+    he: "חיפוש מוצר..."
+  },
+  cardView: {
+    en: "Card View",
+    he: "תצוגת כרטיסים"
   }
+
 };

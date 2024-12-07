@@ -48,12 +48,7 @@ const SideMenu = ({ activeView, onViewChange }) => {
     //   view: "customersMap",
     //   description: "View customers and products on a map"
     // },
-    {
-      icon: FileText,
-      label: t('orders'),
-      view: "orders",
-      description: "Track and manage product orders"
-    },
+    
     {
       icon: Share,
       label: t('sharedProducts'),
@@ -72,7 +67,7 @@ const SideMenu = ({ activeView, onViewChange }) => {
     },
     {
       icon: Database,
-      label: "Items",
+      label: t("items"),
       view: "items",
       description: "Manage system items and generate products"
     },
@@ -83,14 +78,20 @@ const SideMenu = ({ activeView, onViewChange }) => {
       description: 'Manage and monitor all scales in the system'
     },
     {
+      icon: FileText,
+      label: t('orders'),
+      view: "orders",
+      description: "Track and manage product orders"
+    },
+    {
       icon: Plug,
-      label: "Integrations",
+      label: t("integrations"),
       view: "integrations",
       description: "Connect external services and tools"
     },
     {
       icon: UserCircle,
-      label: "My Account",
+      label: t("myaccount"),
       view: "myAccount",
       description: "Manage your account settings"
     },

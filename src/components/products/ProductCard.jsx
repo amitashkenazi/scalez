@@ -146,7 +146,7 @@ const ProductCard = ({ product, scale, customers, latestMeasurement }) => {
     const getWhatsAppLink = () => {
       if (!customerInfo?.phone) return null;
       const message = encodeURIComponent(
-        `${t('runningLowMessage')} ${product.name}\n${t('productLeft')}: ${measurement?.weight || 0}kg\n${t('doYouWantToOrder')}`
+        `${t('runningLowMessage')} ${product.name}\n${t('productLeft')}: ${latestMeasurement?.weight || 0}kg\n${t('doYouWantToOrder')}`
       );
       const cleanPhone = customerInfo.phone.replace(/\D/g, '');
       const formattedPhone = cleanPhone.startsWith('972') ? cleanPhone :

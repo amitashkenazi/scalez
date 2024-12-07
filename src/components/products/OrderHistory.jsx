@@ -73,7 +73,7 @@ const OrderHistory = ({ orders }) => {
                   ₪{order.total}
                 </td>
                 <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-500">
-                  {order.order_external_id}
+                  {order.item_external_id}
                 </td>
               </tr>
             ))}

@@ -387,7 +387,7 @@ const OrdersView = () => {
                       {formatCurrency(order.total_amount)}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {formatDate(order.order_date)}
+                      {order.order_date}
                     </td>
                     <td className="px-6 py-4 text-sm text-gray-500 max-w-xs truncate">
                       {order.notes || ''}
