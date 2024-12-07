@@ -172,12 +172,16 @@ export const translations = {
     he: "אין התראות להצגה"
   },
   runningLowMessage: {
-    en: "I am running out of",
-    he: "עומד להיגמר לי ה - "
+    en: "I see that your are running out of",
+    he: "אני רואה שנגמר לך - "
   },
   productLeft: {
     en: "I have only ",
     he: "נשאר לי רק "
+  },
+  doYouWantToOrder: {
+    en: "Do you want to order more?",
+    he: "האם אתה רוצה להזמין יותר?"
   },
   pleaseResupply: {
     en: "Please send me coffee!",
@@ -396,16 +400,8 @@ export const translations = {
     he: "מוכנים לשנות את ניהול המלאי שלכם?"
   },
   items: {
-    en: [
-      "Add New Scale",
-      "Generate Report",
-      "View Notifications"
-    ],
-    he: [
-      "הוסף משקל חדש",
-      "הפק דוח",
-      "צפה בהתראות"
-    ]
+    en: "Items",
+    he: "פריטים"
   },
   description: {
     en: "Round-the-clock customer support to help you succeed",

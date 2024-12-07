@@ -266,7 +266,7 @@ const ProductsTable = ({
                       <button
                         onClick={() => {
                           const message = encodeURIComponent(
-                            `${t('runningLowMessage')} ${product.name}\n${t('productLeft')}: ${measurement?.weight || 0}kg\n${t('pleaseResupply')}`
+                            `${t('runningLowMessage')} ${product.name}\n${t('productLeft')}: ${measurement?.weight || 0}kg\n${t('doYouWantToOrder')}`
                           );
                           onMessage(customer, message);
                         }}

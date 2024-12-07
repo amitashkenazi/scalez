@@ -90,7 +90,7 @@ const ScaleCard = ({ scale, onCardClick }) => {
   // Generate WhatsApp message
   const getWhatsAppLink = () => {
     const message = encodeURIComponent(
-      `${t('runningLowMessage')} ${safeScale.productName}\n${t('productLeft')}: ${currentWeight}${safeScale.unit}. \n${t('pleaseResupply')}`
+      `${t('runningLowMessage')} ${product.name}\n${t('productLeft')}: ${measurement?.weight || 0}kg\n${t('doYouWantToOrder')}`
     );
     const number = safeScale.notifications?.lower?.phoneNumber || ''; // Fallback number if not set
     return `https://wa.me/${number.replace('+', '')}?text=${message}`;
