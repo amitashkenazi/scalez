@@ -1038,6 +1038,22 @@ export const translations = {
   cardView: {
     en: "Card View",
     he: "תצוגת כרטיסים"
+  },
+  noProductsFound: {
+    en: "No products found",
+    he: "לא נמצאו מוצרים"
+  },
+  tryAdjustingSearch: {
+    en: "Try adjusting your search",
+    he: "נסה לשנות את החיפוש"
+  },
+  noMoreProducts: {
+    en: "No more products",
+    he: "אין עוד מוצרים"
+  },
+  orderID: {
+    en: "Invoice ID",
+    he: "מספר חשבונית"
   }
 
 };

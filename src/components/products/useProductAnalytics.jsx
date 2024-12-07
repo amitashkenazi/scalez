@@ -148,6 +148,8 @@ export const useProductAnalytics = (products) => {
               customer_id,
               item_id
             }));
+            console.log('[Batch] Requesting orders for chunk:', requestItems);
+            if (requestItems.length === 0) continue;
 
             const response = await apiService.request('orders/customers/item-history', {
               method: 'POST',

@@ -1,6 +1,4 @@
 import React, { useState } from 'react';
-import { useLanguage } from '../../contexts/LanguageContext';
-import { translations } from '../../translations/translations';
 import {
   Package,
   AlertCircle,
@@ -12,17 +10,26 @@ import {
   Loader2
 } from 'lucide-react';
 
-import { useProductsData } from './hooks/useProductsData';
+import { useLanguage } from '../../contexts/LanguageContext';
+import { translations } from '../../translations/translations';
 import { useProductSearch } from './hooks/useProductSearch';
 import ProductsTable from './ProductsTable';
 import ProductModal from '../ProductModal';
 import ProductsSelectionManager from './ProductsSelectionManager';
 import DeleteConfirmationModal from '../modals/DeleteConfirmationModal';
 import apiService from '../../services/api';
+import { useProductsData } from './hooks/useProductsData';
 
-const ProductsView = () => {
+const ProductsView = ({
+  useDataHook = useProductsData,
+  canCreate = true,
+  canEdit = true,
+  canDelete = true,
+  viewTitle = 'productsDashboard',
+  viewDescription = 'productStatus',
+  emptyStateMessage = 'noProductsFound',
+}) => {
   const { language } = useLanguage();
-  // Helper function to get translation
   const t = (key) => {
     if (translations[key] && translations[key][language]) {
       return translations[key][language];
@@ -30,6 +37,7 @@ const ProductsView = () => {
     return `Missing translation: ${key}`;
   };
   const isRTL = language === 'he';
+  
   const [viewType, setViewType] = useState('table');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
@@ -39,12 +47,20 @@ const ProductsView = () => {
   const [error, setError] = useState(null);
 
   const {
-    data: { products, scales, customers, measurements, analytics },
+    data,
     isLoading,
     loadMore,
     hasMore,
     refreshData
-  } = useProductsData();
+  } = useDataHook();
+
+  const {
+    products = [],
+    scales = [],
+    customers = [],
+    measurements = {},
+    analytics = {}
+  } = data || {};
 
   const {
     searchTerm,
@@ -54,6 +70,7 @@ const ProductsView = () => {
   } = useProductSearch(products, customers);
 
   const handleAddProduct = async (productData) => {
+    if (!canCreate) return;
     try {
       await apiService.createProduct(productData);
       refreshData();
@@ -67,6 +84,7 @@ const ProductsView = () => {
   };
 
   const handleEdit = (product) => {
+    if (!canEdit) return;
     setSelectedProduct(product);
     setIsModalOpen(true);
   };
@@ -77,6 +95,7 @@ const ProductsView = () => {
   };
 
   const handleSelect = (productId, isSelected) => {
+    if (!canDelete) return;
     setSelectedProducts(prev =>
       isSelected
         ? [...prev, productId]
@@ -85,14 +104,12 @@ const ProductsView = () => {
   };
 
   const handleSelectAll = (isSelected) => {
+    if (!canDelete) return;
     setSelectedProducts(isSelected ? filteredProducts.map(p => p.product_id) : []);
   };
 
-  const handleClearSelection = () => {
-    setSelectedProducts([]);
-  };
-
   const handleDeleteConfirm = async () => {
+    if (!canDelete) return;
     try {
       await Promise.all(selectedProducts.map(productId =>
         apiService.deleteProduct(productId)
@@ -115,7 +132,7 @@ const ProductsView = () => {
     });
   };
 
-  if (isLoading && products.length === 0) {
+  if (isLoading && (!products || products.length === 0)) {
     return (
       <div className="flex justify-center items-center h-64">
         <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
@@ -131,14 +148,11 @@ const ProductsView = () => {
           <div>
             <h2 className="text-2xl font-bold flex items-center gap-2">
               <Package className="h-6 w-6" />
-              {t('productsDashboard')}
+              {t(viewTitle)}
             </h2>
-            <p className="text-gray-600 mt-1">{t('productStatus')}</p>
+            <p className="text-gray-600 mt-1">{t(viewDescription)}</p>
           </div>
           <div className="flex items-center gap-4">
-            <span className="text-sm text-gray-500">
-              {t('lastUpdated')}: {formatTime(new Date())}
-            </span>
             <button
               onClick={() => setViewType(viewType === 'table' ? 'cards' : 'table')}
               className="flex items-center gap-2 px-4 py-2 text-gray-600 hover:text-gray-800 border rounded-lg"
@@ -167,14 +181,13 @@ const ProductsView = () => {
         </div>
       </div>
 
-      {/* Success Message */}
+      {/* Messages */}
       {successMessage && (
         <div className="mb-6 bg-green-50 border border-green-400 rounded-lg p-4">
           <p className="text-green-700">{successMessage}</p>
         </div>
       )}
 
-      {/* Error Message */}
       {error && (
         <div className="mb-6 bg-red-50 border border-red-400 rounded-lg p-4 flex items-center">
           <AlertCircle className="h-5 w-5 text-red-600 mr-2" />
@@ -182,7 +195,7 @@ const ProductsView = () => {
         </div>
       )}
 
-      {/* Search Bar */}
+      {/* Search */}
       <div className="mb-6 relative">
         <input
           type="text"
@@ -202,30 +215,32 @@ const ProductsView = () => {
       </div>
 
       {/* Add Product Button */}
-      <div className="mb-6">
-        <button
-          onClick={() => {
-            setSelectedProduct(null);
-            setIsModalOpen(true);
-          }}
-          className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
-        >
-          <Plus className="h-5 w-5" />
-          {t('addProduct')}
-        </button>
-      </div>
+      {canCreate && (
+        <div className="mb-6">
+          <button
+            onClick={() => {
+              setSelectedProduct(null);
+              setIsModalOpen(true);
+            }}
+            className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+          >
+            <Plus className="h-5 w-5" />
+            {t('addProduct')}
+          </button>
+        </div>
+      )}
 
       {/* Empty State */}
       {!isLoading && filteredProducts.length === 0 && !error && !isSearching && (
         <div className="text-center py-12 bg-gray-50 rounded-lg">
           <Package className="h-12 w-12 mx-auto text-gray-400 mb-4" />
-          <p className="text-gray-600">{t('noProductsFound')}</p>
+          <p className="text-gray-600">{t(emptyStateMessage)}</p>
           <p className="text-gray-500 text-sm">{t('tryAdjustingSearch')}</p>
         </div>
       )}
 
-      {/* Products Display */}
-      {!error && filteredProducts.length > 0 && (
+      {/* Products Table */}
+      {!error && filteredProducts.length > 0 && viewType === 'table' && (
         <ProductsTable
           products={filteredProducts}
           customers={customers}
@@ -235,52 +250,57 @@ const ProductsView = () => {
           isLoading={isLoading}
           hasMore={hasMore}
           loadMore={loadMore}
-          onEdit={handleEdit}
+          onEdit={canEdit ? handleEdit : undefined}
           onMessage={handleMessage}
-          selectedProducts={selectedProducts}
-          onSelect={handleSelect}
-          onSelectAll={handleSelectAll}
+          selectedProducts={canDelete ? selectedProducts : []}
+          onSelect={canDelete ? handleSelect : undefined}
+          onSelectAll={canDelete ? handleSelectAll : undefined}
         />
       )}
 
       {/* Selection Manager */}
-      <ProductsSelectionManager
-        selectedProducts={selectedProducts}
-        onSelect={handleSelect}
-        onSelectAll={handleSelectAll}
-        onClearSelection={handleClearSelection}
-        onDelete={() => setIsDeleteModalOpen(true)}
-        totalProducts={filteredProducts.length}
-        isRTL={isRTL}
-      />
+      {canDelete && (
+        <ProductsSelectionManager
+          selectedProducts={selectedProducts}
+          onSelect={handleSelect}
+          onSelectAll={handleSelectAll}
+          onClearSelection={() => setSelectedProducts([])}
+          onDelete={() => setIsDeleteModalOpen(true)}
+          totalProducts={filteredProducts.length}
+          isRTL={isRTL}
+        />
+      )}
 
       {/* Modals */}
-      <ProductModal
-        isOpen={isModalOpen}
-        onClose={() => {
-          setIsModalOpen(false);
-          setSelectedProduct(null);
-        }}
-        onSubmit={handleAddProduct}
-        customers={customers}
-        initialData={selectedProduct}
-        t={t}
-      />
+      {canCreate && (
+        <ProductModal
+          isOpen={isModalOpen}
+          onClose={() => {
+            setIsModalOpen(false);
+            setSelectedProduct(null);
+          }}
+          onSubmit={handleAddProduct}
+          customers={customers}
+          initialData={selectedProduct}
+          t={t}
+        />
+      )}
 
-      <DeleteConfirmationModal
-        isOpen={isDeleteModalOpen}
-        onClose={() => setIsDeleteModalOpen(false)}
-        onConfirm={handleDeleteConfirm}
-        title={t('deleteProducts') || "Delete Products"}
-        message={selectedProducts.length === 1 
-          ? t('deleteProductConfirmation') || "Are you sure you want to delete this product?"
-          : t('deleteMultipleProductsConfirmation') || `Are you sure you want to delete ${selectedProducts.length} products?`
-        }
-        selectedCount={selectedProducts.length}
-        productNames={selectedProducts.map(id => 
-          products.find(p => p.product_id === id)?.name
-        ).filter(Boolean)}
-      />
+      {canDelete && (
+        <DeleteConfirmationModal
+          isOpen={isDeleteModalOpen}
+          onClose={() => setIsDeleteModalOpen(false)}
+          onConfirm={handleDeleteConfirm}
+          title={t('deleteProducts')}
+          message={selectedProducts.length === 1 
+            ? t('deleteProductConfirmation')
+            : t('deleteMultipleProductsConfirmation')}
+          selectedCount={selectedProducts.length}
+          productNames={selectedProducts.map(id => 
+            products.find(p => p.product_id === id)?.name
+          ).filter(Boolean)}
+        />
+      )}
     </div>
   );
 };

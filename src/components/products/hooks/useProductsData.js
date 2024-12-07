@@ -52,12 +52,17 @@ export const useProductsData = () => {
           item_id: product.item_id.split('_').pop(),
           product_id: product.product_id
         }));
-
-        const analyticsResponse = await apiService.request('orders/customers/item-history', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ items: analyticsItems })
-        });
+        var analyticsResponse;
+        console.log('analyticsItems', analyticsItems);
+        if (analyticsItems.length > 0) {
+            analyticsResponse = await apiService.request('orders/customers/item-history', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ items: analyticsItems })
+            });
+        } else {
+            analyticsResponse = { results: {} };
+        }
 
         setData(prev => ({
           products: productsResponse.items,
@@ -73,12 +78,17 @@ export const useProductsData = () => {
           item_id: product.item_id.split('_').pop(),
           product_id: product.product_id
         }));
-
-        const analyticsResponse = await apiService.request('orders/customers/item-history', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ items: analyticsItems })
-        });
+        console.log('analyticsItems', analyticsItems);
+        var analyticsResponse;
+        if (analyticsItems.length > 0) {
+            analyticsResponse = await apiService.request('orders/customers/item-history', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ items: analyticsItems })
+            });
+        } else {
+            analyticsResponse = { results: {} };
+        }
 
         setData(prev => ({
           ...prev,

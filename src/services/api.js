@@ -40,11 +40,11 @@ class ApiService {
    * @returns {Promise<Object>} A promise that resolves to the generation result
    */
   async generateProductsForItem(itemId) {
-    return this.request(`items/${itemId}/generate-products`, {
+    return this.request(`items/generate-products/${itemId}`, {
       method: 'POST'
     });
   }
-  
+
 
   /**
    * Handles the authentication required event.
@@ -114,7 +114,7 @@ class ApiService {
    * @returns {Promise<Object>} A promise that resolves to the generation result
    */
   async generateProducts(itemId) {
-    return this.request(`items/${itemId}/generate-products`, {
+    return this.request(`items/generate-products/${itemId}`, {
       method: 'POST'
     });
   }
