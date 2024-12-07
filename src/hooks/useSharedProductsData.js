@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import { useProductsData } from '../components/products/hooks/useProductsData';
 import apiService from '../services/api';
 
@@ -12,56 +12,65 @@ export const useSharedProductsData = () => {
   });
   const [sharedCustomers, setSharedCustomers] = useState([]);
   const productsData = useProductsData();
+  const customersRef = useRef(null);
 
-  const fetchSharedProducts = useCallback(async () => {
-    try {
-      // Get customers where the current user is listed
-      const customers = await apiService.request('customers/users/me', {
-        method: 'GET'
-      });
-      setSharedCustomers(customers);
-
-      if (productsData.data?.products) {
-        // Filter the products to only include those from shared customers
-        const sharedProducts = productsData.data.products.filter(product =>
-          customers.some(customer => customer.customer_id === product.customer_id)
-        );
-
-        const newData = {
-          ...productsData.data,
-          products: sharedProducts,
-          customers: customers, // Only include shared customers
-          scales: productsData.data.scales || [],
-          measurements: productsData.data.measurements || {},
-          analytics: productsData.data.analytics || {},
-        };
-        
-        setData(newData);
-        return newData;
+  // Fetch shared customers once
+  useEffect(() => {
+    const fetchSharedCustomers = async () => {
+      try {
+        const customers = await apiService.request('customers/users/me', {
+          method: 'GET'
+        });
+        customersRef.current = customers;
+        setSharedCustomers(customers);
+      } catch (err) {
+        console.error('Error fetching shared customers:', err);
       }
-      
-      return data;
-    } catch (err) {
-      console.error('Error fetching shared products:', err);
-      return data;
+    };
+
+    if (!customersRef.current) {
+      fetchSharedCustomers();
     }
-  }, [productsData.data, data]);
+  }, []);
+
+  // Update data when either products or customers change
+  useEffect(() => {
+    if (productsData.data?.products && sharedCustomers.length > 0) {
+      const customerIds = sharedCustomers.map(customer => 
+        customer.customer_id.includes('_') 
+          ? customer.customer_id 
+          : `customer_${customer.customer_id}`
+      );
+
+      const sharedProducts = productsData.data.products.filter(product => {
+        const productCustomerId = product.customer_id.includes('_') 
+          ? product.customer_id 
+          : `customer_${product.customer_id}`;
+        return customerIds.includes(productCustomerId);
+      });
+
+      setData({
+        ...productsData.data,
+        products: sharedProducts,
+        customers: sharedCustomers,
+      });
+    }
+  }, [productsData.data, sharedCustomers]);
 
   const refreshSharedData = useCallback(async () => {
+    customersRef.current = null; // Reset customers to force a refresh
+    const customers = await apiService.request('customers/users/me', {
+      method: 'GET'
+    });
+    setSharedCustomers(customers);
     await productsData.refreshData();
-    return fetchSharedProducts();
-  }, [productsData.refreshData, fetchSharedProducts]);
+  }, [productsData.refreshData]);
 
   const loadMore = useCallback(async () => {
-    if (!productsData.hasMore) return;
-    await productsData.loadMore();
-    return fetchSharedProducts();
-  }, [productsData.loadMore, productsData.hasMore, fetchSharedProducts]);
-
-  // Fetch data when productsData changes
-  useEffect(() => {
-    fetchSharedProducts();
-  }, [fetchSharedProducts]);
+    if (productsData.hasMore) {
+      await productsData.loadMore();
+    }
+  }, [productsData.loadMore, productsData.hasMore]);
 
   return {
     data,
