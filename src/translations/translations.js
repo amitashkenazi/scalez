@@ -1,6 +1,9 @@
 export const translations = {
   en: {
     // General
+    date: "Date",
+    orderHistory: "Order History",
+    estimationQuantityLeft: "Estimation Quantity Left",
     dashboard: "Dashboard",
     customers: "Customers",
     customersDashboard: "Customers Dashboard",

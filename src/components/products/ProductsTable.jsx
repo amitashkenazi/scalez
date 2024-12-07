@@ -63,6 +63,32 @@ const SortHeader = ({ label, sortKey, currentSort, onSort, isRTL }) => {
   );
 };
 
+const ExpandableRow = ({ children, isExpanded }) => {
+  const contentRef = useRef(null);
+  
+  return (
+    <tr>
+      <td colSpan="6">
+        <div
+          ref={contentRef}
+          style={{
+            maxHeight: isExpanded ? `${contentRef.current?.scrollHeight || 1000}px` : '0',
+            transition: 'all 0.3s ease-in-out',
+            overflow: 'hidden'
+          }}
+          className={`bg-gray-50 transition-opacity duration-300 ${
+            isExpanded ? 'opacity-100' : 'opacity-0'
+          }`}
+        >
+          <div className="px-6 py-4">
+            {children}
+          </div>
+        </div>
+      </td>
+    </tr>
+  );
+};
+
 const ProductsTable = ({
   products,
   customers,
@@ -148,7 +174,9 @@ const ProductsTable = ({
               <React.Fragment key={product.product_id}>
                 <tr 
                   ref={isLastElement ? lastElementRef : null}
-                  className="hover:bg-gray-50"
+                  className={`hover:bg-gray-50 transition-colors duration-200 ${
+                    isExpanded ? 'bg-gray-50' : ''
+                  }`}
                 >
                   <td className="px-6 py-4">
                     <div className="flex items-center">
@@ -206,7 +234,7 @@ const ProductsTable = ({
                     <div className="flex items-center space-x-3">
                       <button
                         onClick={() => onEdit(product)}
-                        className="text-blue-600 hover:text-blue-900"
+                        className="text-blue-600 hover:text-blue-900 transition-colors duration-200"
                       >
                         <Pencil className="h-5 w-5" />
                       </button>
@@ -217,34 +245,32 @@ const ProductsTable = ({
                           );
                           onMessage(customer, message);
                         }}
-                        className="text-green-600 hover:text-green-900"
+                        className="text-green-600 hover:text-green-900 transition-colors duration-200"
                       >
                         <MessageSquare className="h-5 w-5" />
                       </button>
                       {productAnalytics && (
                         <button
                           onClick={() => setExpandedRow(isExpanded ? null : product.product_id)}
-                          className="text-gray-600 hover:text-gray-900"
+                          className="text-gray-600 hover:text-gray-900 transition-colors duration-200"
                         >
                           {isExpanded ? (
-                            <ChevronUp className="h-5 w-5" />
+                            <ChevronUp className="h-5 w-5 transform transition-transform duration-200" />
                           ) : (
-                            <ChevronDown className="h-5 w-5" />
+                            <ChevronDown className="h-5 w-5 transform transition-transform duration-200" />
                           )}
                         </button>
                       )}
                     </div>
                   </td>
                 </tr>
-                {isExpanded && productAnalytics && (
-                  <tr>
-                    <td colSpan="6" className="px-6 py-4 bg-gray-50">
-                      <div className="space-y-4">
-                        <ProductAnalytics analytics={productAnalytics} />
-                        <OrderHistory orders={productAnalytics} language={language} />
-                      </div>
-                    </td>
-                  </tr>
+                {productAnalytics && (
+                  <ExpandableRow isExpanded={isExpanded}>
+                    <div className="space-y-4">
+                      <ProductAnalytics analytics={productAnalytics} />
+                      <OrderHistory orders={productAnalytics} language={language} />
+                    </div>
+                  </ExpandableRow>
                 )}
               </React.Fragment>
             );
