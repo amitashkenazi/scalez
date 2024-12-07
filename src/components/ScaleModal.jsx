@@ -127,7 +127,13 @@ const ScaleModal = ({ isOpen, onClose, onSubmit }) => {
 // Scales Table Component
 const ScalesTable = ({ scales, onDelete }) => {
   const { language } = useLanguage();
-  const t = translations[language];
+  // Helper function to get translation
+  const t = (key) => {
+    if (translations[key] && translations[key][language]) {
+      return translations[key][language];
+    }
+    return `Missing translation: ${key}`;
+  };
 
   return (
     <table className="min-w-full divide-y divide-gray-200">

@@ -1,727 +1,998 @@
 export const translations = {
-  en: {
-    // General
-    date: "Date",
-    orderHistory: "Order History",
-    estimationQuantityLeft: "Estimation Quantity Left",
-    dashboard: "Dashboard",
-    customers: "Customers",
-    customersDashboard: "Customers Dashboard",
-    notifications: "Notifications",
-    allScales: "All Scales",
-    home: "Home",
-    currentStatus: "Current Status",
-    thresholds: "Thresholds",
-    weightHistory: "Weight History",
-    save: "Save Changes",
-    close: "Close",
-    from: "From",
-    dashboardsLabel: "Dashboards",
-    setup: "Setup",
-    to: "To",
-    productsDashboard: "Products Dashboard",
-    productStatus: "Product Status",
-    upperThreshold: "Upper Threshold",
-    lowerThreshold: "Lower Threshold",
-    lastUpdated: "Last Updated",
-    noProducts: "No products found",
-    failedToFetchProducts: "Failed to fetch products data",
-    mapLabel: "Map",
-    // Landing Page
-    welcomeTitle: "Quntifyz - Scale Monitor System",
-    welcomeSubtitle: "Select a module to begin",
-    dashboardDesc: "View all scales and their current status in a comprehensive dashboard.",
-    customersDesc: "Manage and monitor customer scales, products, and inventory levels.",
-    notificationsDesc: "Check alerts and notifications for low inventory levels.",
-    allScalesDesc: "Monitor and manage all scales across all customers in a single view.",
-
-    // Dashboard
-    scaleMonitorDashboard: "Scale Monitor Dashboard",
-    latestWeight: "Latest Weight",
-    noData: "No data available",
-    noScaleAssigned: "No Scale Assigned",
-
-    // Notifications
-    scaleAlerts: "Scale Alerts",
-    noAlerts: "No alerts to display",
-    runningLowMessage: "I am running out of",
-    productLeft: "I have only ",
-    pleaseResupply: "Please send me coffee!",
-
-    // Thresholds
-    thresholdSettings: "Threshold Settings",
-    upperThresholdKg: "Upper Threshold (kg)",
-    lowerThresholdKg: "Lower Threshold (kg)",
-    upperNotification: "Upper Threshold Notification",
-    lowerNotification: "Lower Threshold Notification",
-    whatsappNumber: "WhatsApp Number",
-    messageWhenExceeds: "Message when weight exceeds upper threshold",
-    messageWhenBelow: "Message when weight falls below lower threshold",
-    signIn: "Sign In",
-    signOut: "Sign Out",
-    register: "Register",
-    forgotPassword: "Forgot Password?",
-    email: "Email",
-    password: "Password",
-    confirmPassword: "Confirm Password",
-    name: "Name",
-    createAccount: "Create Account",
-    alreadyHaveAccount: "Already have an account? Sign in",
-    dontHaveAccount: "Don't have an account? Register",
-    verifyEmail: "Verify Email",
-    verificationCode: "Verification Code",
-    verify: "Verify",
-    resendCode: "Resend Code",
-    verificationEmailSent: "We've sent a verification code to your email",
-    passwordsDontMatch: "Passwords don't match",
-    passwordRequirements: "Password must be at least 8 characters",
-    signInError: "Failed to sign in",
-    signUpError: "Failed to create account",
-    verificationError: "Failed to verify email",
-    resetPassword: "Reset Password",
-    newPassword: "New Password",
-    resetPasswordError: "Failed to reset password",
-    passwordResetSuccess: "Password reset successful",
-    welcomeBack: "Welcome back",
-    welcome: "Welcome to Scalez",
-    // Customer Dashboard
-    customerOverview: "Customer Overview",
-    backToCustomers: "Back to Customers",
-    // Menu
-    menuTitle: "Quantifyz",
-    menuSubtitle: "Weight It",
-    version: "Version",
-    copyright: "© 2024 Scale Monitor",
-
-    // Menu Descriptions
-    homeDesc: "Return to home page",
-    // Landing Page
-    userName: "User",
-    welcomeMessage: "{time}, {name}",
-
-    timeGreetings: {
-      morning: "Good Morning",
-      afternoon: "Good Afternoon",
-      evening: "Good Evening"
-    },
-
-    stats: {
-      activeScales: "Active Scales",
-      customers: "Active Customers",
-      alerts: "Active Alerts",
-      today: "today",
-      thisWeek: "this week",
-      thisMonth: "this month"
-    },
-
-    quickActions: {
-      title: "Quick Actions",
-      items: [
-        "Add New Scale",
-        "Generate Report",
-        "View Notifications"
-      ]
-    },
-    items: {
-      title: "Items",
-      description: "Manage system items",
-      generateProducts: "Generate Products",
-      generatingProducts: "Generating...",
-      noItems: "No items found",
-      searchItems: "Search items...",
-      productGenerationSuccess: "Successfully generated {count} products. {skipped} products already existed.",
-      productGenerationError: "Failed to generate products",
-      itemCode: "Item Code",
-      name: "Name",
-      uom: "UOM",
-      actions: "Actions",
-      trySearching: "Try adjusting your search",
-      addThroughIntegrations: "Add items through integrations to get started",
-      refresh: "Refresh"
-    },
-    orders: {
-      title: "Orders",
-      description: "Track and manage your orders",
-      noOrders: "No orders found",
-      searchOrders: "Search orders...",
-      customer: "Customer",
-      status: "Status",
-      items: "Items",
-      totalAmount: "Total Amount",
-      orderDate: "Order Date",
-      notes: "Notes",
-      actions: "Actions",
-      itemDetails: "Order Items",
-      generateProduct: "Create Product",
-      price: "Price",
-      quantity: "Quantity",
-      total: "Total",
-      loading: "Loading...",
-      refresh: "Refresh",
-      loadMore: "Load More",
-      addIntegration: "Add Integration",
-      noOrdersMessage: "No invoices are available. Please add an integration to start receiving orders.",
-      tryAdjustingFilters: "Try adjusting your filters",
-      allStatus: "All Status"
-    },
-
-    unknownCustomer: "Unknown Customer",
-    saving: "Saving...",
-    saveChanges: "Save Changes",
-    weight: "Weight",
-    customer: "Customer",
-    productName: "Product Name",
-
-    // Graph
-    time: "Time",
-
-    // Notifications
-    notificationSettings: "Notification Settings",
-    phoneNumber: "Phone Number",
-    message: "Message",
-    upperThresholdNotification: "Upper Threshold Notification",
-    lowerThresholdNotification: "Lower Threshold Notification",
-    customerName: "Customer Name",
-    searchCustomers: "Search customers...",
-    refresh: "Refresh",
-    addCustomer: "Add Customer",
-    noCustomers: "No customers found",
-    noSearchResults: "No customers match your search",
-    customersTableDesc: "Manage and view all customer information",
-    customersTable: "Customers",
-    orders: "Invoices",
-    loading: "Loading...",
-    tryAgain: "Try Again",
-    errorFetchingScales: "Failed to fetch scales data. Please try again later.",
-    errorUpdatingScale: "Failed to update scale. Please try again later.",
-    productsManagement: "My Products",
-    unitsPerDay: "Units/Day",
-    selectItem: "Select Item",
-    scaleSelection: "Scale Selection",
-    ConsumptionAnalytics: "Consumption Analytics",
-    lastOrderQuantity: "Last Order Quantity",
-    dailyConsumptionRate: "Daily Consumption Rate",
-    units: "Units",
-    noStatsAvailable: "No stats available",
-    estimationQuntityLeft: "Estimation Quantity Left",
-    addProduct: "Add Product",
-    quantity: "Quantity",
-    unit: "Unit",
-    total: "Total",
-    lastOrder: "Last Order",
-    days: "Days",
-    averageDaysBetweenOrders: "Average Days Between Orders",
-    daysFromLastOrder: "Days from Last Order",
-    averageConsumption: "Average Consumption",
-    ils: "ִ₪",
-    selectCustomer: "Select Customer",
-    updateProduct: "Update Product",
-    linkedScales: "Linked Scales",
-    unassigned: "Unassigned",
-    
-    editCustomer: "Edit Customer",
-    deleteCustomer: "Delete Customer",
-    customerNameEn: "Customer Name (English)",
-    customerName: "Customer Name (English)",
-    customerNameHe: "Customer Name (Hebrew)",
-    scalesManagement: "Scales",
-    price: "Price",
-    phone: "Phone",
-    address: "Address",
-    cancel: "Cancel",
-    add: "Add",
-    update: "Update",
-    
-    deleteConfirmation: "Are you sure you want to delete this customer?",
-    deleteConfirmationDesc: "This action cannot be undone.",
-    confirm: "Confirm",
-    customerDeleted: "Customer deleted successfully",
-    customerAdded: "Customer added successfully",
-    customerUpdated: "Customer updated successfully",
-    errorFetchingCustomers: "Failed to fetch customers",
-    vendors: {
-      title: "Vendor Management",
-      addVendor: "Add Vendor",
-      editVendor: "Edit Vendor",
-      deleteVendor: "Delete Vendor",
-      vendorName: "Vendor Name",
-      contactPerson: "Contact Person",
-      email: "Email",
-      phone: "Phone",
-      address: "Address",
-      cancel: "Cancel",
-      add: "Add",
-      update: "Update",
-      saving: "Saving...",
-      deleteConfirmation: "Are you sure you want to delete this vendor?",
-      deleteConfirmationDesc: "This action cannot be undone.",
-      vendorAdded: "Vendor added successfully",
-      vendorUpdated: "Vendor updated successfully",
-      vendorDeleted: "Vendor deleted successfully",
-      errorFetchingVendors: "Failed to fetch vendors",
-      errorAddingVendor: "Failed to add vendor",
-      errorUpdatingVendor: "Failed to update vendor",
-      errorDeletingVendor: "Failed to delete vendor",
-      noVendors: "No vendors found",
-    },
-    // Registration
-    registering: "Registering...",
-    
-    allFieldsRequired: "All fields are required",
-    
-    passwordTooShort: "Password must be at least 8 characters",
-    passwordNeedsUpper: "Password must contain an uppercase letter",
-    passwordNeedsLower: "Password must contain a lowercase letter",
-    passwordNeedsNumber: "Password must contain a number",
-    passwordNeedsSpecial: "Password must contain a special character",
-
-    // Email Verification
-    verifying: "Verifying...",
-    resendingCode: "Resending code...",
-    codeSentSuccessfully: "Verification code sent successfully",
-    errorResendingCode: "Failed to resend verification code",
-    emailVerified: "Email verified successfully",
-
-    // Password Reset
-    sendResetCode: "Send Reset Code",
-    sendingResetCode: "Sending reset code...",
-    resetCodeSent: "Password reset code sent to your email",
-    confirmResetCode: "Confirm Reset Code",
-    passwordChanged: "Password changed successfully",
-
-    // Error Messages
-    invalidEmail: "Please enter a valid email address",
-    networkError: "Network error. Please check your connection",
-    unknownError: "An unknown error occurred",
-    sessionExpired: "Your session has expired. Please sign in again",
-    invalidCode: "Invalid verification code",
-    tooManyAttempts: "Too many attempts. Please try again later",
-
-    // Success Messages
-    loginSuccess: "Signed in successfully",
-    logoutSuccess: "Signed out successfully",
-    registrationSuccess: "Registration successful. Please verify your email",
-
-    // Loading States
-    processing: "Processing...",
-    pleaseWait: "Please wait...",
-    verifyingEmail: "Verifying your email address...",
-    emailVerifiedDesc: "Your email has been successfully verified. You can now sign in to your account.",
-    verificationFailed: "Verification Failed",
-    missingVerificationParams: "Invalid verification link. Missing required parameters.",
-    emailNotFound: "Email address not found in verification link.",
-    requestNewCode: "Request New Code",
-    newCodeSent: "New Code Sent!",
-    checkEmailForCode: "A new verification code has been sent to your email address. Please check your inbox.",
-    continueToApp: "Continue to App",
-    verificationLinkExpired: "Verification link has expired. Please request a new one.",
-    invalidVerificationCode: "Invalid verification code. Please try again.",
-    sharedProducts: "Shared With You",
-    sharedProductsDesc: "View products that have been shared with you",
-    noSharedProducts: "No products have been shared with you yet",
-
-    // In src/translations/translations.js, add these to both 'en' and 'he' objects:
-
-  // ... existing translations ...
-  landing: {
-    hero: {
-      signIn: "Sign In",
-        title: "Smart Inventory Management through Precision Weight Monitoring",
-        subtitle: "Take control of your inventory with real-time weight-based monitoring",
-        getStarted: "Get Started for Free",
-    },
-    features: {
-      title: "Powerful Features for Modern Inventory Management",
-      realTimeMonitoring: {
-        title: "Real-Time Monitoring",
-        description: "Track inventory levels across all locations in real-time with precise weight-based measurements"
-      },
-      analytics: {
-        title: "Advanced Analytics",
-        description: "Make data-driven decisions with comprehensive analytics and trend analysis"
-      },
-      smartAlerts: {
-        title: "Smart Alerts",
-        description: "Get instant notifications when inventory levels reach custom thresholds"
-      },
-      mobileAccess: {
-        title: "Mobile Access",
-        description: "Monitor your inventory from anywhere using our responsive web application"
-      }
-    },
-    benefits: {
-      title: "Why Choose Quantifyz?",
-      globalAccess: {
-        title: "Global Accessibility",
-        description: "Access your inventory data from anywhere in the world"
-      },
-      security: {
-        title: "Secure & Reliable",
-        description: "Enterprise-grade security with 99.9% uptime guarantee"
-      },
-      support: {
-        title: "24/7 Support",
-        description: "Round-the-clock customer support to help you succeed"
-      }
-    },
-    cta: {
-      title: "Ready to Transform Your Inventory Management?",
-      button: "Start Your Journey"
-    },
-    footer: {
-      slogan: "Smart Inventory Solutions",
-      rights: "© 2024 Quantifyz. All rights reserved.",
-      privacy: "Privacy Policy",
-      terms: "Terms of Service"
-    },
-    backToHome: "← Back to home"
-  }
-
+  deleteProducts: {
+    en: "Delete Products",
+    he: "מחק מוצרים"
   },
-  he: {
-    items: {
-      title: "פריטים",
-      description: "ניהול פריטי מערכת",
-      generateProducts: "יצירת מוצרים",
-      generatingProducts: "...יוצר",
-      noItems: "לא נמצאו פריטים",
-      searchItems: "...חיפוש פריטים",
-      productGenerationSuccess: "נוצרו {count} מוצרים בהצלחה. {skipped} מוצרים כבר קיימים.",
-      productGenerationError: "שגיאה ביצירת מוצרים",
-      itemCode: "קוד פריט",
-      name: "שם",
-      uom: "יחידת מידה",
-      actions: "פעולות",
-      trySearching: "נסה לשנות את החיפוש",
-      addThroughIntegrations: "הוסף פריטים דרך אינטגרציות כדי להתחיל",
-      refresh: "רענון"
-    },
-    orders: {
-      title: "הזמנות",
-      description: "מעקב וניהול הזמנות",
-      noOrders: "לא נמצאו הזמנות",
-      searchOrders: "...חיפוש הזמנות",
-      customer: "לקוח",
-      status: "סטטוס",
-      items: "פריטים",
-      totalAmount: "סכום כולל",
-      orderDate: "תאריך הזמנה",
-      notes: "הערות",
-      actions: "פעולות",
-      itemDetails: "פריטי הזמנה",
-      generateProduct: "יצירת מוצר",
-      price: "מחיר",
-      quantity: "כמות",
-      total: "סה״כ",
-      loading: "...טוען",
-      refresh: "רענון",
-      loadMore: "טען עוד",
-      addIntegration: "הוסף אינטגרציה",
-      noOrdersMessage: "אין חשבוניות זמינות. אנא הוסף אינטגרציה כדי להתחיל לקבל הזמנות.",
-      tryAdjustingFilters: "נסה לשנות את הסינון",
-      allStatus: "כל הסטטוסים"
-    },
-    // General
-    dashboard: "לוח בקרה",
-    customers: "לקוחות",
-    customersDashboard: "לוח בקרת לקוחות",
-    notifications: "התראות",
-    allScales: "כל המשקלים",
-    home: "בית",
-    currentStatus: "מצב נוכחי",
-    thresholds: "ספי התראה",
-    weightHistory: "היסטוריית משקל",
-    save: "שמור שינויים",
-    close: "סגור",
-    from: "מתאריך",
-    to: "עד תאריך",
-
-    // Landing Page
-    welcomeTitle: "Quntifyz - מערכת ניטור משקל",
-    welcomeSubtitle: "בחר מודול להתחלה",
-    dashboardDesc: "צפה בכל המשקלים ובסטטוס הנוכחי שלהם בלוח בקרה מקיף",
-    customersDesc: "נהל ועקוב אחר משקלי הלקוחות, המוצרים ורמות המלאי",
-    notificationsDesc: "בדוק התראות והודעות על רמות מלאי נמוכות",
-    allScalesDesc: "נטר ונהל את כל המשקלים בכל הלקוחות בתצוגה אחת",
-
-    // Dashboard
-    scaleMonitorDashboard: "לוח בקרת משקלים",
-    latestWeight: "משקל אחרון",
-    upperThreshold: "סף עליון",
-    lowerThreshold: "סף תחתון",
-    noData: "אין נתונים זמינים",
-
-    // Notifications
-    scaleAlerts: "התראות משקל",
-    noAlerts: "אין התראות להצגה",
-    runningLowMessage: "עומד להיגמר לי ה - ",
-    productLeft: "נשאר לי רק ",
-    pleaseResupply: "!אני צריך קפה",
-
-    // Thresholds
-    thresholdSettings: "הגדרות ספי התראה",
-    upperThresholdKg: "(ק\"ג) סף עליון",
-    lowerThresholdKg: "(ק\"ג) סף תחתון",
-    upperNotification: "התראת סף עליון",
-    lowerNotification: "התראת סף תחתון",
-    whatsappNumber: "מספר וואטסאפ",
-    messageWhenExceeds: "הודעה כאשר המשקל עובר את הסף העליון",
-    messageWhenBelow: "הודעה כאשר המשקל יורד מתחת לסף התחתון",
-
-    // Customer Dashboard
-    customerOverview: "סקירת לקוחות",
-    backToCustomers: "חזרה ללקוחות",
-    // Menu
-    menuTitle: "Qunatifyz",
-    menuSubtitle: "שקול!",
-    version: "גרסה",
-    copyright: "© 2024 ניטור משקל",
-
-    // Menu Descriptions
-    homeDesc: "חזרה לדף הבית",
-    userName: "משתמש",
-    welcomeMessage: "{time}, {name}",
-    timeGreetings: {
-      morning: "בוקר טוב",
-      afternoon: "צהריים טובים",
-      evening: "ערב טוב"
-    },
-
-    stats: {
-      activeScales: "משקלים פעילים",
-      customers: "לקוחות פעילים",
-      alerts: "התראות פעילות",
-      today: "היום",
-      thisWeek: "השבוע",
-      thisMonth: "החודש"
-    },
-
-    quickActions: {
-      title: "פעולות מהירות",
-      items: [
-        "הוסף משקל חדש",
-        "הפק דוח",
-        "צפה בהתראות"
-      ]
-    },
-
-    // Menu Cards
-    saving: "...שומר",
-    saveChanges: "שמור שינויים",
-    weight: "משקל",
-    lastUpdated: "עדכון אחרון",
-    customer: "לקוח",
-    productName: "שם מוצר",
-    customersTable: "לקוחות",
-    // Graph
-    time: "זמן",
-    // orders
-    orders: "חשבוניות",
-    // Notifications
-    notificationSettings: "הגדרות התראות",
-    phoneNumber: "מספר טלפון",
-    message: "הודעה",
-    upperThresholdNotification: "התראת סף עליון",
-    lowerThresholdNotification: "התראת סף תחתון",
-    customerName: "שם לקוח",
-    searchCustomers: "חיפוש לקוחות...",
-    refresh: "רענון",
-    addCustomer: "הוסף לקוח",
-    noCustomers: "לא נמצאו לקוחות",
-    noSearchResults: "לא נמצאו לקוחות התואמים את החיפוש",
-    customersTableDesc: "ניהול וצפייה במידע של כל הלקוחות",
-    loading: "...טוען משקלים",
-    tryAgain: "נסה שוב",
-    errorFetchingScales: "שגיאה בטעינת נתוני המשקלים. אנא נסה שוב מאוחר יותר.",
-    errorUpdatingScale: "שגיאה בעדכון המשקל. אנא נסה שוב מאוחר יותר.",
-    productsManagement: "המוצרים שלי",
-    addProduct: "הוסף מוצר",
-    selectCustomer: "בחר לקוח",
-    updateProduct: "עדכן מוצר",
-    linkedScales: "משקלים מקושרים",
-    unassigned: "לא משויך",
-    editCustomer: "ערוך לקוח",
-    deleteCustomer: "מחק לקוח",
-    customerNameEn: "שם לקוח (אנגלית)",
-    customerNameHe: "שם לקוח (עברית)",
-    mapLabel: "מפה",
-    email: "דוא\"ל",
-    phone: "טלפון",
-    address: "כתובת",
-    cancel: "ביטול",
-    add: "הוסף",
-    update: "עדכן",
-    deleteConfirmation: "האם אתה בטוח שברצונך למחוק לקוח זה?",
-    deleteConfirmationDesc: "לא ניתן לבטל פעולה זו.",
-    confirm: "אישור",
-    customerDeleted: "הלקוח נמחק בהצלחה",
-    customerAdded: "הלקוח נוסף בהצלחה",
-    customerUpdated: "הלקוח עודכן בהצלחה",
-    errorFetchingCustomers: "שגיאה בטעינת רשימת הלקוחות", // For Hebrew
-    vendors: {
-      title: "ניהול ספקים",
-      addVendor: "הוסף ספק",
-      editVendor: "ערוך ספק",
-      deleteVendor: "מחק ספק",
-      vendorName: "שם ספק",
-      contactPerson: "איש קשר",
-      email: "דוא\"ל",
-      phone: "טלפון",
-      address: "כתובת",
-      cancel: "ביטול",
-      add: "הוסף",
-      update: "עדכן",
-      saving: "שומר...",
-      deleteConfirmation: "האם אתה בטוח שברצונך למחוק ספק זה?",
-      deleteConfirmationDesc: "לא ניתן לבטל פעולה זו.",
-      vendorAdded: "הספק נוסף בהצלחה",
-      vendorUpdated: "הספק עודכן בהצלחה",
-      vendorDeleted: "הספק נמחק בהצלחה",
-      errorFetchingVendors: "שגיאה בטעינת נתוני הספקים",
-      errorAddingVendor: "שגיאה בהוספת ספק",
-      errorUpdatingVendor: "שגיאה בעדכון ספק",
-      errorDeletingVendor: "שגיאה במחיקת ספק",
-      noVendors: "לא נמצאו ספקים",
-    },
-    productsDashboard: "לוח מוצרים",
-    productStatus: "סטטוס מוצר",
-    noProducts: "לא נמצאו מוצרים",
-    failedToFetchProducts: "נכשל בטעינת נתוני המוצרים",
-    signIn: "התחברות",
-    signOut: "התנתקות",
-    register: "הרשמה",
-    forgotPassword: "שכחת סיסמה?",
-    password: "סיסמה",
-    confirmPassword: "אימות סיסמה",
-    name: "שם",
-    createAccount: "יצירת חשבון",
-    alreadyHaveAccount: "כבר יש לך חשבון? התחבר",
-    dontHaveAccount: "אין לך חשבון? הירשם",
-    verifyEmail: 'אימות דוא"ל',
-    verificationCode: "קוד אימות",
-    verify: "אמת",
-    resendCode: "שלח קוד מחדש",
-    verificationEmailSent: 'שלחנו קוד אימות לדוא"ל שלך',
-    passwordsDontMatch: "הסיסמאות אינן תואמות",
-    passwordRequirements: "הסיסמה חייבת להכיל לפחות 8 תווים",
-    signInError: "שגיאה בהתחברות",
-    signUpError: "שגיאה ביצירת החשבון",
-    verificationError: 'שגיאה באימות הדוא"ל',
-    resetPassword: "איפוס סיסמה",
-    newPassword: "סיסמה חדשה",
-    resetPasswordError: "שגיאה באיפוס הסיסמה",
-    passwordResetSuccess: "הסיסמה אופסה בהצלחה",
-    welcomeBack: "ברוך שובך",
-    welcome: "ברוכים הבאים למערכת Scale Monitor",
-    // Registration
-    registering: "נרשם...",
-    allFieldsRequired: "כל השדות נדרשים",
-    passwordTooShort: "הסיסמה חייבת להכיל לפחות 8 תווים",
-    passwordNeedsUpper: "הסיסמה חייבת להכיל אות גדולה",
-    passwordNeedsLower: "הסיסמה חייבת להכיל אות קטנה",
-    passwordNeedsNumber: "הסיסמה חייבת להכיל מספר",
-    passwordNeedsSpecial: "הסיסמה חייבת להכיל תו מיוחד",
-
-    // Email Verification
-    codeSentSuccessfully: "קוד האימות נשלח בהצלחה",
-    errorResendingCode: "שגיאה בשליחת קוד האימות מחדש",
-    emailVerified: 'הדוא"ל אומת בהצלחה',
-
-    // Password Reset
-    sendResetCode: "שלח קוד איפוס",
-    sendingResetCode: "שולח קוד איפוס...",
-    resetCodeSent: "קוד איפוס הסיסמה נשלח לדוא\"ל שלך",
-    confirmResetCode: "אשר קוד איפוס",
-    passwordChanged: "הסיסמה שונתה בהצלחה",
-
-    // Error Messages
-    invalidEmail: "נא להזין כתובת דוא\"ל תקינה",
-    networkError: "שגיאת רשת. נא לבדוק את החיבור",
-    unknownError: "אירעה שגיאה לא ידועה",
-    sessionExpired: "פג תוקף החיבור. נא להתחבר מחדש",
-    invalidCode: "קוד אימות לא תקין",
-    tooManyAttempts: "יותר מדי ניסיונות. נא לנסות שוב מאוחר יותר",
-
-    // Success Messages
-    loginSuccess: "התחברת בהצלחה",
-    logoutSuccess: "התנתקת בהצלחה",
-    registrationSuccess: "ההרשמה הושלמה בהצלחה. נא לאמת את הדוא\"ל",
-    dashboardsLabel: "דשבורדים",
-    // Loading States
-    processing: "מעבד...",
-    pleaseWait: "נא להמתין...",
-    scalesManagement: "משקלים",
-    verifyingEmail: "מאמת את כתובת האימייל שלך...",
-    emailVerifiedDesc: "כתובת האימייל שלך אומתה בהצלחה. כעת תוכל להתחבר לחשבונך.",
-    verificationFailed: "האימות נכשל",
-    missingVerificationParams: "קישור אימות לא חוקי. חסרים פרמטרים נדרשים.",
-    emailNotFound: "כתובת האימייל לא נמצאה בקישור האימות.",
-    requestNewCode: "בקש קוד חדש",
-    resendingCode: "שולח קוד חדש...",
-    newCodeSent: "קוד חדש נשלח!",
-    checkEmailForCode: "קוד אימות חדש נשלח לכתובת האימייל שלך. אנא בדוק את תיבת הדואר הנכנס.",
-    continueToApp: "המשך לאפליקציה",
-    verificationLinkExpired: "קישור האימות פג תוקף. אנא בקש קישור חדש.",
-    invalidVerificationCode: "קוד אימות לא חוקי. אנא נסה שוב.",
-    sharedProducts: "שותף איתך",
-    sharedProductsDesc: "צפה במוצרים ששותפו איתך",
-    noSharedProducts: "טרם שותפו איתך מוצרים",
-    setup: "הגדרות",
-    noScaleAssigned: "לא הוקצה משקל",
-
-  // ... existing translations ...
-  landing: {
-    hero: {
-      title: "מערכת ניטור משקל Quantifyz",
-      subtitle: "ניהול מלאי חכם באמצעות ניטור משקל מדויק",
-      getStarted: "התחל עכשיו",
-      signIn: "התחבר",
-    },
-    features: {
-      title: "תכונות חזקות לניהול מלאי מודרני",
-      realTimeMonitoring: {
-        title: "ניטור בזמן אמת",
-        description: "עקוב אחר רמות המלאי בכל המיקומים בזמן אמת עם מדידות מדויקות מבוססות משקל"
-      },
-      analytics: {
-        title: "ניתוח מתקדם",
-        description: "קבל החלטות מבוססות נתונים עם ניתוח מקיף וניתוח מגמות"
-      },
-      smartAlerts: {
-        title: "התראות חכמות",
-        description: "קבל התראות מיידיות כאשר רמות המלאי מגיעות לספים מותאמים אישית"
-      },
-      mobileAccess: {
-        title: "גישה מהנייד",
-        description: "נטר את המלאי שלך מכל מקום באמצעות האפליקציה"
-      }
-    },
-    benefits: {
-      title: "למה לבחור ב-Quantifyz?",
-      globalAccess: {
-        title: "נגישות גלובלית",
-        description: "גש לנתוני המלאי שלך מכל מקום בעולם"
-      },
-      security: {
-        title: "מאובטח ואמין",
-        description: "אבטחה ברמה ארגונית עם 99.9% זמינות מובטחת"
-      },
-      support: {
-        title: "תמיכה 24/7",
-        description: "תמיכת לקוחות מסביב לשעון כדי לעזור לך להצליח"
-      }
-    },
-    cta: {
-      title: "מוכנים לשנות את ניהול המלאי שלכם?",
-      button: "התחל את המסע"
-    },
-    footer: {
-      slogan: "פתרונות מלאי חכמים",
-      rights: "© 2024 Quantifyz. כל הזכויות שמורות.",
-      privacy: "מדיניות פרטיות",
-      terms: "תנאי שימוש"
-    },
-    backToHome: "← חזרה לדף הבית"
-  }
+  deleteMultipleConfirmation: {
+    en: "Are you sure you want to delete {count} selected products? This action cannot be undone.",
+    he: "האם אתה בטוח שברצונך למחוק {count} מוצרים נבחרים? לא ניתן לבטל פעולה זו."
+  },
+  productsDeleted: {
+    en: "Products deleted successfully",
+    he: "המוצרים נמחקו בהצלחה"
+  },
+  failedToDeleteProducts: {
+    en: "Failed to delete products",
+    he: "נכשל במחיקת המוצרים"
+  },
+  date: {
+    en: "Date",
+    he: "#missing value#"
+  },
+  replace: {
+    en: "Replace",
+    he: "#missing value#"
+  },
+  orderHistory: {
+    en: "Order History",
+    he: "#missing value#"
+  },
+  estimationQuantityLeft: {
+    en: "Estimation Quantity Left",
+    he: "#missing value#"
+  },
+  dashboard: {
+    en: "Dashboard",
+    he: "לוח בקרה"
+  },
+  customers: {
+    en: "Active Customers",
+    he: "לקוחות פעילים"
+  },
+  customersDashboard: {
+    en: "Customers Dashboard",
+    he: "לוח בקרת לקוחות"
+  },
+  notifications: {
+    en: "Notifications",
+    he: "התראות"
+  },
+  allScales: {
+    en: "All Scales",
+    he: "כל המשקלים"
+  },
+  home: {
+    en: "Home",
+    he: "בית"
+  },
+  currentStatus: {
+    en: "Current Status",
+    he: "מצב נוכחי"
+  },
+  thresholds: {
+    en: "Thresholds",
+    he: "ספי התראה"
+  },
+  weightHistory: {
+    en: "Weight History",
+    he: "היסטוריית משקל"
+  },
+  save: {
+    en: "Save Changes",
+    he: "שמור שינויים"
+  },
+  close: {
+    en: "Close",
+    he: "סגור"
+  },
+  from: {
+    en: "From",
+    he: "מתאריך"
+  },
+  dashboardsLabel: {
+    en: "Dashboards",
+    he: "דשבורדים"
+  },
+  setup: {
+    en: "Setup",
+    he: "הגדרות"
+  },
+  to: {
+    en: "To",
+    he: "עד תאריך"
+  },
+  productsDashboard: {
+    en: "Products Dashboard",
+    he: "לוח מוצרים"
+  },
+  productStatus: {
+    en: "Product Status",
+    he: "סטטוס מוצר"
+  },
+  upperThreshold: {
+    en: "Upper Threshold",
+    he: "סף עליון"
+  },
+  lowerThreshold: {
+    en: "Lower Threshold",
+    he: "סף תחתון"
+  },
+  lastUpdated: {
+    en: "Last Updated",
+    he: "עדכון אחרון"
+  },
+  noProducts: {
+    en: "No products found",
+    he: "לא נמצאו מוצרים"
+  },
+  failedToFetchProducts: {
+    en: "Failed to fetch products data",
+    he: "נכשל בטעינת נתוני המוצרים"
+  },
+  mapLabel: {
+    en: "Map",
+    he: "מפה"
+  },
+  welcomeTitle: {
+    en: "Quntifyz - Scale Monitor System",
+    he: "Quntifyz - מערכת ניטור משקל"
+  },
+  welcomeSubtitle: {
+    en: "Select a module to begin",
+    he: "בחר מודול להתחלה"
+  },
+  dashboardDesc: {
+    en: "View all scales and their current status in a comprehensive dashboard.",
+    he: "צפה בכל המשקלים ובסטטוס הנוכחי שלהם בלוח בקרה מקיף"
+  },
+  customersDesc: {
+    en: "Manage and monitor customer scales, products, and inventory levels.",
+    he: "נהל ועקוב אחר משקלי הלקוחות, המוצרים ורמות המלאי"
+  },
+  notificationsDesc: {
+    en: "Check alerts and notifications for low inventory levels.",
+    he: "בדוק התראות והודעות על רמות מלאי נמוכות"
+  },
+  allScalesDesc: {
+    en: "Monitor and manage all scales across all customers in a single view.",
+    he: "נטר ונהל את כל המשקלים בכל הלקוחות בתצוגה אחת"
+  },
+  scaleMonitorDashboard: {
+    en: "Scale Monitor Dashboard",
+    he: "לוח בקרת משקלים"
+  },
+  latestWeight: {
+    en: "Latest Weight",
+    he: "משקל אחרון"
+  },
+  noData: {
+    en: "No data available",
+    he: "אין נתונים זמינים"
+  },
+  noScaleAssigned: {
+    en: "No Scale Assigned",
+    he: "לא הוקצה משקל"
+  },
+  scaleAlerts: {
+    en: "Scale Alerts",
+    he: "התראות משקל"
+  },
+  noAlerts: {
+    en: "No alerts to display",
+    he: "אין התראות להצגה"
+  },
+  runningLowMessage: {
+    en: "I am running out of",
+    he: "עומד להיגמר לי ה - "
+  },
+  productLeft: {
+    en: "I have only ",
+    he: "נשאר לי רק "
+  },
+  pleaseResupply: {
+    en: "Please send me coffee!",
+    he: "!אני צריך קפה"
+  },
+  thresholdSettings: {
+    en: "Threshold Settings",
+    he: "הגדרות ספי התראה"
+  },
+  upperThresholdKg: {
+    en: "Upper Threshold (kg)",
+    he: "(ק\"ג) סף עליון"
+  },
+  lowerThresholdKg: {
+    en: "Lower Threshold (kg)",
+    he: "(ק\"ג) סף תחתון"
+  },
+  upperNotification: {
+    en: "Upper Threshold Notification",
+    he: "התראת סף עליון"
+  },
+  lowerNotification: {
+    en: "Lower Threshold Notification",
+    he: "התראת סף תחתון"
+  },
+  whatsappNumber: {
+    en: "WhatsApp Number",
+    he: "מספר וואטסאפ"
+  },
+  messageWhenExceeds: {
+    en: "Message when weight exceeds upper threshold",
+    he: "הודעה כאשר המשקל עובר את הסף העליון"
+  },
+  messageWhenBelow: {
+    en: "Message when weight falls below lower threshold",
+    he: "הודעה כאשר המשקל יורד מתחת לסף התחתון"
+  },
+  signIn: {
+    en: "Sign In",
+    he: "התחבר"
+  },
+  signOut: {
+    en: "Sign Out",
+    he: "התנתקות"
+  },
+  register: {
+    en: "Register",
+    he: "הרשמה"
+  },
+  forgotPassword: {
+    en: "Forgot Password?",
+    he: "שכחת סיסמה?"
+  },
+  email: {
+    en: "Email",
+    he: "דוא\"ל"
+  },
+  password: {
+    en: "Password",
+    he: "סיסמה"
+  },
+  confirmPassword: {
+    en: "Confirm Password",
+    he: "אימות סיסמה"
+  },
+  name: {
+    en: "Name",
+    he: "שם"
+  },
+  createAccount: {
+    en: "Create Account",
+    he: "יצירת חשבון"
+  },
+  alreadyHaveAccount: {
+    en: "Already have an account? Sign in",
+    he: "כבר יש לך חשבון? התחבר"
+  },
+  dontHaveAccount: {
+    en: "Don't have an account? Register",
+    he: "אין לך חשבון? הירשם"
+  },
+  verifyEmail: {
+    en: "Verify Email",
+    he: "אימות דוא\"ל"
+  },
+  verificationCode: {
+    en: "Verification Code",
+    he: "קוד אימות"
+  },
+  verify: {
+    en: "Verify",
+    he: "אמת"
+  },
+  resendCode: {
+    en: "Resend Code",
+    he: "שלח קוד מחדש"
+  },
+  verificationEmailSent: {
+    en: "We've sent a verification code to your email",
+    he: "שלחנו קוד אימות לדוא\"ל שלך"
+  },
+  passwordsDontMatch: {
+    en: "Passwords don't match",
+    he: "הסיסמאות אינן תואמות"
+  },
+  passwordRequirements: {
+    en: "Password must be at least 8 characters",
+    he: "הסיסמה חייבת להכיל לפחות 8 תווים"
+  },
+  signInError: {
+    en: "Failed to sign in",
+    he: "שגיאה בהתחברות"
+  },
+  signUpError: {
+    en: "Failed to create account",
+    he: "שגיאה ביצירת החשבון"
+  },
+  verificationError: {
+    en: "Failed to verify email",
+    he: "שגיאה באימות הדוא\"ל"
+  },
+  resetPassword: {
+    en: "Reset Password",
+    he: "איפוס סיסמה"
+  },
+  newPassword: {
+    en: "New Password",
+    he: "סיסמה חדשה"
+  },
+  resetPasswordError: {
+    en: "Failed to reset password",
+    he: "שגיאה באיפוס הסיסמה"
+  },
+  passwordResetSuccess: {
+    en: "Password reset successful",
+    he: "הסיסמה אופסה בהצלחה"
+  },
+  welcomeBack: {
+    en: "Welcome back",
+    he: "ברוך שובך"
+  },
+  welcome: {
+    en: "Welcome to Scalez",
+    he: "ברוכים הבאים למערכת Scale Monitor"
+  },
+  customerOverview: {
+    en: "Customer Overview",
+    he: "סקירת לקוחות"
+  },
+  backToCustomers: {
+    en: "Back to Customers",
+    he: "חזרה ללקוחות"
+  },
+  menuTitle: {
+    en: "Quantifyz",
+    he: "Qunatifyz"
+  },
+  menuSubtitle: {
+    en: "Weight It",
+    he: "שקול!"
+  },
+  version: {
+    en: "Version",
+    he: "גרסה"
+  },
+  copyright: {
+    en: "© 2024 Scale Monitor",
+    he: "© 2024 ניטור משקל"
+  },
+  homeDesc: {
+    en: "Return to home page",
+    he: "חזרה לדף הבית"
+  },
+  userName: {
+    en: "User",
+    he: "משתמש"
+  },
+  welcomeMessage: {
+    en: "{time}, {name}",
+    he: "{time}, {name}"
+  },
+  morning: {
+    en: "Good Morning",
+    he: "בוקר טוב"
+  },
+  afternoon: {
+    en: "Good Afternoon",
+    he: "צהריים טובים"
+  },
+  evening: {
+    en: "Good Evening",
+    he: "ערב טוב"
+  },
+  activeScales: {
+    en: "Active Scales",
+    he: "משקלים פעילים"
+  },
+  alerts: {
+    en: "Active Alerts",
+    he: "התראות פעילות"
+  },
+  today: {
+    en: "today",
+    he: "היום"
+  },
+  thisWeek: {
+    en: "this week",
+    he: "השבוע"
+  },
+  thisMonth: {
+    en: "this month",
+    he: "החודש"
+  },
+  title: {
+    en: "Ready to Transform Your Inventory Management?",
+    he: "מוכנים לשנות את ניהול המלאי שלכם?"
+  },
+  items: {
+    en: [
+      "Add New Scale",
+      "Generate Report",
+      "View Notifications"
+    ],
+    he: [
+      "הוסף משקל חדש",
+      "הפק דוח",
+      "צפה בהתראות"
+    ]
+  },
+  description: {
+    en: "Round-the-clock customer support to help you succeed",
+    he: "תמיכת לקוחות מסביב לשעון כדי לעזור לך להצליח"
+  },
+  generateProducts: {
+    en: "Generate Products",
+    he: "יצירת מוצרים"
+  },
+  generatingProducts: {
+    en: "Generating...",
+    he: "...יוצר"
+  },
+  noItems: {
+    en: "No items found",
+    he: "לא נמצאו פריטים"
+  },
+  searchItems: {
+    en: "Search items...",
+    he: "...חיפוש פריטים"
+  },
+  productGenerationSuccess: {
+    en: "Successfully generated {count} products. {skipped} products already existed.",
+    he: "נוצרו {count} מוצרים בהצלחה. {skipped} מוצרים כבר קיימים."
+  },
+  productGenerationError: {
+    en: "Failed to generate products",
+    he: "שגיאה ביצירת מוצרים"
+  },
+  itemCode: {
+    en: "Item Code",
+    he: "קוד פריט"
+  },
+  uom: {
+    en: "UOM",
+    he: "יחידת מידה"
+  },
+  actions: {
+    en: "Actions",
+    he: "פעולות"
+  },
+  trySearching: {
+    en: "Try adjusting your search",
+    he: "נסה לשנות את החיפוש"
+  },
+  addThroughIntegrations: {
+    en: "Add items through integrations to get started",
+    he: "הוסף פריטים דרך אינטגרציות כדי להתחיל"
+  },
+  refresh: {
+    en: "Refresh",
+    he: "רענון"
+  },
+  orders: {
+    en: "Invoices",
+    he: "חשבוניות"
+  },
+  unknownCustomer: {
+    en: "Unknown Customer",
+    he: "#missing value#"
+  },
+  saving: {
+    en: "Saving...",
+    he: "שומר..."
+  },
+  saveChanges: {
+    en: "Save Changes",
+    he: "שמור שינויים"
+  },
+  weight: {
+    en: "Weight",
+    he: "משקל"
+  },
+  customer: {
+    en: "Customer",
+    he: "לקוח"
+  },
+  productName: {
+    en: "Product Name",
+    he: "שם מוצר"
+  },
+  time: {
+    en: "Time",
+    he: "זמן"
+  },
+  notificationSettings: {
+    en: "Notification Settings",
+    he: "הגדרות התראות"
+  },
+  phoneNumber: {
+    en: "Phone Number",
+    he: "מספר טלפון"
+  },
+  message: {
+    en: "Message",
+    he: "הודעה"
+  },
+  upperThresholdNotification: {
+    en: "Upper Threshold Notification",
+    he: "התראת סף עליון"
+  },
+  lowerThresholdNotification: {
+    en: "Lower Threshold Notification",
+    he: "התראת סף תחתון"
+  },
+  customerName: {
+    en: "Customer Name (English)",
+    he: "שם לקוח"
+  },
+  searchCustomers: {
+    en: "Search customers...",
+    he: "חיפוש לקוחות..."
+  },
+  addCustomer: {
+    en: "Add Customer",
+    he: "הוסף לקוח"
+  },
+  noCustomers: {
+    en: "No customers found",
+    he: "לא נמצאו לקוחות"
+  },
+  noSearchResults: {
+    en: "No customers match your search",
+    he: "לא נמצאו לקוחות התואמים את החיפוש"
+  },
+  customersTableDesc: {
+    en: "Manage and view all customer information",
+    he: "ניהול וצפייה במידע של כל הלקוחות"
+  },
+  customersTable: {
+    en: "Customers",
+    he: "לקוחות"
+  },
+  loading: {
+    en: "Loading...",
+    he: "...טוען משקלים"
+  },
+  tryAgain: {
+    en: "Try Again",
+    he: "נסה שוב"
+  },
+  errorFetchingScales: {
+    en: "Failed to fetch scales data. Please try again later.",
+    he: "שגיאה בטעינת נתוני המשקלים. אנא נסה שוב מאוחר יותר."
+  },
+  errorUpdatingScale: {
+    en: "Failed to update scale. Please try again later.",
+    he: "שגיאה בעדכון המשקל. אנא נסה שוב מאוחר יותר."
+  },
+  productsManagement: {
+    en: "My Products",
+    he: "המוצרים שלי"
+  },
+  unitsPerDay: {
+    en: "Units/Day",
+    he: "#missing value#"
+  },
+  selectItem: {
+    en: "Select Item",
+    he: "#missing value#"
+  },
+  scaleSelection: {
+    en: "Scale Selection",
+    he: "#missing value#"
+  },
+  ConsumptionAnalytics: {
+    en: "Consumption Analytics",
+    he: "#missing value#"
+  },
+  lastOrderQuantity: {
+    en: "Last Order Quantity",
+    he: "#missing value#"
+  },
+  dailyConsumptionRate: {
+    en: "Daily Consumption Rate",
+    he: "#missing value#"
+  },
+  units: {
+    en: "Units",
+    he: "#missing value#"
+  },
+  noStatsAvailable: {
+    en: "No stats available",
+    he: "#missing value#"
+  },
+  estimationQuntityLeft: {
+    en: "Estimation Quantity Left",
+    he: "#missing value#"
+  },
+  addProduct: {
+    en: "Add Product",
+    he: "הוסף מוצר"
+  },
+  quantity: {
+    en: "Quantity",
+    he: "#missing value#"
+  },
+  unit: {
+    en: "Unit",
+    he: "#missing value#"
+  },
+  total: {
+    en: "Total",
+    he: "#missing value#"
+  },
+  lastOrder: {
+    en: "Last Order",
+    he: "#missing value#"
+  },
+  days: {
+    en: "Days",
+    he: "#missing value#"
+  },
+  averageDaysBetweenOrders: {
+    en: "Average Days Between Orders",
+    he: "#missing value#"
+  },
+  daysFromLastOrder: {
+    en: "Days from Last Order",
+    he: "#missing value#"
+  },
+  averageConsumption: {
+    en: "Average Consumption",
+    he: "#missing value#"
+  },
+  ils: {
+    en: "ִ₪",
+    he: "#missing value#"
+  },
+  selectCustomer: {
+    en: "Select Customer",
+    he: "בחר לקוח"
+  },
+  updateProduct: {
+    en: "Update Product",
+    he: "עדכן מוצר"
+  },
+  linkedScales: {
+    en: "Linked Scales",
+    he: "משקלים מקושרים"
+  },
+  unassigned: {
+    en: "Unassigned",
+    he: "לא משויך"
+  },
+  editCustomer: {
+    en: "Edit Customer",
+    he: "ערוך לקוח"
+  },
+  deleteCustomer: {
+    en: "Delete Customer",
+    he: "מחק לקוח"
+  },
+  customerNameEn: {
+    en: "Customer Name (English)",
+    he: "שם לקוח (אנגלית)"
+  },
+  customerNameHe: {
+    en: "Customer Name (Hebrew)",
+    he: "שם לקוח (עברית)"
+  },
+  scalesManagement: {
+    en: "Scales",
+    he: "משקלים"
+  },
+  price: {
+    en: "Price",
+    he: "#missing value#"
+  },
+  phone: {
+    en: "Phone",
+    he: "טלפון"
+  },
+  address: {
+    en: "Address",
+    he: "כתובת"
+  },
+  cancel: {
+    en: "Cancel",
+    he: "ביטול"
+  },
+  add: {
+    en: "Add",
+    he: "הוסף"
+  },
+  update: {
+    en: "Update",
+    he: "עדכן"
+  },
+  deleteProductConfirmation: {
+    en: "Are you sure you want to delete this product?",
+    he: "האם אתה בטוח שברצונך למחוק מוצר זה?"
+  },
+  deleteMultipleProductsConfirmation: {
+    en: "Are you sure you want to delete these products?",
+    he: "האם אתה בטוח שברצונך למחוק מוצרים אלה?"
+  },
+  selectedForDeletion: {
+    en: "Selected for deletion",
+    he: "נבחרו למחיקה"
+  },
+  products: {
+    en: "products",
+    he: "מוצרים"
+  },
+  delete: {
+    en: "Delete",
+    he: "מחק"
+  },
+  deleteConfirmation: {
+    en: "Are you sure you want to delete this vendor?",
+    he: "האם אתה בטוח שברצונך למחוק ספק זה?"
+  },
+  deleteConfirmationDesc: {
+    en: "This action cannot be undone.",
+    he: "לא ניתן לבטל פעולה זו."
+  },
+  confirm: {
+    en: "Confirm",
+    he: "אישור"
+  },
+  customerDeleted: {
+    en: "Customer deleted successfully",
+    he: "הלקוח נמחק בהצלחה"
+  },
+  customerAdded: {
+    en: "Customer added successfully",
+    he: "הלקוח נוסף בהצלחה"
+  },
+  customerUpdated: {
+    en: "Customer updated successfully",
+    he: "הלקוח עודכן בהצלחה"
+  },
+  errorFetchingCustomers: {
+    en: "Failed to fetch customers",
+    he: "שגיאה בטעינת רשימת הלקוחות"
+  },
+  addVendor: {
+    en: "Add Vendor",
+    he: "הוסף ספק"
+  },
+  editVendor: {
+    en: "Edit Vendor",
+    he: "ערוך ספק"
+  },
+  deleteVendor: {
+    en: "Delete Vendor",
+    he: "מחק ספק"
+  },
+  vendorName: {
+    en: "Vendor Name",
+    he: "שם ספק"
+  },
+  contactPerson: {
+    en: "Contact Person",
+    he: "איש קשר"
+  },
+  vendorAdded: {
+    en: "Vendor added successfully",
+    he: "הספק נוסף בהצלחה"
+  },
+  vendorUpdated: {
+    en: "Vendor updated successfully",
+    he: "הספק עודכן בהצלחה"
+  },
+  vendorDeleted: {
+    en: "Vendor deleted successfully",
+    he: "הספק נמחק בהצלחה"
+  },
+  errorFetchingVendors: {
+    en: "Failed to fetch vendors",
+    he: "שגיאה בטעינת נתוני הספקים"
+  },
+  errorAddingVendor: {
+    en: "Failed to add vendor",
+    he: "שגיאה בהוספת ספק"
+  },
+  errorUpdatingVendor: {
+    en: "Failed to update vendor",
+    he: "שגיאה בעדכון ספק"
+  },
+  errorDeletingVendor: {
+    en: "Failed to delete vendor",
+    he: "שגיאה במחיקת ספק"
+  },
+  noVendors: {
+    en: "No vendors found",
+    he: "לא נמצאו ספקים"
+  },
+  registering: {
+    en: "Registering...",
+    he: "נרשם..."
+  },
+  allFieldsRequired: {
+    en: "All fields are required",
+    he: "כל השדות נדרשים"
+  },
+  passwordTooShort: {
+    en: "Password must be at least 8 characters",
+    he: "הסיסמה חייבת להכיל לפחות 8 תווים"
+  },
+  passwordNeedsUpper: {
+    en: "Password must contain an uppercase letter",
+    he: "הסיסמה חייבת להכיל אות גדולה"
+  },
+  passwordNeedsLower: {
+    en: "Password must contain a lowercase letter",
+    he: "הסיסמה חייבת להכיל אות קטנה"
+  },
+  passwordNeedsNumber: {
+    en: "Password must contain a number",
+    he: "הסיסמה חייבת להכיל מספר"
+  },
+  passwordNeedsSpecial: {
+    en: "Password must contain a special character",
+    he: "הסיסמה חייבת להכיל תו מיוחד"
+  },
+  verifying: {
+    en: "Verifying...",
+    he: "#missing value#"
+  },
+  resendingCode: {
+    en: "Resending code...",
+    he: "שולח קוד חדש..."
+  },
+  codeSentSuccessfully: {
+    en: "Verification code sent successfully",
+    he: "קוד האימות נשלח בהצלחה"
+  },
+  errorResendingCode: {
+    en: "Failed to resend verification code",
+    he: "שגיאה בשליחת קוד האימות מחדש"
+  },
+  emailVerified: {
+    en: "Email verified successfully",
+    he: "הדוא\"ל אומת בהצלחה"
+  },
+  sendResetCode: {
+    en: "Send Reset Code",
+    he: "שלח קוד איפוס"
+  },
+  sendingResetCode: {
+    en: "Sending reset code...",
+    he: "שולח קוד איפוס..."
+  },
+  resetCodeSent: {
+    en: "Password reset code sent to your email",
+    he: "קוד איפוס הסיסמה נשלח לדוא\"ל שלך"
+  },
+  confirmResetCode: {
+    en: "Confirm Reset Code",
+    he: "אשר קוד איפוס"
+  },
+  passwordChanged: {
+    en: "Password changed successfully",
+    he: "הסיסמה שונתה בהצלחה"
+  },
+  invalidEmail: {
+    en: "Please enter a valid email address",
+    he: "נא להזין כתובת דוא\"ל תקינה"
+  },
+  networkError: {
+    en: "Network error. Please check your connection",
+    he: "שגיאת רשת. נא לבדוק את החיבור"
+  },
+  unknownError: {
+    en: "An unknown error occurred",
+    he: "אירעה שגיאה לא ידועה"
+  },
+  sessionExpired: {
+    en: "Your session has expired. Please sign in again",
+    he: "פג תוקף החיבור. נא להתחבר מחדש"
+  },
+  invalidCode: {
+    en: "Invalid verification code",
+    he: "קוד אימות לא תקין"
+  },
+  tooManyAttempts: {
+    en: "Too many attempts. Please try again later",
+    he: "יותר מדי ניסיונות. נא לנסות שוב מאוחר יותר"
+  },
+  loginSuccess: {
+    en: "Signed in successfully",
+    he: "התחברת בהצלחה"
+  },
+  logoutSuccess: {
+    en: "Signed out successfully",
+    he: "התנתקת בהצלחה"
+  },
+  registrationSuccess: {
+    en: "Registration successful. Please verify your email",
+    he: "ההרשמה הושלמה בהצלחה. נא לאמת את הדוא\"ל"
+  },
+  processing: {
+    en: "Processing...",
+    he: "מעבד..."
+  },
+  pleaseWait: {
+    en: "Please wait...",
+    he: "נא להמתין..."
+  },
+  verifyingEmail: {
+    en: "Verifying your email address...",
+    he: "מאמת את כתובת האימייל שלך..."
+  },
+  emailVerifiedDesc: {
+    en: "Your email has been successfully verified. You can now sign in to your account.",
+    he: "כתובת האימייל שלך אומתה בהצלחה. כעת תוכל להתחבר לחשבונך."
+  },
+  verificationFailed: {
+    en: "Verification Failed",
+    he: "האימות נכשל"
+  },
+  missingVerificationParams: {
+    en: "Invalid verification link. Missing required parameters.",
+    he: "קישור אימות לא חוקי. חסרים פרמטרים נדרשים."
+  },
+  emailNotFound: {
+    en: "Email address not found in verification link.",
+    he: "כתובת האימייל לא נמצאה בקישור האימות."
+  },
+  requestNewCode: {
+    en: "Request New Code",
+    he: "בקש קוד חדש"
+  },
+  newCodeSent: {
+    en: "New Code Sent!",
+    he: "קוד חדש נשלח!"
+  },
+  checkEmailForCode: {
+    en: "A new verification code has been sent to your email address. Please check your inbox.",
+    he: "קוד אימות חדש נשלח לכתובת האימייל שלך. אנא בדוק את תיבת הדואר הנכנס."
+  },
+  continueToApp: {
+    en: "Continue to App",
+    he: "המשך לאפליקציה"
+  },
+  verificationLinkExpired: {
+    en: "Verification link has expired. Please request a new one.",
+    he: "קישור האימות פג תוקף. אנא בקש קישור חדש."
+  },
+  invalidVerificationCode: {
+    en: "Invalid verification code. Please try again.",
+    he: "קוד אימות לא חוקי. אנא נסה שוב."
+  },
+  sharedProducts: {
+    en: "Shared With You",
+    he: "שותף איתך"
+  },
+  sharedProductsDesc: {
+    en: "View products that have been shared with you",
+    he: "צפה במוצרים ששותפו איתך"
+  },
+  noSharedProducts: {
+    en: "No products have been shared with you yet",
+    he: "טרם שותפו איתך מוצרים"
+  },
+  subtitle: {
+    en: "Take control of your inventory with real-time weight-based monitoring",
+    he: "ניהול מלאי חכם באמצעות ניטור משקל מדויק"
+  },
+  getStarted: {
+    en: "Get Started for Free",
+    he: "התחל עכשיו"
+  },
+  button: {
+    en: "Start Your Journey",
+    he: "התחל את המסע"
+  },
+  slogan: {
+    en: "Smart Inventory Solutions",
+    he: "פתרונות מלאי חכמים"
+  },
+  rights: {
+    en: "© 2024 Quantifyz. All rights reserved.",
+    he: "© 2024 Quantifyz. כל הזכויות שמורות."
+  },
+  privacy: {
+    en: "Privacy Policy",
+    he: "מדיניות פרטיות"
+  },
+  terms: {
+    en: "Terms of Service",
+    he: "תנאי שימוש"
+  },
+  backToHome: {
+    en: "← Back to home",
+    he: "← חזרה לדף הבית"
   }
 };

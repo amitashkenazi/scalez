@@ -4,7 +4,7 @@ import { Plus, Trash2, Loader2, RefreshCw, AlertCircle } from 'lucide-react';
 import apiService from '../services/api';
 import ScaleModal from './ScaleModal';
 import DeleteConfirmationModal from './modals/DeleteConfirmationModal';
-// import { translations } from '../translations/translations';
+import { translations } from '../translations/translations';
 
 const formatDate = (timestamp) => {
   if (!timestamp) return 'N/A';
@@ -17,21 +17,27 @@ const ScalesManagement = () => {
   const [error, setError] = useState(null);
   const [successMessage, setSuccessMessage] = useState('');
   const [isRefreshing, setIsRefreshing] = useState(false);
-  
+
   // Modal states
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [selectedScale, setSelectedScale] = useState(null);
 
   const { language } = useLanguage();
-  // const t = translations[language];
+  // Helper function to get translation
+  const t = (key) => {
+    if (translations[key] && translations[key][language]) {
+      return translations[key][language];
+    }
+    return `Missing translation: ${key}`;
+  };
   const isRTL = language === 'he';
 
   // Fetch initial data
   const fetchData = async () => {
     try {
       setError(null);
-      
+
       // Get all scales
       const scalesResponse = await apiService.getScales();
 
@@ -76,11 +82,11 @@ const ScalesManagement = () => {
 
   const handleAddScale = async (scaleData) => {
     try {
-      await apiService.createScale({ 
+      await apiService.createScale({
         id: scaleData.id,
-        name: scaleData.name 
+        name: scaleData.name
       });
-      
+
       await fetchData();
       showSuccessMessage('Scale added successfully');
     } catch (err) {
@@ -215,8 +221,12 @@ const ScalesManagement = () => {
           setSelectedScale(null);
         }}
         onConfirm={handleDeleteScale}
-        title="Delete Scale"
-        message={`Are you sure you want to delete scale "${selectedScale?.name || selectedScale?.scale_id}"? This action cannot be undone.`}
+        title={"Delete Scale"}
+        message={"Are you sure you want to delete this scale?"}
+        selectedCount={1}
+        productNames={selectedScale ? [
+          `${selectedScale.name || 'Unnamed Scale'} (ID: ${selectedScale.scale_id})`
+        ] : []}
       />
     </div>
   );

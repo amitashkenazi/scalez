@@ -6,7 +6,13 @@ import { Receipt } from 'lucide-react';
 
 const OrderHistory = ({ orders }) => {
   const { language } = useLanguage();
-  const t = translations[language];
+  // Helper function to get translation
+  const t = (key) => {
+    if (translations[key] && translations[key][language]) {
+      return translations[key][language];
+    }
+    return `Missing translation: ${key}`;
+  };
   const isRTL = language === 'he';
 
   const formatDate = (dateString) => {
@@ -27,7 +33,7 @@ const OrderHistory = ({ orders }) => {
     <div className="p-4 bg-gray-50 rounded-lg">
       <div className="flex items-center gap-2 mb-4">
         <Receipt className="h-5 w-5 text-gray-500" />
-        <h3 className="text-lg font-semibold">{t.orderHistory}</h3>
+        <h3 className="text-lg font-semibold">{t('orderHistory')}</h3>
       </div>
 
       <div className="overflow-x-auto">
@@ -35,19 +41,19 @@ const OrderHistory = ({ orders }) => {
           <thead className="bg-gray-50">
             <tr>
               <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                {t.date}
+                {t('date')}
               </th>
               <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                {t.quantity}
+                {t('quantity')}
               </th>
               <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                {t.price}
+                {t('price')}
               </th>
               <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                {t.total}
+                {t('total')}
               </th>
               <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                {t.orderID}
+                {t('orderID')}
               </th>
             </tr>
           </thead>
@@ -75,14 +81,14 @@ const OrderHistory = ({ orders }) => {
           <tfoot className="bg-gray-50">
             <tr>
               <td className="px-4 py-2 text-sm font-medium text-gray-900">
-                {t.totalOrders}: {orders.length}
+                {t('totalOrders')}: {orders.length}
               </td>
               <td className="px-4 py-2 text-sm font-medium text-gray-900">
-                {t.totalQuantity}: {orders.reduce((sum, order) => sum + (parseFloat(order.quantity) || 0), 0)}
+                {t('totalQuantity')}: {orders.reduce((sum, order) => sum + (parseFloat(order.quantity) || 0), 0)}
               </td>
               <td></td>
               <td className="px-4 py-2 text-sm font-medium text-gray-900">
-                {t.totalAmount}: ₪{orders.reduce((sum, order) => sum + (parseFloat(order.total) || 0), 0).toFixed(2)}
+                {t('totalAmount')}: ₪{orders.reduce((sum, order) => sum + (parseFloat(order.total) || 0), 0).toFixed(2)}
               </td>
               <td></td>
             </tr>

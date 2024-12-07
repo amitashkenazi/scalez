@@ -20,7 +20,13 @@ export default function ProductsManagementView() {
   const [selectedProduct, setSelectedProduct] = useState(null);
 
   const { language } = useLanguage();
-  const t = translations[language];
+  // Helper function to get translation
+  const t = (key) => {
+    if (translations[key] && translations[key][language]) {
+      return translations[key][language];
+    }
+    return `Missing translation: ${key}`;
+  };
   const isRTL = language === 'he';
 
   const fetchInitialData = async () => {
@@ -65,7 +71,7 @@ export default function ProductsManagementView() {
       console.log('newProduct', newProduct);
       setProducts(prev => [...prev, newProduct]);
       setIsModalOpen(false);
-      showSuccessMessage(t.productAdded || 'Product added successfully');
+      showSuccessMessage(t('productAdded') || 'Product added successfully');
     } catch (err) {
       throw new Error(err.message || 'Failed to add product');
     }
@@ -78,7 +84,7 @@ export default function ProductsManagementView() {
       setProducts(prev => prev.map(p => p.product_id === updatedProduct.product_id ? updatedProduct : p));
       setIsModalOpen(false);
       setSelectedProduct(null);
-      showSuccessMessage(t.productUpdated || 'Product updated successfully');
+      showSuccessMessage(t('productUpdated') || 'Product updated successfully');
     } catch (err) {
       throw new Error(err.message || 'Failed to update product');
     }
@@ -92,7 +98,7 @@ export default function ProductsManagementView() {
       setProducts(prev => prev.filter(p => p.product_id !== selectedProduct.product_id));
       setIsDeleteModalOpen(false);
       setSelectedProduct(null);
-      showSuccessMessage(t.productDeleted || 'Product deleted successfully');
+      showSuccessMessage(t('productDeleted') || 'Product deleted successfully');
     } catch (err) {
       setError(err.message || 'Failed to delete product');
     }
@@ -123,7 +129,7 @@ export default function ProductsManagementView() {
     <div className="p-6 max-w-7xl mx-auto" dir={isRTL ? 'rtl' : 'ltr'}>
       <div className="mb-6">
         <div className="flex justify-between items-center">
-          <h2 className="text-2xl font-bold">{t.productsManagement}</h2>
+          <h2 className="text-2xl font-bold">{t('productsManagement')}</h2>
           <div className="flex gap-2">
             <button
               onClick={handleRefresh}
@@ -131,7 +137,7 @@ export default function ProductsManagementView() {
               disabled={isRefreshing}
             >
               <RefreshCw className={`h-5 w-5 ${isRefreshing ? 'animate-spin' : ''}`} />
-              {t.refresh}
+              {t('refresh')}
             </button>
             <button
               onClick={() => {
@@ -141,7 +147,7 @@ export default function ProductsManagementView() {
               className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
             >
               <Plus size={20} />
-              {t.addProduct}
+              {t('addProduct')}
             </button>
           </div>
         </div>
@@ -165,19 +171,19 @@ export default function ProductsManagementView() {
           <thead className="bg-gray-50">
             <tr>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                {t.productName}
+                {t('productName')}
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                {t.customer}
+                {t('customer')}
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                {t.thresholds}
+                {t('thresholds')}
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                {t.linkedScales}
+                {t('linkedScales')}
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                {t.actions}
+                {t('actions')}
               </th>
             </tr>
           </thead>
@@ -251,8 +257,8 @@ export default function ProductsManagementView() {
           setSelectedProduct(null);
         }}
         onConfirm={handleDeleteProduct}
-        title={t.deleteProduct}
-        message={`${t.deleteConfirmationDesc} "${selectedProduct?.name}"`}
+        title={t('deleteProduct')}
+        message={`${t('deleteConfirmationDesc')} "${selectedProduct?.name}"`}
       />
     </div>
   );

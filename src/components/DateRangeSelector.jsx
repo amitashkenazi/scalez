@@ -9,7 +9,13 @@ import { translations } from '../translations/translations';
  */
 const DateRangeSelector = ({ startDate, endDate, onStartDateChange, onEndDateChange }) => {
   const { language } = useLanguage();
-  const t = translations[language];
+  // Helper function to get translation
+  const t = (key) => {
+    if (translations[key] && translations[key][language]) {
+      return translations[key][language];
+    }
+    return `Missing translation: ${key}`;
+  };
   const isRTL = language === 'he';
 
   return (
@@ -18,7 +24,7 @@ const DateRangeSelector = ({ startDate, endDate, onStartDateChange, onEndDateCha
       dir={isRTL ? 'rtl' : 'ltr'}
     >
       <div>
-        <label className="block text-sm text-gray-500 mb-1">{t.from}</label>
+        <label className="block text-sm text-gray-500 mb-1">{t('from')}</label>
         <input
           type="datetime-local"
           value={startDate}
@@ -27,7 +33,7 @@ const DateRangeSelector = ({ startDate, endDate, onStartDateChange, onEndDateCha
         />
       </div>
       <div>
-        <label className="block text-sm text-gray-500 mb-1">{t.to}</label>
+        <label className="block text-sm text-gray-500 mb-1">{t('to')}</label>
         <input
           type="datetime-local"
           value={endDate}

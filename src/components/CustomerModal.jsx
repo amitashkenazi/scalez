@@ -18,7 +18,13 @@ import apiService from '../services/api';
  */
 const CustomerModal = ({ isOpen, onClose, onSubmit, initialData = null }) => {
   const { language } = useLanguage();
-  const t = translations[language];
+  // Helper function to get translation
+  const t = (key) => {
+    if (translations[key] && translations[key][language]) {
+      return translations[key][language];
+    }
+    return `Missing translation: ${key}`;
+  };
   const isRTL = language === 'he';
 
   const [formData, setFormData] = useState({
@@ -191,7 +197,7 @@ const CustomerModal = ({ isOpen, onClose, onSubmit, initialData = null }) => {
       >
         <div className="flex justify-between items-center mb-6">
           <h2 className="text-xl font-bold text-gray-900">
-            {initialData ? t.editCustomer : t.addCustomer}
+            {initialData ? t('editCustomer') : t('addCustomer')}
           </h2>
           <button 
             onClick={onClose}
@@ -204,7 +210,7 @@ const CustomerModal = ({ isOpen, onClose, onSubmit, initialData = null }) => {
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              {t.customerName}
+              {t('customerName')}
             </label>
             <input
               type="text"
@@ -223,7 +229,7 @@ const CustomerModal = ({ isOpen, onClose, onSubmit, initialData = null }) => {
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              {t.email}
+              {t('email')}
             </label>
             <input
               type="email"
@@ -240,7 +246,7 @@ const CustomerModal = ({ isOpen, onClose, onSubmit, initialData = null }) => {
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              {t.phone}
+              {t('phone')}
             </label>
             <input
               type="tel"
@@ -254,7 +260,7 @@ const CustomerModal = ({ isOpen, onClose, onSubmit, initialData = null }) => {
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              {t.address}
+              {t('address')}
             </label>
             <textarea
               value={formData.address}
@@ -358,7 +364,7 @@ const CustomerModal = ({ isOpen, onClose, onSubmit, initialData = null }) => {
               className="px-4 py-2 text-gray-700 border rounded-lg hover:bg-gray-50 transition-colors"
               disabled={isSubmitting}
             >
-              {t.cancel}
+              {t('cancel')}
             </button>
             <button
               type="submit"
@@ -367,7 +373,7 @@ const CustomerModal = ({ isOpen, onClose, onSubmit, initialData = null }) => {
               disabled={isSubmitting}
             >
               {isSubmitting && <Loader2 className="h-4 w-4 animate-spin" />}
-              {isSubmitting ? t.saving : (initialData ? t.update : t.add)}
+              {isSubmitting ? t('saving') : (initialData ? t('update') : t('add'))}
             </button>
           </div>
         </form>

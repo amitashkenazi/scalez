@@ -46,7 +46,13 @@ const OrderDetails = ({ items, customerName }) => {
   const [customers, setCustomers] = useState([]);
   const [successMessage, setSuccessMessage] = useState('');
   const { language } = useLanguage();
-  const t = translations[language];
+  // Helper function to get translation
+  const t = (key) => {
+    if (translations[key] && translations[key][language]) {
+      return translations[key][language];
+    }
+    return `Missing translation: ${key}`;
+  };
 
   useEffect(() => {
     const fetchCustomers = async () => {
@@ -69,7 +75,7 @@ const OrderDetails = ({ items, customerName }) => {
   const handleAddProduct = async (productData) => {
     try {
       await apiService.createProduct(productData);
-      setSuccessMessage(t.productAdded || 'Product created successfully');
+      setSuccessMessage((t('productAdded')) || 'Product created successfully');
       setIsModalOpen(false);
       setTimeout(() => setSuccessMessage(''), 3000);
     } catch (error) {
@@ -150,7 +156,13 @@ const OrdersView = () => {
   const [hasMore, setHasMore] = useState(true);
 
   const { language } = useLanguage();
-  const t = translations[language];
+  // Helper function to get translation
+  const t = (key) => {
+    if (translations[key] && translations[key][language]) {
+      return translations[key][language];
+    }
+    return `Missing translation: ${key}`;
+  };
   const isRTL = language === 'he';
 
   const fetchOrders = async (showLoadingState = true, pageToken = null, filters = { status: statusFilter, search: searchTerm }) => {

@@ -8,7 +8,13 @@ import { Loader2, AlertCircle, Eye, EyeOff } from 'lucide-react';
 export const RegisterForm = ({ onSwitch }) => {
     const { signUp } = useAuth();
     const { language } = useLanguage();
-    const t = translations[language];
+    // Helper function to get translation
+    const t = (key) => {
+        if (translations[key] && translations[key][language]) {
+        return translations[key][language];
+        }
+        return `Missing translation: ${key}`;
+    };
 
     const [formData, setFormData] = useState({
         email: '',
@@ -28,7 +34,7 @@ export const RegisterForm = ({ onSwitch }) => {
         setError('');
 
         if (formData.password !== formData.confirmPassword) {
-            setError(t.passwordsDontMatch);
+            setError(t('passwordsDontMatch'));
             return;
         }
 
@@ -50,7 +56,7 @@ export const RegisterForm = ({ onSwitch }) => {
 
         } catch (err) {
             console.error('Registration error:', err);
-            setError(err.message || t.signUpError);
+            setError(err.message || t('signUpError'));
         } finally {
             setIsLoading(false);
         }
@@ -60,13 +66,13 @@ export const RegisterForm = ({ onSwitch }) => {
         <form onSubmit={handleSubmit} className="space-y-4">
             {registrationSuccess && (
                 <div className="bg-green-50 border border-green-400 rounded-lg p-4 mb-4">
-                    <p className="text-green-700">{t.registrationSuccess}</p>
+                    <p className="text-green-700">{t('registrationSuccess')}</p>
                 </div>
             )}
 
             <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                    {t.name}
+                    {t('name')}
                 </label>
                 <input
                     type="text"
@@ -80,7 +86,7 @@ export const RegisterForm = ({ onSwitch }) => {
 
             <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                    {t.email}
+                    {t('email')}
                 </label>
                 <input
                     type="email"
@@ -94,7 +100,7 @@ export const RegisterForm = ({ onSwitch }) => {
 
             <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                    {t.password}
+                    {t('password')}
                 </label>
                 <div className="relative">
                     <input
@@ -118,7 +124,7 @@ export const RegisterForm = ({ onSwitch }) => {
 
             <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                    {t.confirmPassword}
+                    {t('confirmPassword')}
                 </label>
                 <div className="relative">
                     <input
@@ -156,7 +162,7 @@ export const RegisterForm = ({ onSwitch }) => {
                 disabled={isLoading || registrationSuccess}
             >
                 {isLoading && <Loader2 className="h-4 w-4 animate-spin" />}
-                {isLoading ? t.registering : t.createAccount}
+                {isLoading ? t('registering') : t('createAccount')}
             </button>
 
             {!registrationSuccess && (
@@ -167,7 +173,7 @@ export const RegisterForm = ({ onSwitch }) => {
                         className="text-sm text-blue-600 hover:text-blue-800"
                         disabled={isLoading}
                     >
-                        {t.alreadyHaveAccount}
+                        {t('alreadyHaveAccount')}
                     </button>
                 </div>
             )}

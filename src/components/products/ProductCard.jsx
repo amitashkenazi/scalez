@@ -9,7 +9,13 @@ import { getStatusInfo } from '../../utils/statusUtils';
 const ProductCard = ({ product, scale, customers, latestMeasurement }) => {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const { language } = useLanguage();
-    const t = translations[language];
+    // Helper function to get translation
+    const t = (key) => {
+        if (translations[key] && translations[key][language]) {
+        return translations[key][language];
+        }
+        return `Missing translation: ${key}`;
+    };
     const [lastOrder, setLastOrder] = useState(null);
     const [consumptionStats, setConsumptionStats] = useState(null);
     const [scaleId, setScaleId] = useState(null);
@@ -111,7 +117,7 @@ const ProductCard = ({ product, scale, customers, latestMeasurement }) => {
       { color: 'text-gray-400', bgColor: 'bg-gray-50', status: 'unknown', distance: 0 };
   
     const formatDate = (timestamp) => {
-      if (!timestamp) return t.noData;
+      if (!timestamp) return t('noData');
       return new Date(timestamp).toLocaleString(language === 'he' ? 'he-IL' : 'en-US', {
         year: 'numeric',
         month: 'short',
@@ -140,7 +146,7 @@ const ProductCard = ({ product, scale, customers, latestMeasurement }) => {
     const getWhatsAppLink = () => {
       if (!customerInfo?.phone) return null;
       const message = encodeURIComponent(
-        `${t.runningLowMessage} ${product.name || ''}\n${t.productLeft}: ${latestMeasurement?.weight || 0}kg\n${t.pleaseResupply}`
+        `${t('runningLowMessage')} ${product.name || ''}\n${t('productLeft')}: ${latestMeasurement?.weight || 0}kg\n${t('pleaseResupply')}`
       );
       const cleanPhone = customerInfo.phone.replace(/\D/g, '');
       const formattedPhone = cleanPhone.startsWith('972') ? cleanPhone :
@@ -168,7 +174,7 @@ const ProductCard = ({ product, scale, customers, latestMeasurement }) => {
                 <div className="flex items-center gap-1 text-gray-400">
                   <Scale size={14} />
                   <span className="text-gray-500">
-                    {scale ? (scale.name || `Scale ${scale.scale_id}`) : t.noScaleAssigned}
+                    {scale ? (scale.name || `Scale ${scale.scale_id}`) : t('noScaleAssigned')}
                   </span>
                 </div>
                 {product.scale_id && (
@@ -187,7 +193,7 @@ const ProductCard = ({ product, scale, customers, latestMeasurement }) => {
                 <div className={`px-4 py-2 rounded-lg ${statusInfo.bgColor} transform transition-transform 
                   group-hover:scale-105`}>
                   <span className={`text-xl font-bold ${statusInfo.color}`}>
-                    {latestMeasurement?.weight ? `${latestMeasurement.weight} kg` : t.noData}
+                    {latestMeasurement?.weight ? `${latestMeasurement.weight} kg` : t('noData')}
                   </span>
                 </div>
               )}
@@ -213,11 +219,11 @@ const ProductCard = ({ product, scale, customers, latestMeasurement }) => {
             <>
               <div className="space-y-2">
                 <div className="flex justify-between items-center">
-                  <span className="text-gray-600">{t.upperThreshold}:</span>
+                  <span className="text-gray-600">{t('upperThreshold')}:</span>
                   <span className="text-green-600 font-medium">{product.thresholds?.upper || 0} kg</span>
                 </div>
                 <div className="flex justify-between items-center">
-                  <span className="text-gray-600">{t.lowerThreshold}:</span>
+                  <span className="text-gray-600">{t('lowerThreshold')}:</span>
                   <span className="text-red-600 font-medium">{product.thresholds?.lower || 0} kg</span>
                 </div>
               </div>
@@ -245,7 +251,7 @@ const ProductCard = ({ product, scale, customers, latestMeasurement }) => {
                 <div className="flex items-center gap-2">
                   <Receipt size={16} className="text-gray-500" />
                   <span className="text-sm font-medium text-gray-700">
-                    {t.lastOrder}
+                    {t('lastOrder')}
                   </span>
                 </div>
                 <span className="text text-gray-500">
@@ -258,21 +264,21 @@ const ProductCard = ({ product, scale, customers, latestMeasurement }) => {
               </div>
               <div className="grid grid-cols-3 gap-3">
                 <div className="bg-white rounded-md p-3 shadow-sm">
-                  <span className="text-xs text-gray-500 block mb-1">{t.quantity}</span>
+                  <span className="text-xs text-gray-500 block mb-1">{t('quantity')}</span>
                   <span className="text-lg font-semibold">
                     {lastOrder.quantity || 0}
-                    <span className="text-xs text-gray-500 ml-1">{t.units}</span>
+                    <span className="text-xs text-gray-500 ml-1">{t('units')}</span>
                   </span>
                 </div>
                 <div className="bg-white rounded-md p-3 shadow-sm">
-                  <span className="text-xs text-gray-500 block mb-1">{t.price}</span>
+                  <span className="text-xs text-gray-500 block mb-1">{t('price')}</span>
                   <span className="text-lg font-semibold">
                     ₪{lastOrder.price || 0}
-                    <span className="text-xs text-gray-500 ml-1">/ {t.unit}</span>
+                    <span className="text-xs text-gray-500 ml-1">/ {t('unit')}</span>
                   </span>
                 </div>
                 <div className="bg-white rounded-md p-3 shadow-sm">
-                  <span className="text-xs text-gray-500 block mb-1">{t.total}</span>
+                  <span className="text-xs text-gray-500 block mb-1">{t('total')}</span>
                   <span className="text-lg font-semibold">
                     ₪{lastOrder.total || 0}
                   </span>
@@ -286,7 +292,7 @@ const ProductCard = ({ product, scale, customers, latestMeasurement }) => {
                 <div className="flex items-center gap-2">
                     <TrendingUp size={16} className="text-gray-500" />
                     <h4 className="text-base font-semibold text-gray-700">
-                        {t.ConsumptionAnalytics}
+                        {t('ConsumptionAnalytics')}
                     </h4>
                 </div>
                 <div className="flex items-center gap-1 text-sm text-gray-500">
@@ -306,7 +312,7 @@ const ProductCard = ({ product, scale, customers, latestMeasurement }) => {
                                 <span className="text-lg font-semibold">
                                     {consumptionStats.dailyAverage}
                                 </span>
-                                <span className="text-xs text-gray-500 ml-1">{t.unitsPerDay}</span>
+                                <span className="text-xs text-gray-500 ml-1">{t('unitsPerDay')}</span>
                             </div>
                         </div>
                     </div>
@@ -314,13 +320,13 @@ const ProductCard = ({ product, scale, customers, latestMeasurement }) => {
                     <div className="bg-white rounded-md p-3 shadow-sm">
                         <div className="flex flex-col h-full justify-between">
                             <span className="text-xs text-gray-500 font-medium">
-                                {t.averageDaysBetweenOrders}
+                                {t('averageDaysBetweenOrders')}
                             </span>
                             <div className="mt-1">
                                 <span className="text-lg font-semibold">
                                     {consumptionStats.averageDaysBetweenOrders}
                                 </span>
-                                <span className="text-xs text-gray-500 ml-1">{t.days}</span>
+                                <span className="text-xs text-gray-500 ml-1">{t('days')}</span>
                             </div>
                         </div>
                     </div>
@@ -330,13 +336,13 @@ const ProductCard = ({ product, scale, customers, latestMeasurement }) => {
                     }`}>
                         <div className="flex flex-col h-full justify-between">
                             <span className="text-xs text-gray-500 font-medium">
-                                {t.daysFromLastOrder}
+                                {t('daysFromLastOrder')}
                             </span>
                             <div className="mt-1">
                                 <span className="text-lg font-semibold">
                                     {consumptionStats.daysFromLastOrder}
                                 </span>
-                                <span className="text-xs text-gray-500 ml-1">{t.days}</span>
+                                <span className="text-xs text-gray-500 ml-1">{t('days')}</span>
                             </div>
                         </div>
                     </div>
@@ -346,20 +352,20 @@ const ProductCard = ({ product, scale, customers, latestMeasurement }) => {
                     }`}>
                         <div className="flex flex-col h-full justify-between">
                             <span className="text-xs text-gray-500 font-medium">
-                                {t.estimationQuntityLeft}
+                                {t('estimationQuntityLeft')}
                             </span>
                             <div className="mt-1">
                                 <span className="text-lg font-semibold">
                                     {consumptionStats.estimationQuntityLeft}
                                 </span>
-                                <span className="text-xs text-gray-500 ml-1">{t.units}</span>
+                                <span className="text-xs text-gray-500 ml-1">{t('units')}</span>
                             </div>
                         </div>
                     </div>
                 </div>
             ) : (
                 <div className="text-gray-500 text-sm">
-                    {t.noStatsAvailable}
+                    {t('noStatsAvailable')}
                 </div>
             )}
         </div>

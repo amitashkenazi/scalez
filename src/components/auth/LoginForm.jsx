@@ -8,7 +8,13 @@ import { Loader2, AlertCircle, Eye, EyeOff } from 'lucide-react';
 export const LoginForm = ({ onSuccess, onSwitch }) => {
     const { signIn } = useAuth();
     const { language } = useLanguage();
-    const t = translations[language];
+    // Helper function to get translation
+    const t = (key) => {
+        if (translations[key] && translations[key][language]) {
+        return translations[key][language];
+        }
+        return `Missing translation: ${key}`;
+    };
     
     const [formData, setFormData] = useState({
         email: '',
@@ -28,7 +34,7 @@ export const LoginForm = ({ onSuccess, onSwitch }) => {
             onSuccess();
         } catch (err) {
             console.error('Login error:', err);
-            setError(err.message || t.signInError);
+            setError(err.message || t('signInError'));
         } finally {
             setIsLoading(false);
         }
@@ -38,7 +44,7 @@ export const LoginForm = ({ onSuccess, onSwitch }) => {
         <form onSubmit={handleSubmit} className="space-y-4">
             <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                    {t.email}
+                    {t('email')}
                 </label>
                 <input
                     type="email"
@@ -51,7 +57,7 @@ export const LoginForm = ({ onSuccess, onSwitch }) => {
 
             <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                    {t.password}
+                    {t('password')}
                 </label>
                 <div className="relative">
                     <input
@@ -87,7 +93,7 @@ export const LoginForm = ({ onSuccess, onSwitch }) => {
                 disabled={isLoading}
             >
                 {isLoading && <Loader2 className="h-4 w-4 animate-spin" />}
-                {isLoading ? t.loading : t.signIn}
+                {isLoading ? t('loading') : t('signIn')}
             </button>
 
             <div className="text-center">
@@ -96,7 +102,7 @@ export const LoginForm = ({ onSuccess, onSwitch }) => {
                     onClick={() => onSwitch('register')}
                     className="text-sm text-blue-600 hover:text-blue-800"
                 >
-                    {t.dontHaveAccount}
+                    {t('dontHaveAccount')}
                 </button>
             </div>
         </form>

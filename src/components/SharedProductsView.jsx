@@ -18,7 +18,13 @@ const SharedProductsView = () => {
 
   const { language } = useLanguage();
   const { user } = useAuth();
-  const t = translations[language];
+  // Helper function to get translation
+  const t = (key) => {
+    if (translations[key] && translations[key][language]) {
+      return translations[key][language];
+    }
+    return `Missing translation: ${key}`;
+  };
   const isRTL = language === 'he';
 
   // Fetch shared products for the current user
@@ -48,7 +54,7 @@ const SharedProductsView = () => {
 
     } catch (err) {
       console.error('Error fetching shared products:', err);
-      setError(t.failedToFetchProducts);
+      setError(t('failedToFetchProducts'));
     } finally {
       setIsLoading(false);
       setIsRefreshing(false);
@@ -134,7 +140,7 @@ const SharedProductsView = () => {
           </div>
           <div className="flex items-center gap-4">
             <span className="text-sm text-gray-500">
-              {t.lastUpdated}: {getLastRefreshTimeString()}
+              {t('lastUpdated')}: {getLastRefreshTimeString()}
             </span>
             <button
               onClick={handleRefresh}
@@ -142,7 +148,7 @@ const SharedProductsView = () => {
               disabled={isRefreshing}
             >
               <RefreshCw className={`h-5 w-5 ${isRefreshing ? 'animate-spin' : ''}`} />
-              {t.refresh}
+              {t('refresh')}
             </button>
           </div>
         </div>

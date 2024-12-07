@@ -8,7 +8,13 @@ import { Loader2, AlertCircle } from 'lucide-react';
 export const VerifyEmailForm = ({ email, onSuccess }) => {
     const { confirmSignUp, resendConfirmationCode } = useAuth();
     const { language } = useLanguage();
-    const t = translations[language];
+    // Helper function to get translation
+    const t = (key) => {
+        if (translations[key] && translations[key][language]) {
+        return translations[key][language];
+        }
+        return `Missing translation: ${key}`;
+    };
     const isRTL = language === 'he';
 
     const [code, setCode] = useState('');
@@ -27,7 +33,7 @@ export const VerifyEmailForm = ({ email, onSuccess }) => {
             onSuccess();
         } catch (err) {
             console.error('Verification error:', err);
-            setError(err.message || t.verificationError);
+            setError(err.message || t('verificationError'));
         } finally {
             setIsLoading(false);
         }
@@ -44,7 +50,7 @@ export const VerifyEmailForm = ({ email, onSuccess }) => {
             setTimeout(() => setResendSuccess(false), 3000);
         } catch (err) {
             console.error('Error resending code:', err);
-            setError(err.message || t.errorResendingCode);
+            setError(err.message || t('errorResendingCode'));
         } finally {
             setIsResending(false);
         }
@@ -52,10 +58,10 @@ export const VerifyEmailForm = ({ email, onSuccess }) => {
 
     return (
         <div className="w-full max-w-md mx-auto" dir={isRTL ? 'rtl' : 'ltr'}>
-            <h2 className="text-3xl font-bold text-center mb-8">{t.verifyEmail}</h2>
+            <h2 className="text-3xl font-bold text-center mb-8">{t('verifyEmail')}</h2>
 
             <p className="text-center text-gray-600 mb-6">
-                {t.verificationEmailSent}
+                {t('verificationEmailSent')}
                 <br />
                 <span className="font-medium">{email}</span>
             </p>
@@ -63,7 +69,7 @@ export const VerifyEmailForm = ({ email, onSuccess }) => {
             <form onSubmit={handleSubmit} className="space-y-6">
                 <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
-                        {t.verificationCode}
+                        {t('verificationCode')}
                     </label>
                     <input
                         type="text"
@@ -85,7 +91,7 @@ export const VerifyEmailForm = ({ email, onSuccess }) => {
 
                 {resendSuccess && (
                     <div className="bg-green-50 border border-green-400 rounded-lg p-3">
-                        <p className="text-green-700 text-sm">{t.codeSentSuccessfully}</p>
+                        <p className="text-green-700 text-sm">{t('codeSentSuccessfully')}</p>
                     </div>
                 )}
 
@@ -96,7 +102,7 @@ export const VerifyEmailForm = ({ email, onSuccess }) => {
                     disabled={isLoading}
                 >
                     {isLoading && <Loader2 className="h-4 w-4 animate-spin" />}
-                    {isLoading ? t.verifying : t.verify}
+                    {isLoading ? t('verifying') : t('verify')}
                 </button>
 
                 <div className="text-center">
@@ -109,10 +115,10 @@ export const VerifyEmailForm = ({ email, onSuccess }) => {
                         {isResending ? (
                             <span className="flex items-center justify-center gap-2">
                                 <Loader2 className="h-4 w-4 animate-spin" />
-                                {t.resendingCode}
+                                {t('resendingCode')}
                             </span>
                         ) : (
-                            t.resendCode
+                            t('resendCode')
                         )}
                     </button>
                 </div>

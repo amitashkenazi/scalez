@@ -86,7 +86,13 @@ const ProductsTableView = ({
   onMessageClick 
 }) => {
   const { language } = useLanguage();
-  const t = translations[language];
+  // Helper function to get translation
+  const t = (key) => {
+    if (translations[key] && translations[key][language]) {
+      return translations[key][language];
+    }
+    return `Missing translation: ${key}`;
+  };
   const isRTL = language === 'he';
   const [expandedRow, setExpandedRow] = useState(null);
   const { analytics, isLoading: isLoadingAnalytics } = useProductAnalytics(products);
@@ -142,7 +148,7 @@ const ProductsTableView = ({
   };
 
   const formatDate = (timestamp) => {
-    if (!timestamp) return t.noData;
+    if (!timestamp) return t('noData');
     return new Date(timestamp).toLocaleString(language === 'he' ? 'he-IL' : 'en-US', {
       year: 'numeric',
       month: 'short',
@@ -163,7 +169,7 @@ const ProductsTableView = ({
 
   const getCustomerName = (customerId) => {
     const customer = customers.find(c => c.customer_id === customerId);
-    if (!customer) return t.unknownCustomer;
+    if (!customer) return t('unknownCustomer');
     return customer.name;
   };
 
@@ -200,7 +206,7 @@ const ProductsTableView = ({
   if (!Array.isArray(products)) {
     return (
       <div className="bg-white rounded-lg shadow p-6 text-center text-gray-500">
-        {t.noProducts}
+        {t('noProducts')}
       </div>
     );
   }
@@ -211,7 +217,7 @@ const ProductsTableView = ({
         <thead className="bg-gray-50">
           <tr>
             <SortHeader 
-              label={t.productName}
+              label={t('productName')}
               sortKey="name"
               currentSort={sortConfig}
               onSort={handleSort}
@@ -219,24 +225,24 @@ const ProductsTableView = ({
             />
             <th className={`px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider
               ${isRTL ? 'text-right' : 'text-left'}`}>
-              {t.customer}
+              {t('customer')}
             </th>
             <SortHeader 
-              label={t.weight}
+              label={t('weight')}
               sortKey="weight"
               currentSort={sortConfig}
               onSort={handleSort}
               isRTL={isRTL}
             />
             <SortHeader 
-              label={t.estimationQuntityLeft}
+              label={t('estimationQuntityLeft')}
               sortKey="estimationQuantityLeft"
               currentSort={sortConfig}
               onSort={handleSort}
               isRTL={isRTL}
             />
             <SortHeader 
-              label={t.daysFromLastOrder}
+              label={t('daysFromLastOrder')}
               sortKey="daysFromLastOrder"
               currentSort={sortConfig}
               onSort={handleSort}
@@ -244,7 +250,7 @@ const ProductsTableView = ({
             />
             <th className={`px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider
               ${isRTL ? 'text-right' : 'text-left'}`}>
-              {t.actions}
+              {t('actions')}
             </th>
           </tr>
         </thead>
@@ -285,7 +291,7 @@ const ProductsTableView = ({
                   </td>
                   <td className="px-6 py-4">
                     <span className={`text-sm font-medium ${statusColor}`}>
-                      {measurement ? `${measurement.weight} kg` : t.noData}
+                      {measurement ? `${measurement.weight} kg` : t('noData')}
                     </span>
                   </td>
                   <td className={`px-6 py-4 ${quantityWarning.className}`}>
@@ -295,10 +301,10 @@ const ProductsTableView = ({
                         <Loader2 className="h-4 w-4 animate-spin text-gray-400" />
                       ) : productAnalytics ? (
                         <span>
-                          {productAnalytics.estimationQuantityLeft} {t.units}
+                          {productAnalytics.estimationQuantityLeft} {t('units')}
                         </span>
                       ) : (
-                        <span className="text-gray-400">{t.noData}</span>
+                        <span className="text-gray-400">{t('noData')}</span>
                       )}
                     </div>
                   </td>
@@ -309,10 +315,10 @@ const ProductsTableView = ({
                         <Loader2 className="h-4 w-4 animate-spin text-gray-400" />
                       ) : productAnalytics ? (
                         <span>
-                          {productAnalytics.daysFromLastOrder} {t.days}
+                          {productAnalytics.daysFromLastOrder} {t('days')}
                         </span>
                       ) : (
-                        <span className="text-gray-400">{t.noData}</span>
+                        <span className="text-gray-400">{t('noData')}</span>
                       )}
                     </div>
                   </td>
@@ -359,34 +365,34 @@ const ProductsTableView = ({
                           <div className="flex items-center gap-2">
                             <TrendingUp className="h-5 w-5 text-gray-500" />
                             <span className="font-medium text-gray-700">
-                              {t.ConsumptionAnalytics}
+                              {t('ConsumptionAnalytics')}
                             </span>
                           </div>
                           <div className="grid grid-cols-4 gap-4">
                             <div className="bg-white rounded-lg p-3 shadow-sm">
                               <span className="text-sm text-gray-500 font-medium">
-                                {t.averageConsumption}
+                                {t('averageConsumption')}
                               </span>
                               <div className="mt-1 text-gray-900">
                                 <span className="text-lg font-semibold">
                                   {productAnalytics.dailyAverage}
                                 </span>
                                 <span className="text-sm text-gray-500 ml-1">
-                                  {t.unitsPerDay}
+                                  {t('unitsPerDay')}
                                 </span>
                               </div>
                             </div>
 
                             <div className="bg-white rounded-lg p-3 shadow-sm">
                               <span className="text-sm text-gray-500 font-medium">
-                                {t.averageDaysBetweenOrders}
+                                {t('averageDaysBetweenOrders')}
                               </span>
                               <div className="mt-1 text-gray-900">
                                 <span className="text-lg font-semibold">
                                   {productAnalytics.averageDaysBetweenOrders}
                                 </span>
                                 <span className="text-sm text-gray-500 ml-1">
-                                  {t.days}
+                                  {t('days')}
                                 </span>
                               </div>
                             </div>
@@ -400,7 +406,7 @@ const ProductsTableView = ({
                                   {productAnalytics.quantityLastOrder}
                                 </span>
                                 <span className="text-sm text-gray-500 ml-1">
-                                  {t.units}
+                                  {t('units')}
                                 </span>
                               </div>
                             </div>
@@ -458,7 +464,7 @@ const ProductsTableView = ({
                         </div>
                       ) : (
                         <div className="text-center py-8 text-gray-500">
-                          {t.noData}
+                          {t('noData')}
                         </div>
                       )}
                     </td>

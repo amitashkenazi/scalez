@@ -45,7 +45,13 @@ const ProductModal = ({
   const [productId, setProductId] = useState(null);
 
   const { language } = useLanguage();
-  const t = translations[language];
+  // Helper function to get translation
+  const t = (key) => {
+    if (translations[key] && translations[key][language]) {
+      return translations[key][language];
+    }
+    return `Missing translation: ${key}`;
+  };
   const isRTL = language === 'he';
 
   const fetchItems = async () => {
@@ -182,20 +188,20 @@ const ProductModal = ({
     const newErrors = {};
 
     if (!formData.name.trim()) {
-      newErrors.name = t.productNameRequired || 'Product name is required';
+      newErrors.name = t('productNameRequired') || 'Product name is required';
     }
 
     if (!formData.customer_id) {
-      newErrors.customer_id = t.customerRequired || 'Customer is required';
+      newErrors.customer_id = t('customerRequired') || 'Customer is required';
     }
 
     const upperThreshold = Number(formData.thresholds.upper);
     const lowerThreshold = Number(formData.thresholds.lower);
 
     if (isNaN(upperThreshold) || isNaN(lowerThreshold)) {
-      newErrors.thresholds = t.invalidThresholds || 'Invalid thresholds';
+      newErrors.thresholds = t('invalidThresholds') || 'Invalid thresholds';
     } else if (upperThreshold <= lowerThreshold) {
-      newErrors.thresholds = t.thresholdError || 'Upper threshold must be greater than lower threshold';
+      newErrors.thresholds = t('thresholdError') || 'Upper threshold must be greater than lower threshold';
     }
 
     setErrors(newErrors);
@@ -225,7 +231,7 @@ const ProductModal = ({
       onClose();
     } catch (err) {
       console.error('Submission error:', err);
-      setErrors({ submit: err.message || t.failedToSaveProduct || 'Failed to save product' });
+      setErrors({ submit: err.message || t('failedToSaveProduct') || 'Failed to save product' });
     } finally {
       setIsSubmitting(false);
     }
@@ -290,7 +296,7 @@ const ProductModal = ({
       >
         <div className="flex justify-between items-center mb-6">
           <h2 className="text-xl font-bold">
-            {initialData ? t.updateProduct || 'Update Product' : t.addProduct || 'Add Product'}
+            {initialData ? t('updateProduct') || 'Update Product' : t('addProduct') || 'Add Product'}
           </h2>
           <button 
             onClick={onClose}
@@ -304,7 +310,7 @@ const ProductModal = ({
           {/* Item Selection */}
           <div className="relative dropdown-container">
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              {t.selectItem || 'Select Item'}
+              {t('selectItem') || 'Select Item'}
             </label>
             <div className="relative">
               <input
@@ -323,7 +329,7 @@ const ProductModal = ({
                   }
                 }}
                 onFocus={() => setShowItemDropdown(true)}
-                placeholder={t.searchItems || 'Search items'}
+                placeholder={t('searchItems') || 'Search items'}
                 className="w-full p-2 pr-10 border rounded-lg"
               />
               <Search className="absolute right-3 top-2.5 text-gray-400" size={20} />
@@ -350,7 +356,7 @@ const ProductModal = ({
           {/* Product Name */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              {t.productName || 'Product Name'}
+              {t('productName') || 'Product Name'}
             </label>
             <input
               type="text"
@@ -366,7 +372,7 @@ const ProductModal = ({
           {/* Customer Selection */}
           <div className="relative dropdown-container">
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              {t.customer || 'Customer'}
+              {t('customer') || 'Customer'}
             </label>
             <div className="relative">
               <input
@@ -385,7 +391,7 @@ const ProductModal = ({
                   }
                 }}
                 onFocus={() => setShowCustomerDropdown(true)}
-                placeholder={t.searchCustomers || 'Search customers...'}
+                placeholder={t('searchCustomers') || 'Search customers...'}
                 className={`w-full p-2 pr-10 border rounded-lg ${
                   errors.customer_id ? 'border-red-500' : 'border-gray-300'
                 }`}
@@ -414,7 +420,7 @@ const ProductModal = ({
                   }}
                   className="p-2 hover:bg-blue-50 cursor-pointer text-blue-600 border-t"
                 >
-                  + {t.addNewCustomer || 'Add New Customer'}
+                  + {t('addNewCustomer') || 'Add New Customer'}
                 </div>
               </div>
             )}
@@ -426,30 +432,30 @@ const ProductModal = ({
           {/* Scale Selection */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              {t.scaleSelection || 'Scale Selection'}
+              {t('scaleSelection') || 'Scale Selection'}
             </label>
             <select
               value={formData.scale_id}
               onChange={handleScaleChange}
               className="w-full p-2 border rounded-lg border-gray-300"
             >
-              <option value="">{t.noScale || 'No Scale'}</option>
+              <option value="">{t('noScale') || 'No Scale'}</option>
               {availableScales.map(scale => (
                 <option key={scale.scale_id} value={scale.scale_id}>
                   {scale.name || `Scale ${scale.scale_id}`}
                 </option>
               ))}
-              <option value="new">{t.addNewScale || 'Add New Scale'}</option>
+              <option value="new">{t('addNewScale') || 'Add New Scale'}</option>
             </select>
           </div>
 
           {/* Thresholds */}
           <div className="space-y-4">
-            <h3 className="text-lg font-medium text-gray-900">{t.thresholds || 'Thresholds'}</h3>
+            <h3 className="text-lg font-medium text-gray-900">{t('thresholds') || 'Thresholds'}</h3>
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  {t.upperThreshold || 'Upper Threshold (kg)'}
+                  {t('upperThreshold') || 'Upper Threshold (kg)'}
                 </label>
                 <input
                   type="number"
@@ -467,7 +473,7 @@ const ProductModal = ({
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  {t.lowerThreshold || 'Lower Threshold (kg)'}
+                  {t('lowerThreshold') || 'Lower Threshold (kg)'}
                 </label>
                 <input
                   type="number"
@@ -506,7 +512,7 @@ const ProductModal = ({
               className="px-4 py-2 text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50"
               disabled={isSubmitting}
             >
-              {t.cancel || 'Cancel'}
+              {t('cancel') || 'Cancel'}
             </button>
             <button
               type="submit"
@@ -515,7 +521,7 @@ const ProductModal = ({
               disabled={isSubmitting}
             >
               {isSubmitting && <Loader2 className="h-4 w-4 animate-spin" />}
-              {isSubmitting ? t.saving || 'Saving...' : (initialData ? t.update || 'Update' : t.add || 'Add')}
+              {isSubmitting ? t('saving') || 'Saving...' : (initialData ? t('update') || 'Update' : t('add') || 'Add')}
             </button>
           </div>
         </form>

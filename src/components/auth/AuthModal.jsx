@@ -10,7 +10,13 @@ const AuthModal = ({ isOpen, onClose }) => {
     const [view, setView] = useState('login');
     const [registeredEmail, setRegisteredEmail] = useState('');
     const { language } = useLanguage();
-    const t = translations[language];
+    // Helper function to get translation
+    const t = (key) => {
+        if (translations[key] && translations[key][language]) {
+        return translations[key][language];
+        }
+        return `Missing translation: ${key}`;
+    };
     const isRTL = language === 'he';
 
     const handleLoginSuccess = () => {
@@ -33,9 +39,9 @@ const AuthModal = ({ isOpen, onClose }) => {
             >
                 <div className="flex justify-between items-center mb-6">
                     <h2 className="text-xl font-bold">
-                        {view === 'login' ? t.signIn : 
-                         view === 'register' ? t.register : 
-                         t.verifyEmail}
+                        {view === 'login' ? t('signIn') : 
+                         view === 'register' ? t('register') : 
+                         t('verifyEmail')}
                     </h2>
                     <button 
                         onClick={onClose}

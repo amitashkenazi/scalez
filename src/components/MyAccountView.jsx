@@ -8,7 +8,13 @@ import apiService from '../services/api';
 const MyAccountView = () => {
   const { user, refreshUser } = useAuth();
   const { language } = useLanguage();
-  const t = translations[language];
+  // Helper function to get translation
+  const t = (key) => {
+    if (translations[key] && translations[key][language]) {
+      return translations[key][language];
+    }
+    return `Missing translation: ${key}`;
+  };
   const isRTL = language === 'he';
 
   const [formData, setFormData] = useState({

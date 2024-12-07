@@ -20,7 +20,6 @@ import OrderHistory from './OrderHistory';
 import { getStatusColor, getAnalyticsWarningLevel, calculateAnalytics } from './utils/productUtils';
 import useSortableData from './hooks/useSortableData';
 
-// Intersection Observer Hook
 const useInfiniteScroll = (loadMore, hasMore, isLoading) => {
   const observer = useRef();
   
@@ -68,7 +67,7 @@ const ExpandableRow = ({ children, isExpanded }) => {
   
   return (
     <tr>
-      <td colSpan="6">
+      <td colSpan="7"> {/* Updated colspan to account for checkbox column */}
         <div
           ref={contentRef}
           style={{
@@ -99,10 +98,19 @@ const ProductsTable = ({
   hasMore,
   loadMore,
   onEdit,
-  onMessage
+  onMessage,
+  selectedProducts,
+  onSelect,
+  onSelectAll
 }) => {
   const { language } = useLanguage();
-  const t = translations[language];
+  // Helper function to get translation
+  const t = (key) => {
+    if (translations[key] && translations[key][language]) {
+      return translations[key][language];
+    }
+    return `Missing translation: ${key}`;
+  };
   const isRTL = language === 'he';
   const [expandedRow, setExpandedRow] = useState(null);
 
@@ -119,8 +127,16 @@ const ProductsTable = ({
       <table className="min-w-full divide-y divide-gray-200">
         <thead className="bg-gray-50">
           <tr>
+            <th className="px-6 py-3 w-12">
+              <input
+                type="checkbox"
+                checked={selectedProducts.length === products.length && products.length > 0}
+                onChange={(e) => onSelectAll(e.target.checked)}
+                className="w-4 h-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500"
+              />
+            </th>
             <SortHeader 
-              label={t.productName}
+              label={t('productName')}
               sortKey="name"
               currentSort={sortConfig}
               onSort={requestSort}
@@ -128,24 +144,24 @@ const ProductsTable = ({
             />
             <th className={`px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider
               ${isRTL ? 'text-right' : 'text-left'}`}>
-              {t.customer}
+              {t('customer')}
             </th>
             <SortHeader 
-              label={t.weight}
+              label={t('weight')}
               sortKey="weight"
               currentSort={sortConfig}
               onSort={requestSort}
               isRTL={isRTL}
             />
             <SortHeader 
-              label={t.estimationQuantityLeft}
+              label={t('estimationQuantityLeft')}
               sortKey="estimationQuantityLeft"
               currentSort={sortConfig}
               onSort={requestSort}
               isRTL={isRTL}
             />
             <SortHeader 
-              label={t.daysFromLastOrder}
+              label={t('daysFromLastOrder')}
               sortKey="daysFromLastOrder"
               currentSort={sortConfig}
               onSort={requestSort}
@@ -153,7 +169,7 @@ const ProductsTable = ({
             />
             <th className={`px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider
               ${isRTL ? 'text-right' : 'text-left'}`}>
-              {t.actions}
+              {t('actions')}
             </th>
           </tr>
         </thead>
@@ -173,11 +189,20 @@ const ProductsTable = ({
             return (
               <React.Fragment key={product.product_id}>
                 <tr 
-                  ref={isLastElement ? lastElementRef : null}
-                  className={`hover:bg-gray-50 transition-colors duration-200 ${
+                    ref={isLastElement ? lastElementRef : null}
+                    key={`row-${product.product_id}`}  // Add unique key for main row
+                    className={`hover:bg-gray-50 transition-colors duration-200 ${
                     isExpanded ? 'bg-gray-50' : ''
-                  }`}
+                    }`}
                 >
+                  <td className="px-6 py-4 w-12">
+                    <input
+                      type="checkbox"
+                      checked={selectedProducts.includes(product.product_id)}
+                      onChange={(e) => onSelect(product.product_id, e.target.checked)}
+                      className="w-4 h-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500"
+                    />
+                  </td>
                   <td className="px-6 py-4">
                     <div className="flex items-center">
                       <div className="flex-shrink-0">
@@ -198,12 +223,12 @@ const ProductsTable = ({
                   </td>
                   <td className="px-6 py-4">
                     <div className="text-sm text-gray-900">
-                      {customer?.name || t.unknownCustomer}
+                      {customer?.name || t('unknownCustomer')}
                     </div>
                   </td>
                   <td className="px-6 py-4">
                     <span className={`text-sm font-medium ${statusColor}`}>
-                      {measurement ? `${measurement.weight} kg` : t.noData}
+                      {measurement ? `${measurement.weight} kg` : t('noData')}
                     </span>
                   </td>
                   <td className={`px-6 py-4 ${quantityWarning.className}`}>
@@ -211,10 +236,10 @@ const ProductsTable = ({
                       <ShoppingBag className="h-4 w-4" />
                       {analyticsData ? (
                         <span>
-                          {analyticsData.estimationQuantityLeft} {t.units}
+                          {analyticsData.estimationQuantityLeft} {t('units')}
                         </span>
                       ) : (
-                        <span className="text-gray-400">{t.noData}</span>
+                        <span className="text-gray-400">{t('noData')}</span>
                       )}
                     </div>
                   </td>
@@ -223,10 +248,10 @@ const ProductsTable = ({
                       <Calendar className="h-4 w-4" />
                       {analyticsData ? (
                         <span>
-                          {analyticsData.daysFromLastOrder} {t.days}
+                          {analyticsData.daysFromLastOrder} {t('days')}
                         </span>
                       ) : (
-                        <span className="text-gray-400">{t.noData}</span>
+                        <span className="text-gray-400">{t('noData')}</span>
                       )}
                     </div>
                   </td>
@@ -241,7 +266,7 @@ const ProductsTable = ({
                       <button
                         onClick={() => {
                           const message = encodeURIComponent(
-                            `${t.runningLowMessage} ${product.name}\n${t.productLeft}: ${measurement?.weight || 0}kg\n${t.pleaseResupply}`
+                            `${t('runningLowMessage')} ${product.name}\n${t('productLeft')}: ${measurement?.weight || 0}kg\n${t('pleaseResupply')}`
                           );
                           onMessage(customer, message);
                         }}
@@ -265,12 +290,15 @@ const ProductsTable = ({
                   </td>
                 </tr>
                 {productAnalytics && (
-                  <ExpandableRow isExpanded={isExpanded}>
+                    <ExpandableRow 
+                    key={`expandable-${product.product_id}`}  // Add unique key for expandable row
+                    isExpanded={isExpanded}
+                    >
                     <div className="space-y-4">
-                      <ProductAnalytics analytics={productAnalytics} />
-                      <OrderHistory orders={productAnalytics} language={language} />
+                        <ProductAnalytics analytics={productAnalytics} />
+                        <OrderHistory orders={productAnalytics} />
                     </div>
-                  </ExpandableRow>
+                    </ExpandableRow>
                 )}
               </React.Fragment>
             );
@@ -288,7 +316,7 @@ const ProductsTable = ({
       {/* End of content indicator */}
       {!hasMore && products.length > 0 && (
         <div className="text-center py-4 text-gray-500">
-          {t.noMoreProducts}
+          {t('noMoreProducts')}
         </div>
       )}
     </div>

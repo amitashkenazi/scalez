@@ -19,7 +19,13 @@ import customersData from '../data/customersData.json';
 
 const ScaleDetail = ({ scale, onClose, dateRange, onStartDateChange, onEndDateChange, onSave }) => {
   const { language } = useLanguage();
-  const t = translations[language];
+  // Helper function to get translation
+  const t = (key) => {
+    if (translations[key] && translations[key][language]) {
+      return translations[key][language];
+    }
+    return `Missing translation: ${key}`;
+  };
   const isRTL = language === 'he';
 
   // Helper function to format dates
@@ -50,7 +56,7 @@ const ScaleDetail = ({ scale, onClose, dateRange, onStartDateChange, onEndDateCh
 
   // Get customer name in correct format based on language
   const getCustomerName = () => {
-    if (!customer) return t.unknownCustomer;
+    if (!customer) return t('unknownCustomer');
     const [hebrewName, englishName] = customer.name.split(" - ");
     return language === 'he' ? hebrewName : englishName;
   };
@@ -143,13 +149,13 @@ const ScaleDetail = ({ scale, onClose, dateRange, onStartDateChange, onEndDateCh
               disabled={isSaving}
               className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:bg-gray-400"
             >
-              {isSaving ? t.saving : t.saveChanges}
+              {isSaving ? t('saving') : t('saveChanges')}
             </button>
             <button 
               className="px-4 py-2 text-gray-700 border rounded hover:bg-gray-100"
               onClick={onClose}
             >
-              {t.close}
+              {t('close')}
             </button>
           </div>
         </div>
@@ -157,26 +163,26 @@ const ScaleDetail = ({ scale, onClose, dateRange, onStartDateChange, onEndDateCh
         {/* Status Cards */}
         <div className={`grid grid-cols-1 md:grid-cols-2 gap-4 mb-6`}>
           <div className="bg-white rounded-lg p-6 shadow">
-            <h3 className="text-lg font-bold mb-4">{t.currentStatus}</h3>
+            <h3 className="text-lg font-bold mb-4">{t('currentStatus')}</h3>
             <div className={`text-2xl font-bold ${statusColor}`}>
-              {currentWeight !== null ? `${currentWeight} ${scale.unit}` : t.noData}
+              {currentWeight !== null ? `${currentWeight} ${scale.unit}` : t('noData')}
             </div>
             {currentWeight !== null && (
               <p className="text-sm text-gray-500 mt-2">
-                {t.lastUpdated}: {formatDate(sortedHistory[0].timestamp)}
+                {t('lastUpdated')}: {formatDate(sortedHistory[0].timestamp)}
               </p>
             )}
           </div>
 
           <div className="bg-white rounded-lg p-6 shadow">
-            <h3 className="text-lg font-bold mb-4">{t.thresholds}</h3>
+            <h3 className="text-lg font-bold mb-4">{t('thresholds')}</h3>
             <div className="space-y-4">
               <div>
-                <span className="block text-sm text-gray-500">{t.upperThreshold}</span>
+                <span className="block text-sm text-gray-500">{t('upperThreshold')}</span>
                 <span className="text-green-600 font-bold">{thresholds.upper} {scale.unit}</span>
               </div>
               <div>
-                <span className="block text-sm text-gray-500">{t.lowerThreshold}</span>
+                <span className="block text-sm text-gray-500">{t('lowerThreshold')}</span>
                 <span className="text-red-600 font-bold">{thresholds.lower} {scale.unit}</span>
               </div>
             </div>
@@ -193,7 +199,7 @@ const ScaleDetail = ({ scale, onClose, dateRange, onStartDateChange, onEndDateCh
 
         {/* Weight History Graph */}
         <div className="mt-4 bg-white rounded-lg p-6 shadow">
-          <h3 className="text-lg font-bold mb-4">{t.weightHistory}</h3>
+          <h3 className="text-lg font-bold mb-4">{t('weightHistory')}</h3>
           <div className="h-64">
             <ResponsiveContainer width="100%" height="100%">
               <LineChart data={filteredData}>
@@ -221,7 +227,7 @@ const ScaleDetail = ({ scale, onClose, dateRange, onStartDateChange, onEndDateCh
                   stroke="#22c55e"
                   strokeDasharray="3 3"
                   label={{ 
-                    value: `${t.upperThreshold} (${thresholds.upper}${scale.unit})`,
+                    value: `${t('upperThreshold')} (${thresholds.upper}${scale.unit})`,
                     fill: '#22c55e',
                     fontSize: 12,
                     position: isRTL ? 'right' : 'left'
@@ -232,7 +238,7 @@ const ScaleDetail = ({ scale, onClose, dateRange, onStartDateChange, onEndDateCh
                   stroke="#dc2626"
                   strokeDasharray="3 3"
                   label={{ 
-                    value: `${t.lowerThreshold} (${thresholds.lower}${scale.unit})`,
+                    value: `${t('lowerThreshold')} (${thresholds.lower}${scale.unit})`,
                     fill: '#dc2626',
                     fontSize: 12,
                     position: isRTL ? 'right' : 'left'

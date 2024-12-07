@@ -8,7 +8,13 @@ const UserAccountButton = () => {
   const { user, signOut } = useAuth();
   const { language } = useLanguage();
   const [isOpen, setIsOpen] = useState(false);
-  const t = translations[language];
+  // Helper function to get translation
+  const t = (key) => {
+    if (translations[key] && translations[key][language]) {
+      return translations[key][language];
+    }
+    return `Missing translation: ${key}`;
+  };
   const isRTL = language === 'he';
 
   const handleSignOut = async () => {
@@ -52,7 +58,7 @@ const displayName = user.email.length > 10 ? `${user.email.substring(0, 10)}...`
               ${isRTL ? 'flex-row-reverse text-right' : 'text-left'}`}
           >
             <LogOut className="w-4 h-4" />
-            {t.signOut}
+            {t('signOut')}
           </button>
         </div>
       )}

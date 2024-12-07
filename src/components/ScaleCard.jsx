@@ -37,7 +37,13 @@ const MiniGraph = ({ data }) => {
 
 const ScaleCard = ({ scale, onCardClick }) => {
   const { language } = useLanguage();
-  const t = translations[language];
+  // Helper function to get translation
+  const t = (key) => {
+    if (translations[key] && translations[key][language]) {
+      return translations[key][language];
+    }
+    return `Missing translation: ${key}`;
+  };
   const isRTL = language === 'he';
   
   // Early return if scale is invalid
@@ -65,7 +71,7 @@ const ScaleCard = ({ scale, onCardClick }) => {
   
   // Get customer name in correct format based on language
   const getCustomerName = () => {
-    if (!customer) return t.unknownCustomer;
+    if (!customer) return t('unknownCustomer');
     const [hebrewName, englishName] = customer.name.split(" - ");
     return language === 'he' ? hebrewName : englishName;
   };
@@ -84,7 +90,7 @@ const ScaleCard = ({ scale, onCardClick }) => {
   // Generate WhatsApp message
   const getWhatsAppLink = () => {
     const message = encodeURIComponent(
-      `${t.runningLowMessage} ${safeScale.productName}\n${t.productLeft}: ${currentWeight}${safeScale.unit}. \n${t.pleaseResupply}`
+      `${t('runningLowMessage')} ${safeScale.productName}\n${t('productLeft')}: ${currentWeight}${safeScale.unit}. \n${t('pleaseResupply')}`
     );
     const number = safeScale.notifications?.lower?.phoneNumber || ''; // Fallback number if not set
     return `https://wa.me/${number.replace('+', '')}?text=${message}`;
@@ -108,7 +114,7 @@ const ScaleCard = ({ scale, onCardClick }) => {
             statusColor === 'text-orange-500' ? 'bg-orange-100' : 'bg-red-100'
           }`}>
             <span className={`text-sm font-medium ${statusColor}`}>
-              {currentWeight !== null ? `${currentWeight} ${safeScale.unit}` : t.noData}
+              {currentWeight !== null ? `${currentWeight} ${safeScale.unit}` : t('noData')}
             </span>
           </div>
           <a
@@ -128,13 +134,13 @@ const ScaleCard = ({ scale, onCardClick }) => {
         onClick={() => onCardClick(safeScale)}
       >
         <div>
-          <span className="block text-sm text-gray-500 mb-1">{t.thresholds}</span>
+          <span className="block text-sm text-gray-500 mb-1">{t('thresholds')}</span>
           <div className="text-sm">
             <div className="text-green-600">
-              {t.upperThreshold}: {safeScale.thresholds.upper} {safeScale.unit}
+              {t('upperThreshold')}: {safeScale.thresholds.upper} {safeScale.unit}
             </div>
             <div className="text-red-600">
-              {t.lowerThreshold}: {safeScale.thresholds.lower} {safeScale.unit}
+              {t('lowerThreshold')}: {safeScale.thresholds.lower} {safeScale.unit}
             </div>
           </div>
         </div>

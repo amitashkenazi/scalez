@@ -6,7 +6,13 @@ import { calculateAnalytics } from './utils/productUtils';
 
 const ProductAnalytics = ({ analytics }) => {
   const { language } = useLanguage();
-  const t = translations[language];
+  // Helper function to get translation
+  const t = (key) => {
+    if (translations[key] && translations[key][language]) {
+      return translations[key][language];
+    }
+    return `Missing translation: ${key}`;
+  };
   const analyticsData = calculateAnalytics(analytics);
 
   if (!analyticsData) return null;
@@ -16,59 +22,59 @@ const ProductAnalytics = ({ analytics }) => {
       <div className="flex items-center gap-2">
         <TrendingUp className="h-5 w-5 text-gray-500" />
         <span className="font-medium text-gray-700">
-          {t.ConsumptionAnalytics}
+          {t('ConsumptionAnalytics')}
         </span>
       </div>
       <div className="grid grid-cols-4 gap-4">
         <div className="bg-white rounded-lg p-3 shadow-sm">
           <span className="text-sm text-gray-500 font-medium">
-            {t.averageConsumption}
+            {t('averageConsumption')}
           </span>
           <div className="mt-1 text-gray-900">
             <span className="text-lg font-semibold">
               {analyticsData.dailyAverage}
             </span>
             <span className="text-sm text-gray-500 ml-1">
-              {t.unitsPerDay}
+              {t('unitsPerDay')}
             </span>
           </div>
         </div>
         <div className="bg-white rounded-lg p-3 shadow-sm">
           <span className="text-sm text-gray-500 font-medium">
-            {t.averageDaysBetweenOrders}
+            {t('averageDaysBetweenOrders')}
           </span>
           <div className="mt-1 text-gray-900">
             <span className="text-lg font-semibold">
               {analyticsData.averageDaysBetweenOrders}
             </span>
             <span className="text-sm text-gray-500 ml-1">
-              {t.days}
+              {t('days')}
             </span>
           </div>
         </div>
         <div className="bg-white rounded-lg p-3 shadow-sm">
           <span className="text-sm text-gray-500 font-medium">
-            {t.lastOrderQuantity}
+            {t('lastOrderQuantity')}
           </span>
           <div className="mt-1 text-gray-900">
             <span className="text-lg font-semibold">
               {analyticsData.quantityLastOrder}
             </span>
             <span className="text-sm text-gray-500 ml-1">
-              {t.units}
+              {t('units')}
             </span>
           </div>
         </div>
         <div className="bg-white rounded-lg p-3 shadow-sm">
           <span className="text-sm text-gray-500 font-medium">
-            {t.dailyConsumptionRate}
+            {t('dailyConsumptionRate')}
           </span>
           <div className="mt-1 text-gray-900">
             <span className="text-lg font-semibold">
               {((parseFloat(analyticsData.dailyAverage) / analyticsData.quantityLastOrder) * 100).toFixed(1)}%
             </span>
             <span className="text-sm text-gray-500 ml-1">
-              {t.perDay}
+              {t('perDay')}
             </span>
           </div>
         </div>

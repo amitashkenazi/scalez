@@ -12,7 +12,13 @@ const UnauthenticatedView = () => {
   const [view, setView] = useState('landing'); // Change default view to 'landing'
   const [registeredEmail, setRegisteredEmail] = useState('');
   const { language, toggleLanguage } = useLanguage();
-  const t = translations[language];
+  // Helper function to get translation
+  const t = (key) => {
+    if (translations[key] && translations[key][language]) {
+      return translations[key][language];
+    }
+    return `Missing translation: ${key}`;
+  };
   const isRTL = language === 'he';
 
   const handleRegisterSuccess = (email) => {
@@ -59,10 +65,10 @@ const UnauthenticatedView = () => {
               </div>
             </div>
             <h1 className="text-3xl font-bold mb-2 text-gray-900">
-              {t.welcomeTitle}
+              {t('welcomeTitle')}
             </h1>
             <h2 className="text-xl font-semibold mb-2 text-gray-800">
-              {t.welcomeBack}
+              {t('welcomeBack')}
             </h2>
             <p className="text-gray-600">
               {view === 'login' 

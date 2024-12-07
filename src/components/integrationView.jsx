@@ -153,7 +153,7 @@ const IntegrationCard = ({ integration, onConnect, onDisconnect, isLoading }) =>
       </div>
     );
   };
-  
+
 const IntegrationsView = () => {
   const [integrations, setIntegrations] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -244,9 +244,9 @@ const IntegrationsView = () => {
           <div>
             <h2 className="text-2xl font-bold flex items-center gap-2">
               <Plug className="h-6 w-6" />
-              {t.integrations.title}
+              {t('title')}
             </h2>
-            <p className="text-gray-600 mt-1">{t.integrations.description}</p>
+            <p className="text-gray-600 mt-1">{t('description')}</p>
           </div>
           <button
             onClick={handleRefresh}
@@ -254,7 +254,7 @@ const IntegrationsView = () => {
             disabled={isRefreshing}
           >
             <RefreshCw className={`h-5 w-5 ${isRefreshing ? 'animate-spin' : ''}`} />
-            {t.integrations.refresh}
+            {t('refresh')}
           </button>
         </div>
       </div>
@@ -281,8 +281,8 @@ const IntegrationsView = () => {
       {integrations.length === 0 && !error && (
         <div className="text-center py-12 bg-gray-50 rounded-lg">
           <Plug className="mx-auto h-12 w-12 text-gray-400 mb-4" />
-          <h3 className="text-lg font-medium text-gray-900">{t.integrations.noIntegrations}</h3>
-          <p className="mt-2 text-gray-500">{t.integrations.checkBack}</p>
+          <h3 className="text-lg font-medium text-gray-900">{t('noIntegrations')}</h3>
+          <p className="mt-2 text-gray-500">{t('checkBack')}</p>
         </div>
       )}
     </div>

@@ -15,7 +15,13 @@ const ProductDetailModal = ({
   customer 
 }) => {
   const { language } = useLanguage();
-  const t = translations[language];
+  // Helper function to get translation
+  const t = (key) => {
+    if (translations[key] && translations[key][language]) {
+      return translations[key][language];
+    }
+    return `Missing translation: ${key}`;
+  };
   const isRTL = language === 'he';
 
   console.log('ProductDetailModal rendered:', { isOpen, scale_id }); // Initial render log
@@ -110,7 +116,7 @@ const ProductDetailModal = ({
       } catch (err) {
         console.error('Error in fetch:', err);
         if (isMounted) {
-          setError(t.failedToFetchMeasurements || 'Failed to fetch measurements');
+          setError(t('failedToFetchMeasurements') || 'Failed to fetch measurements');
         }
       } finally {
         if (isMounted) {
@@ -170,11 +176,11 @@ const ProductDetailModal = ({
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <span className="block text-sm text-gray-500 mb-1">{t.upperThreshold}</span>
+              <span className="block text-sm text-gray-500 mb-1">{t('upperThreshold')}</span>
               <span className="text-green-600 font-medium">{product?.thresholds?.upper} kg</span>
             </div>
             <div>
-              <span className="block text-sm text-gray-500 mb-1">{t.lowerThreshold}</span>
+              <span className="block text-sm text-gray-500 mb-1">{t('lowerThreshold')}</span>
               <span className="text-red-600 font-medium">{product?.thresholds?.lower} kg</span>
             </div>
           </div>
@@ -196,12 +202,12 @@ const ProductDetailModal = ({
 
         {/* Weight History Graph */}
         <div className="bg-white rounded-lg shadow-lg p-4 mt-4">
-          <h3 className="text-lg font-bold mb-4">{t.weightHistory}</h3>
+          <h3 className="text-lg font-bold mb-4">{t('weightHistory')}</h3>
           
           {isLoadingMeasurements ? (
             <div className="flex justify-center items-center h-64">
               <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
-              <span className="ml-2 text-gray-600">{t.loading}</span>
+              <span className="ml-2 text-gray-600">{t('loading')}</span>
             </div>
           ) : error ? (
             <div className="flex justify-center items-center h-64 text-red-600">
@@ -215,14 +221,14 @@ const ProductDetailModal = ({
             />
           ) : (
             <div className="flex justify-center items-center h-64 text-gray-500">
-              {t.noData || 'No measurement data available for the selected period'}
+              {t('noData') || 'No measurement data available for the selected period'}
             </div>
           )}
         </div>
 
         {/* Last Updated */}
         <div className="mt-4 text-sm text-gray-500 text-right">
-          {t.lastUpdated}: {formatDate(latestMeasurement?.timestamp)}
+          {t('lastUpdated')}: {formatDate(latestMeasurement?.timestamp)}
         </div>
       </div>
     </div>

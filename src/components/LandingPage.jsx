@@ -21,7 +21,13 @@ import FunOutOfStockMessage from './outOfStock';
 const LandingPage = ({ onAuthClick }) => {
   const { language, toggleLanguage } = useLanguage();
   const [showMessage, setShowMessage] = useState(false);
-  const t = translations[language];
+  // Helper function to get translation
+  const t = (key) => {
+    if (translations[key] && translations[key][language]) {
+      return translations[key][language];
+    }
+    return `Missing translation: ${key}`;
+  };
   const isRTL = language === 'he';
   const features = [
     {
@@ -89,7 +95,7 @@ const LandingPage = ({ onAuthClick }) => {
                 className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 
                   transition-colors flex items-center gap-2"
               >
-                {t.landing.hero.signIn}
+                {t('signIn')}
                 <ChevronRight size={16} />
               </button>
             </div>

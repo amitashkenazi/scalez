@@ -25,49 +25,50 @@ const SideMenu = ({ activeView, onViewChange }) => {
   const { user, isAdmin } = useAuth();
   const { language, toggleLanguage } = useLanguage();
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
-  const t = translations[language];
+  // Helper function to get translation
+  const t = (key) => {
+    if (translations[key] && translations[key][language]) {
+      return translations[key][language];
+    }
+    return `Missing translation: ${key}`;
+  };
   const isRTL = language === 'he';
 
   // Define menu sections
   const dashboardItems = [
     {
       icon: Package,
-      label: t.productsDashboard,
+      label: t('productsDashboard'),
       view: "products",
-      description: t.productsDashboardDesc
+      description: t('productsDashboardDesc')
     },
     // {
     //   icon: MapIcon,
-    //   label: t.mapLabel,
+    //   label: t('mapLabel'),
     //   view: "customersMap",
     //   description: "View customers and products on a map"
     // },
     {
       icon: FileText,
-      label: t.orders,
+      label: t('orders'),
       view: "orders",
       description: "Track and manage product orders"
     },
     {
       icon: Share,
-      label: t.sharedProducts,
+      label: t('sharedProducts'),
       view: "sharedProducts",
-      description: t.sharedProductsDesc
+      description: t('sharedProductsDesc')
     }
   ];
 
   const setupItems = [
-    {
-      icon: Package,
-      label: t.productsManagement,
-      view: "productsMng",
-      description: t.productsDesc
-    },
+    
     {
       icon: Users,
-      label: t.customersTable,
+      label: t('customersTable'),
       view: "customersTable",
-      description: t.customersTableDesc
+      description: t('customersTableDesc')
     },
     {
       icon: Database,
@@ -77,7 +78,7 @@ const SideMenu = ({ activeView, onViewChange }) => {
     },
     {
       icon: Scale,
-      label: t.scalesManagement,
+      label: t('scalesManagement'),
       view: 'scalesManagement',
       description: 'Manage and monitor all scales in the system'
     },
@@ -99,9 +100,9 @@ const SideMenu = ({ activeView, onViewChange }) => {
   if (isAdmin) {
     setupItems.push({
       icon: Truck,
-      label: t.vendors.title,
+      label: t('vendors').title,
       view: "vendors",
-      description: t.vendors.description
+      description: t('vendors').description
     });
   }
 
@@ -152,7 +153,7 @@ const SideMenu = ({ activeView, onViewChange }) => {
               onClick={() => setIsAuthModalOpen(true)}
               className="w-full px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
             >
-              {t.signIn}
+              {t('signIn')}
             </button>
           )}
         </div>
@@ -160,18 +161,18 @@ const SideMenu = ({ activeView, onViewChange }) => {
         {/* Menu Title */}
         <div className="p-6">
           <h2 className={`text-xl font-bold text-white mb-2 ${isRTL ? 'text-right' : 'text-left'}`}>
-            {t.menuTitle}
+            {t('menuTitle')}
           </h2>
           <p className={`text-sm text-gray-400 ${isRTL ? 'text-right' : 'text-left'}`}>
-            {t.menuSubtitle}
+            {t('menuSubtitle')}
           </p>
         </div>
 
         {/* Menu Sections */}
         <nav className={`flex-1 px-4 overflow-y-auto ${isRTL ? 'text-right' : 'text-left'}`}>
-          {renderMenuSection(t.dashboardsLabel, dashboardItems, <LayoutDashboard size={18} />)}
+          {renderMenuSection(t('dashboardsLabel'), dashboardItems, <LayoutDashboard size={18} />)}
           <div className={`mx-2 my-4 border-t border-gray-700`} />
-          {renderMenuSection(t.setup, setupItems, <Settings size={18} />)}
+          {renderMenuSection(t('setup'), setupItems, <Settings size={18} />)}
         </nav>
 
         {/* Language Toggle */}
@@ -193,8 +194,8 @@ const SideMenu = ({ activeView, onViewChange }) => {
         {/* Footer */}
         <div className="p-6 border-t border-gray-700">
           <div className={`text-sm text-gray-400 ${isRTL ? 'text-right' : 'text-left'}`}>
-            <p>{t.version}: 1.0.0</p>
-            <p>{t.copyright}</p>
+            <p>{t('version')}: 1.0.0</p>
+            <p>{t('copyright')}</p>
           </div>
         </div>
       </div>

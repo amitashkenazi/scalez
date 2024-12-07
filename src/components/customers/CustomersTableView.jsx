@@ -40,7 +40,13 @@ const CustomersTableView = () => {
   const [successMessage, setSuccessMessage] = useState('');
 
   const { language } = useLanguage();
-  const t = translations[language];
+  // Helper function to get translation
+  const t = (key) => {
+    if (translations[key] && translations[key][language]) {
+      return translations[key][language];
+    }
+    return `Missing translation: ${key}`;
+  };
   const isRTL = language === 'he';
 
   const fetchCustomers = async () => {
@@ -58,7 +64,7 @@ const CustomersTableView = () => {
       setCustomers(formattedCustomers);
     } catch (err) {
       console.error('Error fetching customers:', err);
-      setError(t.errorFetchingCustomers || 'Failed to fetch customers');
+      setError(t('errorFetchingCustomers') || 'Failed to fetch customers');
     } finally {
       setIsLoading(false);
     }
@@ -97,16 +103,16 @@ const CustomersTableView = () => {
       const newCustomer = await apiService.createCustomer(customerData);
       setCustomers(prev => [...prev, newCustomer]);
       setIsAddModalOpen(false);
-      showSuccessMessage(t.customerAdded);
+      showSuccessMessage(t('customerAdded'));
     } catch (err) {
-      setError(t.errorAddingCustomer);
+      setError(t('errorAddingCustomer'));
       console.error('Error adding customer:', err);
     }
   };
 
   const handleEditCustomer = async (customerData) => {
     if (!selectedCustomer?.customer_id) {
-      setError(t.invalidCustomer);
+      setError(t('invalidCustomer'));
       return;
     }
 
@@ -121,16 +127,16 @@ const CustomersTableView = () => {
       ));
       setIsEditModalOpen(false);
       setSelectedCustomer(null);
-      showSuccessMessage(t.customerUpdated);
+      showSuccessMessage(t('customerUpdated'));
     } catch (err) {
-      setError(t.errorUpdatingCustomer);
+      setError(t('errorUpdatingCustomer'));
       console.error('Error updating customer:', err);
     }
   };
 
   const handleDeleteCustomer = async () => {
     if (!selectedCustomer?.customer_id) {
-      setError(t.invalidCustomer);
+      setError(t('invalidCustomer'));
       return;
     }
 
@@ -140,9 +146,9 @@ const CustomersTableView = () => {
       setCustomers(prev => prev.filter(c => c.customer_id !== selectedCustomer.customer_id));
       setIsDeleteModalOpen(false);
       setSelectedCustomer(null);
-      showSuccessMessage(t.customerDeleted);
+      showSuccessMessage(t('customerDeleted'));
     } catch (err) {
-      setError(t.errorDeletingCustomer);
+      setError(t('errorDeletingCustomer'));
       console.error('Error deleting customer:', err);
     }
   };
@@ -177,10 +183,10 @@ const CustomersTableView = () => {
 
   const headers = [
     { key: 'customer_id', label: 'ID' },
-    { key: 'name', label: t.customerName },
-    { key: 'email', label: t.email },
-    { key: 'phone', label: t.phone },
-    { key: 'address', label: t.address },
+    { key: 'name', label: t('customerName') },
+    { key: 'email', label: t('email') },
+    { key: 'phone', label: t('phone') },
+    { key: 'address', label: t('address') },
     { key: 'actions', label: '' }
   ];
 
@@ -188,7 +194,7 @@ const CustomersTableView = () => {
     return (
       <div className="flex justify-center items-center h-64">
         <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
-        <span className="ml-2 text-gray-600">{t.loading}</span>
+        <span className="ml-2 text-gray-600">{t('loading')}</span>
       </div>
     );
   }
@@ -196,15 +202,15 @@ const CustomersTableView = () => {
   return (
     <div className="p-6 max-w-7xl mx-auto" dir={isRTL ? 'rtl' : 'ltr'}>
       <div className="mb-6">
-        <h2 className="text-2xl font-bold">{t.customersTable}</h2>
-        <p className="text-gray-600 mt-1">{t.customersTableDesc}</p>
+        <h2 className="text-2xl font-bold">{t('customersTable')}</h2>
+        <p className="text-gray-600 mt-1">{t('customersTableDesc')}</p>
       </div>
 
       <div className="mb-6 flex flex-col sm:flex-row gap-4 justify-between items-center">
         <div className="relative w-full sm:w-96">
           <input
             type="text"
-            placeholder={t.searchCustomers}
+            placeholder={t('searchCustomers')}
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="w-full pl-10 pr-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -219,7 +225,7 @@ const CustomersTableView = () => {
             disabled={isRefreshing}
           >
             <RefreshCw className={`h-5 w-5 ${isRefreshing ? 'animate-spin' : ''}`} />
-            {t.refresh}
+            {t('refresh')}
           </button>
 
           <button
@@ -227,7 +233,7 @@ const CustomersTableView = () => {
             className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
           >
             <PlusCircle className="h-5 w-5" />
-            {t.addCustomer}
+            {t('addCustomer')}
           </button>
         </div>
       </div>
@@ -311,7 +317,7 @@ const CustomersTableView = () => {
 
         {filteredAndSortedCustomers.length === 0 && (
           <div className="text-center py-8 text-gray-500">
-            {searchTerm ? t.noSearchResults : t.noCustomers}
+            {searchTerm ? t('noSearchResults') : t('noCustomers')}
           </div>
         )}
       </div>
@@ -359,7 +365,7 @@ const CustomersTableView = () => {
 
         {filteredAndSortedCustomers.length === 0 && (
           <div className="text-center py-8 text-gray-500">
-            {searchTerm ? t.noSearchResults : t.noCustomers}
+            {searchTerm ? t('noSearchResults') : t('noCustomers')}
           </div>
         )}
       </div>
@@ -388,8 +394,8 @@ const CustomersTableView = () => {
           setSelectedCustomer(null);
         }}
         onConfirm={handleDeleteCustomer}
-        title={t.deleteCustomer}
-        message={t.deleteConfirmationDesc}
+        title={t('deleteCustomer')}
+        message={t('deleteConfirmationDesc')}
       />
     </div>
   );

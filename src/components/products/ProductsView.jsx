@@ -1,10 +1,10 @@
 import React, { useState } from 'react';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { translations } from '../../translations/translations';
-import { 
-  Package, 
-  AlertCircle, 
-  RefreshCw, 
+import {
+  Package,
+  AlertCircle,
+  RefreshCw,
   Search,
   Plus,
   TableIcon,
@@ -16,19 +16,29 @@ import { useProductsData } from './hooks/useProductsData';
 import { useProductSearch } from './hooks/useProductSearch';
 import ProductsTable from './ProductsTable';
 import ProductModal from '../ProductModal';
+import ProductsSelectionManager from './ProductsSelectionManager';
+import DeleteConfirmationModal from '../modals/DeleteConfirmationModal';
 import apiService from '../../services/api';
 
 const ProductsView = () => {
   const { language } = useLanguage();
-  const t = translations[language];
+  // Helper function to get translation
+  const t = (key) => {
+    if (translations[key] && translations[key][language]) {
+      return translations[key][language];
+    }
+    return `Missing translation: ${key}`;
+  };
   const isRTL = language === 'he';
   const [viewType, setViewType] = useState('table');
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState(null);
+  const [selectedProducts, setSelectedProducts] = useState([]);
   const [successMessage, setSuccessMessage] = useState('');
   const [error, setError] = useState(null);
 
-  const { 
+  const {
     data: { products, scales, customers, measurements, analytics },
     isLoading,
     loadMore,
@@ -48,11 +58,11 @@ const ProductsView = () => {
       await apiService.createProduct(productData);
       refreshData();
       setIsModalOpen(false);
-      setSuccessMessage(t.productAdded);
+      setSuccessMessage(t('productAdded'));
       setTimeout(() => setSuccessMessage(''), 3000);
     } catch (err) {
       console.error('Error adding product:', err);
-      setError(err.message || t.failedToAddProduct);
+      setError(err.message || t('failedToAddProduct'));
     }
   };
 
@@ -64,6 +74,38 @@ const ProductsView = () => {
   const handleMessage = (customer, message) => {
     if (!customer?.phone) return;
     window.open(`https://wa.me/${customer.phone.replace(/\D/g, '')}?text=${message}`, '_blank');
+  };
+
+  const handleSelect = (productId, isSelected) => {
+    setSelectedProducts(prev =>
+      isSelected
+        ? [...prev, productId]
+        : prev.filter(id => id !== productId)
+    );
+  };
+
+  const handleSelectAll = (isSelected) => {
+    setSelectedProducts(isSelected ? filteredProducts.map(p => p.product_id) : []);
+  };
+
+  const handleClearSelection = () => {
+    setSelectedProducts([]);
+  };
+
+  const handleDeleteConfirm = async () => {
+    try {
+      await Promise.all(selectedProducts.map(productId =>
+        apiService.deleteProduct(productId)
+      ));
+      refreshData();
+      setSelectedProducts([]);
+      setIsDeleteModalOpen(false);
+      setSuccessMessage(t('productsDeleted'));
+      setTimeout(() => setSuccessMessage(''), 3000);
+    } catch (err) {
+      console.error('Error deleting products:', err);
+      setError(err.message || t('failedToDeleteProducts'));
+    }
   };
 
   const formatTime = (date) => {
@@ -89,13 +131,13 @@ const ProductsView = () => {
           <div>
             <h2 className="text-2xl font-bold flex items-center gap-2">
               <Package className="h-6 w-6" />
-              {t.productsDashboard}
+              {t('productsDashboard')}
             </h2>
-            <p className="text-gray-600 mt-1">{t.productStatus}</p>
+            <p className="text-gray-600 mt-1">{t('productStatus')}</p>
           </div>
           <div className="flex items-center gap-4">
             <span className="text-sm text-gray-500">
-              {t.lastUpdated}: {formatTime(new Date())}
+              {t('lastUpdated')}: {formatTime(new Date())}
             </span>
             <button
               onClick={() => setViewType(viewType === 'table' ? 'cards' : 'table')}
@@ -104,12 +146,12 @@ const ProductsView = () => {
               {viewType === 'table' ? (
                 <>
                   <LayoutGrid className="h-5 w-5" />
-                  {t.cardView}
+                  {t('cardView')}
                 </>
               ) : (
                 <>
                   <TableIcon className="h-5 w-5" />
-                  {t.tableView}
+                  {t('tableView')}
                 </>
               )}
             </button>
@@ -119,7 +161,7 @@ const ProductsView = () => {
               disabled={isLoading}
             >
               <RefreshCw className={`h-5 w-5 ${isLoading ? 'animate-spin' : ''}`} />
-              {t.refresh}
+              {t('refresh')}
             </button>
           </div>
         </div>
@@ -144,7 +186,7 @@ const ProductsView = () => {
       <div className="mb-6 relative">
         <input
           type="text"
-          placeholder={t.searchProducts}
+          placeholder={t('searchProducts')}
           value={searchTerm}
           onChange={(e) => handleSearchChange(e.target.value)}
           className="w-full pl-10 pr-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
@@ -158,6 +200,7 @@ const ProductsView = () => {
           )}
         </div>
       </div>
+
       {/* Add Product Button */}
       <div className="mb-6">
         <button
@@ -168,7 +211,7 @@ const ProductsView = () => {
           className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
         >
           <Plus className="h-5 w-5" />
-          {t.addProduct}
+          {t('addProduct')}
         </button>
       </div>
 
@@ -176,8 +219,8 @@ const ProductsView = () => {
       {!isLoading && filteredProducts.length === 0 && !error && !isSearching && (
         <div className="text-center py-12 bg-gray-50 rounded-lg">
           <Package className="h-12 w-12 mx-auto text-gray-400 mb-4" />
-          <p className="text-gray-600">{t.noProductsFound}</p>
-          <p className="text-gray-500 text-sm">{t.tryAdjustingSearch}</p>
+          <p className="text-gray-600">{t('noProductsFound')}</p>
+          <p className="text-gray-500 text-sm">{t('tryAdjustingSearch')}</p>
         </div>
       )}
 
@@ -194,10 +237,24 @@ const ProductsView = () => {
           loadMore={loadMore}
           onEdit={handleEdit}
           onMessage={handleMessage}
+          selectedProducts={selectedProducts}
+          onSelect={handleSelect}
+          onSelectAll={handleSelectAll}
         />
       )}
 
-      {/* Product Modal */}
+      {/* Selection Manager */}
+      <ProductsSelectionManager
+        selectedProducts={selectedProducts}
+        onSelect={handleSelect}
+        onSelectAll={handleSelectAll}
+        onClearSelection={handleClearSelection}
+        onDelete={() => setIsDeleteModalOpen(true)}
+        totalProducts={filteredProducts.length}
+        isRTL={isRTL}
+      />
+
+      {/* Modals */}
       <ProductModal
         isOpen={isModalOpen}
         onClose={() => {
@@ -208,6 +265,21 @@ const ProductsView = () => {
         customers={customers}
         initialData={selectedProduct}
         t={t}
+      />
+
+      <DeleteConfirmationModal
+        isOpen={isDeleteModalOpen}
+        onClose={() => setIsDeleteModalOpen(false)}
+        onConfirm={handleDeleteConfirm}
+        title={t('deleteProducts') || "Delete Products"}
+        message={selectedProducts.length === 1 
+          ? t('deleteProductConfirmation') || "Are you sure you want to delete this product?"
+          : t('deleteMultipleProductsConfirmation') || `Are you sure you want to delete ${selectedProducts.length} products?`
+        }
+        selectedCount={selectedProducts.length}
+        productNames={selectedProducts.map(id => 
+          products.find(p => p.product_id === id)?.name
+        ).filter(Boolean)}
       />
     </div>
   );

@@ -22,7 +22,13 @@ const ItemsView = () => {
   const [generatingProducts, setGeneratingProducts] = useState({});
 
   const { language } = useLanguage();
-  const t = translations[language];
+  // Helper function to get translation
+  const t = (key) => {
+    if (translations[key] && translations[key][language]) {
+      return translations[key][language];
+    }
+    return `Missing translation: ${key}`;
+  };
   const isRTL = language === 'he';
 
   // Fetch items
@@ -101,9 +107,9 @@ const ItemsView = () => {
           <div>
             <h2 className="text-2xl font-bold flex items-center gap-2">
               <Package className="h-6 w-6" />
-              {t.items.title}
+              {t('title')}
             </h2>
-            <p className="text-gray-600 mt-1">{t.items.description}</p>
+            <p className="text-gray-600 mt-1">{t('description')}</p>
           </div>
           <button
             onClick={handleRefresh}
@@ -111,7 +117,7 @@ const ItemsView = () => {
             disabled={isRefreshing}
           >
             <RefreshCw className={`h-5 w-5 ${isRefreshing ? 'animate-spin' : ''}`} />
-            {t.items.refresh}
+            {t('refresh')}
           </button>
         </div>
       </div>
@@ -121,7 +127,7 @@ const ItemsView = () => {
         <div className="relative">
           <input
             type="text"
-            placeholder={t.items.searchPlaceholder}
+            placeholder={t('searchPlaceholder')}
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="w-full pl-10 pr-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
@@ -166,16 +172,16 @@ const ItemsView = () => {
             <thead className="bg-gray-50">
               <tr>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  {t.items.itemCode}
+                  {t('itemCode')}
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  {t.items.name}
+                  {t('name')}
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  {t.items.uom}
+                  {t('uom')}
                 </th>
                 <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  {t.items.actions}
+                  {t('actions')}
                 </th>
               </tr>
             </thead>
@@ -203,12 +209,12 @@ const ItemsView = () => {
                       {generatingProducts[item.item_id] ? (
                         <>
                           <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                          {t.items.generating}
+                          {t('generating')}
                         </>
                       ) : (
                         <>
                           <Sparkles className="h-4 w-4 mr-2" />
-                          {t.items.generateProducts}
+                          {t('generateProducts')}
                         </>
                       )}
                     </button>
@@ -223,10 +229,10 @@ const ItemsView = () => {
             <div className="text-center py-12">
               <Package className="mx-auto h-12 w-12 text-gray-400" />
               <h3 className="mt-4 text-sm font-medium text-gray-900">
-                {t.items.noItemsFound}
+                {t('noItemsFound')}
               </h3>
               <p className="mt-1 text-sm text-gray-500">
-                {searchTerm ? t.items.adjustSearch : t.items.addItemsPrompt}
+                {searchTerm ? t('adjustSearch') : t('addItemsPrompt')}
               </p>
             </div>
           )}

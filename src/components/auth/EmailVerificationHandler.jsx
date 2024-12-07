@@ -9,7 +9,13 @@ const EmailVerificationHandler = () => {
   const [error, setError] = useState(null);
   const { confirmSignUp, resendConfirmationCode } = useAuth();
   const { language } = useLanguage();
-  const t = translations[language];
+  // Helper function to get translation
+  const t = (key) => {
+    if (translations[key] && translations[key][language]) {
+      return translations[key][language];
+    }
+    return `Missing translation: ${key}`;
+  };
   const isRTL = language === 'he';
 
   useEffect(() => {
@@ -21,7 +27,7 @@ const EmailVerificationHandler = () => {
         const code = urlParams.get('code');
 
         if (!email || !code) {
-          throw new Error(t.missingVerificationParams);
+          throw new Error(t('missingVerificationParams'));
         }
 
         // Attempt to verify email
@@ -43,7 +49,7 @@ const EmailVerificationHandler = () => {
       const email = urlParams.get('email');
       
       if (!email) {
-        throw new Error(t.emailNotFound);
+        throw new Error(t('emailNotFound'));
       }
 
       setStatus('resending');
@@ -64,7 +70,7 @@ const EmailVerificationHandler = () => {
         {status === 'checking' && (
           <div className="flex flex-col items-center">
             <Loader2 className="w-12 h-12 text-blue-600 animate-spin mb-4" />
-            <p className="text-gray-600 text-center">{t.verifyingEmail}</p>
+            <p className="text-gray-600 text-center">{t('verifyingEmail')}</p>
           </div>
         )}
 
@@ -73,13 +79,13 @@ const EmailVerificationHandler = () => {
             <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
               <Check className="w-8 h-8 text-green-600" />
             </div>
-            <h2 className="text-2xl font-bold text-gray-900 mb-2">{t.emailVerified}</h2>
-            <p className="text-gray-600 mb-6">{t.emailVerifiedDesc}</p>
+            <h2 className="text-2xl font-bold text-gray-900 mb-2">{t('emailVerified')}</h2>
+            <p className="text-gray-600 mb-6">{t('emailVerifiedDesc')}</p>
             <a 
               href="/"
               className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
             >
-              {t.continueToApp}
+              {t('continueToApp')}
             </a>
           </div>
         )}
@@ -89,7 +95,7 @@ const EmailVerificationHandler = () => {
             <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
               <AlertTriangle className="w-8 h-8 text-red-600" />
             </div>
-            <h2 className="text-2xl font-bold text-gray-900 mb-2">{t.verificationFailed}</h2>
+            <h2 className="text-2xl font-bold text-gray-900 mb-2">{t('verificationFailed')}</h2>
             <p className="text-red-600 mb-6">{error}</p>
             {status !== 'resent' && (
               <button
@@ -100,12 +106,12 @@ const EmailVerificationHandler = () => {
                 {status === 'resending' ? (
                   <>
                     <Loader2 className="w-4 h-4 animate-spin mr-2" />
-                    {t.resendingCode}
+                    {t('resendingCode')}
                   </>
                 ) : (
                   <>
                     <RefreshCw className="w-4 h-4 mr-2" />
-                    {t.requestNewCode}
+                    {t('requestNewCode')}
                   </>
                 )}
               </button>
@@ -118,8 +124,8 @@ const EmailVerificationHandler = () => {
             <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
               <Check className="w-8 h-8 text-blue-600" />
             </div>
-            <h2 className="text-2xl font-bold text-gray-900 mb-2">{t.newCodeSent}</h2>
-            <p className="text-gray-600 mb-6">{t.checkEmailForCode}</p>
+            <h2 className="text-2xl font-bold text-gray-900 mb-2">{t('newCodeSent')}</h2>
+            <p className="text-gray-600 mb-6">{t('checkEmailForCode')}</p>
           </div>
         )}
       </div>
