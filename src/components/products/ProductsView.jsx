@@ -11,12 +11,12 @@ import {
   LayoutGrid,
   Loader2
 } from 'lucide-react';
+
 import { useProductsData } from './hooks/useProductsData';
 import { useProductSearch } from './hooks/useProductSearch';
 import ProductsTable from './ProductsTable';
-import ProductsGrid from './ProductsGrid';
 import ProductModal from '../ProductModal';
-import NewProductCard from './NewProductCard';
+import apiService from '../../services/api';
 
 const ProductsView = () => {
   const { language } = useLanguage();
@@ -26,15 +26,14 @@ const ProductsView = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState(null);
   const [successMessage, setSuccessMessage] = useState('');
-  const [page, setPage] = useState(1);
-  const pageSize = 10;
+  const [error, setError] = useState(null);
 
   const { 
     data: { products, scales, customers, measurements, analytics },
     isLoading,
-    error,
-    refreshData,
-    handleAddProduct
+    loadMore,
+    hasMore,
+    refreshData
   } = useProductsData();
 
   const {
@@ -42,17 +41,38 @@ const ProductsView = () => {
     isSearching,
     handleSearchChange,
     filteredProducts
-  } = useProductSearch(products, page, pageSize);
+  } = useProductSearch(products);
+
+  const handleAddProduct = async (productData) => {
+    try {
+      await apiService.createProduct(productData);
+      refreshData();
+      setIsModalOpen(false);
+      setSuccessMessage(t.productAdded);
+      setTimeout(() => setSuccessMessage(''), 3000);
+    } catch (err) {
+      console.error('Error adding product:', err);
+      setError(err.message || t.failedToAddProduct);
+    }
+  };
+
+  const handleEdit = (product) => {
+    setSelectedProduct(product);
+    setIsModalOpen(true);
+  };
+
+  const handleMessage = (customer, message) => {
+    if (!customer?.phone) return;
+    window.open(`https://wa.me/${customer.phone.replace(/\D/g, '')}?text=${message}`, '_blank');
+  };
 
   const formatTime = (date) => {
     return date.toLocaleTimeString(language === 'he' ? 'he-IL' : 'en-US', {
       hour: '2-digit',
-      minute: '2-digit',
-      second: '2-digit'
+      minute: '2-digit'
     });
   };
 
-  // Loading state
   if (isLoading && products.length === 0) {
     return (
       <div className="flex justify-center items-center h-64">
@@ -78,18 +98,18 @@ const ProductsView = () => {
               {t.lastUpdated}: {formatTime(new Date())}
             </span>
             <button
-              onClick={() => setViewType(viewType === 'cards' ? 'table' : 'cards')}
+              onClick={() => setViewType(viewType === 'table' ? 'cards' : 'table')}
               className="flex items-center gap-2 px-4 py-2 text-gray-600 hover:text-gray-800 border rounded-lg"
             >
-              {viewType === 'cards' ? (
-                <>
-                  <TableIcon className="h-5 w-5" />
-                  {t.tableView}
-                </>
-              ) : (
+              {viewType === 'table' ? (
                 <>
                   <LayoutGrid className="h-5 w-5" />
                   {t.cardView}
+                </>
+              ) : (
+                <>
+                  <TableIcon className="h-5 w-5" />
+                  {t.tableView}
                 </>
               )}
             </button>
@@ -164,42 +184,18 @@ const ProductsView = () => {
 
       {/* Products Display */}
       {!error && filteredProducts.length > 0 && (
-        viewType === 'cards' ? (
-          <ProductsGrid
-            products={filteredProducts}
-            customers={customers}
-            scales={scales}
-            measurements={measurements}
-            analytics={analytics}
-            onEdit={(product) => {
-              setSelectedProduct(product);
-              setIsModalOpen(true);
-            }}
-            onMessage={(customer, message) => {
-              if (!customer?.phone) return;
-              window.open(`https://wa.me/${customer.phone.replace(/\D/g, '')}?text=${message}`, '_blank');
-            }}
-          />
-        ) : (
-          <ProductsTable
-            products={filteredProducts}
-            customers={customers}
-            scales={scales}
-            measurements={measurements}
-            analytics={analytics}
-            page={page}
-            pageSize={pageSize}
-            onPageChange={setPage}
-            onEdit={(product) => {
-              setSelectedProduct(product);
-              setIsModalOpen(true);
-            }}
-            onMessage={(customer, message) => {
-              if (!customer?.phone) return;
-              window.open(`https://wa.me/${customer.phone.replace(/\D/g, '')}?text=${message}`, '_blank');
-            }}
-          />
-        )
+        <ProductsTable
+          products={filteredProducts}
+          customers={customers}
+          scales={scales}
+          measurements={measurements}
+          analytics={analytics}
+          isLoading={isLoading}
+          hasMore={hasMore}
+          loadMore={loadMore}
+          onEdit={handleEdit}
+          onMessage={handleMessage}
+        />
       )}
 
       {/* Product Modal */}
