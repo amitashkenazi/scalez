@@ -1,8 +1,8 @@
-// src/contexts/AuthContext.js
-
 import React, { createContext, useState, useContext, useEffect } from 'react';
 import { cognitoAuth } from '../utils/cognitoAuth';
 import { authConfig } from '../config/auth';
+import { tokenService } from '../services/tokenService';
+
 
 const AuthContext = createContext(null);
 
@@ -19,6 +19,7 @@ export function AuthProvider({ children }) {
   const [userRole, setUserRole] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
+
   const [isConfigured] = useState(!!authConfig.USER_POOL_ID && !!authConfig.USER_POOL_WEB_CLIENT_ID);
 
   const decodeToken = (token) => {
@@ -40,7 +41,6 @@ export function AuthProvider({ children }) {
       const decodedToken = decodeToken(idToken);
       if (!decodedToken) return 'user';
 
-      // Check for role in custom:role or cognito:groups or your specific attribute
       const role = decodedToken['custom:role'] || 
                   (decodedToken['cognito:groups'] && 
                    decodedToken['cognito:groups'].includes('admin') ? 'admin' : 'user');
@@ -48,7 +48,7 @@ export function AuthProvider({ children }) {
       return role;
     } catch (err) {
       console.error('Error extracting user role:', err);
-      return 'user'; // Default to regular user role
+      return 'user';
     }
   };
 
@@ -94,6 +94,26 @@ export function AuthProvider({ children }) {
   };
 
   useEffect(() => {
+    const checkAuth = async () => {
+      try {
+        const session = await cognitoAuth.getCurrentSession();
+        if (session) {
+          const userData = await cognitoAuth.getCurrentUser();
+          if (userData) {
+            setUser(userData);
+          }
+        }
+      } catch (error) {
+        console.error('Auth check failed:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    checkAuth();
+  }, []);
+
+  useEffect(() => {
     checkAuthState();
   }, []);
 
@@ -112,33 +132,40 @@ export function AuthProvider({ children }) {
     }
   };
 
-  const signInWithGoogle = async () => {
+  const signInWithGoogle = async (authData) => {
     try {
-      const domain = authConfig.COGNITO_HOSTED_UI_DOMAIN;
-      const clientId = authConfig.USER_POOL_WEB_CLIENT_ID;
-      const redirectUri = `${window.location.origin}/auth/callback`;
-      
-      // Generate PKCE code verifier and challenge
-      const codeVerifier = generateCodeVerifier();
-      const codeChallenge = await generateCodeChallenge(codeVerifier);
-      
-      // Store code verifier in session storage for callback
-      sessionStorage.setItem('codeVerifier', codeVerifier);
-      
-      const queryParams = new URLSearchParams({
-        response_type: 'code',
-        client_id: clientId,
-        redirect_uri: redirectUri,
-        identity_provider: 'Google',
-        scope: 'email openid profile',
-        code_challenge: codeChallenge,
-        code_challenge_method: 'S256'
+      if (!authData) {
+        throw new Error('No authentication data provided');
+      }
+
+      // Store tokens
+      tokenService.setTokens({
+        accessToken: authData.access_token,
+        idToken: authData.id_token,
+        refreshToken: authData.refresh_token,
+        expiresIn: authData.expires_in
       });
 
-      window.location.href = `${domain}/oauth2/authorize?${queryParams.toString()}`;
+      // Extract user info from ID token
+      const decodedToken = decodeToken(authData.id_token);
+      const role = extractUserRole(authData.id_token);
+      
+      const userData = {
+        email: decodedToken.email,
+        name: decodedToken.name,
+        sub: decodedToken.sub,
+        role: role
+      };
+
+      // Update state and storage
+      setUser(userData);
+      setUserRole(role);
+      localStorage.setItem('userData', JSON.stringify(userData));
+
+      return userData;
     } catch (err) {
       console.error('Google sign in error:', err);
-      throw new Error('Failed to initiate Google sign in');
+      throw new Error('Failed to complete Google sign in');
     }
   };
 
@@ -159,7 +186,6 @@ export function AuthProvider({ children }) {
       setUserRole(role);
       localStorage.setItem('userData', JSON.stringify(userWithRole));
       
-      // Clean up
       sessionStorage.removeItem('codeVerifier');
       
       return userWithRole;
@@ -176,31 +202,35 @@ export function AuthProvider({ children }) {
       setUserRole(null);
       localStorage.removeItem('userData');
       sessionStorage.removeItem('codeVerifier');
+      tokenService.clearTokens();
     } catch (err) {
       console.error('Sign out failed:', err);
       throw err;
     }
   };
 
-  // PKCE Helper Functions
-  const generateCodeVerifier = () => {
-    const array = new Uint8Array(32);
-    window.crypto.getRandomValues(array);
-    return Array.from(array, dec => ('0' + dec.toString(16)).substr(-2)).join('');
-  };
-
-  const generateCodeChallenge = async (verifier) => {
-    const encoder = new TextEncoder();
-    const data = encoder.encode(verifier);
-    const hash = await window.crypto.subtle.digest('SHA-256', data);
-    return btoa(String.fromCharCode(...new Uint8Array(hash)))
-      .replace(/\+/g, '-')
-      .replace(/\//g, '_')
-      .replace(/=/g, '');
+  const refreshSession = async () => {
+    try {
+      const newToken = await cognitoAuth.refreshSession();
+      if (newToken) {
+        const role = extractUserRole(newToken);
+        const userData = await cognitoAuth.getCurrentUser();
+        const userWithRole = { ...userData, role };
+        setUser(userWithRole);
+        setUserRole(role);
+        localStorage.setItem('userData', JSON.stringify(userWithRole));
+        return true;
+      }
+      return false;
+    } catch (err) {
+      console.error('Session refresh failed:', err);
+      return false;
+    }
   };
 
   const value = {
     user,
+    setUser,
     userRole,
     isLoading,
     error,
@@ -212,6 +242,7 @@ export function AuthProvider({ children }) {
     confirmSignUp: cognitoAuth.confirmSignUp,
     resendConfirmationCode: cognitoAuth.resendConfirmationCode,
     refreshUser: checkAuthState,
+    refreshSession,
     isConfigured,
     isAdmin: userRole === 'admin'
   };

@@ -1,56 +1,112 @@
 import React, { useState } from 'react';
 import { useGoogleLogin } from '@react-oauth/google';
 import { useAuth } from '../../contexts/AuthContext';
+import { useNavigate } from 'react-router-dom';
 import apiService from '../../services/api';
+import { tokenService } from '../../services/tokenService';
 
-const GoogleSignInButton = ({ onSuccess }) => {
-  const { signInWithGoogle } = useAuth();
+const GoogleSignInButton = ({ onSuccess, onError }) => {
+  const { signInWithGoogle, setUser } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
+  const navigate = useNavigate();
+
+  const handleAuthSuccess = async (authData) => {
+    try {
+      // Store tokens
+      tokenService.setTokens({
+        accessToken: authData.access_token,
+        idToken: authData.id_token,
+        refreshToken: authData.refresh_token,
+        expiresIn: authData.expires_in
+      });
+
+      // Get user info from token
+      const payload = JSON.parse(atob(authData.id_token.split('.')[1]));
+      const userData = {
+        email: payload.email,
+        name: payload.name,
+        sub: payload.sub
+      };
+
+      // Update auth context
+      setUser(userData);
+
+      // Call optional success callback
+      if (onSuccess) {
+        onSuccess(authData);
+      }
+
+      // Navigate to main dashboard
+      navigate('/dashboard');
+    } catch (err) {
+      console.error('Error handling auth success:', err);
+      setError('Failed to process login');
+      if (onError) {
+        onError(err);
+      }
+    }
+  };
 
   const login = useGoogleLogin({
     onSuccess: async (response) => {
+      console.log('Google login success, response:', response); // Debug log
       setIsLoading(true);
       try {
-        const result = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
-          headers: {
-            Authorization: `Bearer ${response.access_token}`,
-          },
-        });
-        
-        const userInfo = await result.json();
-        
-        // Call your backend with the Google token
-        const backendResponse = await fetch(`${apiService.baseUrl}/auth/google/callback`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            google_token: response.access_token,
-            userInfo: userInfo
-          }),
+        // Get user info from Google
+        const userInfoResponse = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
+          headers: { Authorization: `Bearer ${response.access_token}` },
         });
 
+        console.log('User info response:', userInfoResponse); // Debug log
+        
+        if (!userInfoResponse.ok) {
+          throw new Error('Failed to get user info from Google');
+        }
+        
+        const userInfo = await userInfoResponse.json();
+        console.log('User info:', userInfo); // Debug log
+        
+        // Exchange Google token for Cognito tokens
+        const backendResponse = await fetch(`${apiService.baseUrl}/auth/google/callback`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            code: response.access_token,
+            userInfo
+          }),
+        });
+        console.log('Backend response:', backendResponse); // Debug log
         if (!backendResponse.ok) {
-          throw new Error('Failed to authenticate with backend');
+          const errorData = await backendResponse.json();
+          throw new Error(errorData.error || 'Authentication failed');
         }
 
         const authData = await backendResponse.json();
-        
-        // Update your auth context with the token
+        console.log('Auth data:', authData); // Debug log
         await signInWithGoogle(authData);
-        onSuccess?.();
+        
+        // Handle successful authentication
+        await handleAuthSuccess(authData);
+        
       } catch (err) {
         console.error('Google sign in error:', err);
-        setError(err.message || 'Failed to sign in with Google');
+        const errorMessage = err.message || 'Failed to sign in with Google';
+        setError(errorMessage);
+        if (onError) {
+          onError(errorMessage);
+        }
       } finally {
         setIsLoading(false);
       }
     },
     onError: (error) => {
       console.error('Google Login Error:', error);
-      setError('Failed to sign in with Google');
+      const errorMessage = 'Failed to sign in with Google';
+      setError(errorMessage);
+      if (onError) {
+        onError(errorMessage);
+      }
     }
   });
 
@@ -63,7 +119,10 @@ const GoogleSignInButton = ({ onSuccess }) => {
       )}
       
       <button
-        onClick={() => login()}
+        onClick={() => {
+          console.log('Button clicked'); // Debug log
+          login();
+        }}
         disabled={isLoading}
         className="w-full flex items-center justify-center gap-2 px-4 py-2 border border-gray-300 
           rounded-lg bg-white hover:bg-gray-50 transition-colors disabled:opacity-50"

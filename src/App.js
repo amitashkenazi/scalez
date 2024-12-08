@@ -1,4 +1,4 @@
-import React, { useState, useRef, useCallback } from 'react';
+import React, { useState, useRef, useCallback, useEffect } from 'react';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { LanguageProvider, useLanguage } from './contexts/LanguageContext';
 import { MapProvider } from './contexts/MapContext';
@@ -21,6 +21,16 @@ import CustomersMapView from './components/maps/CustomersMapView';
 import ScaleMonitor from './components/ScaleMonitor';
 import ItemsView from './components/ItemsView';
 import { GoogleOAuthProvider } from '@react-oauth/google';
+import GoogleAuthCallback from './components/auth/GoogleAuthCallback';
+import { 
+  BrowserRouter as Router, 
+  Routes, 
+  Route, 
+  Navigate, 
+  useNavigate, 
+  useLocation 
+} from 'react-router-dom';
+
 
 function AppContent() {
   const { user } = useAuth();
@@ -109,7 +119,6 @@ function AppContent() {
 
     return (
       <>
-        {activeView === 'home' && <LandingPage onViewChange={setActiveView} />}
         {activeView === 'products' && <ProductsView />}
         {activeView === 'customersTable' && <CustomersTableView />}
         {activeView === 'productsMng' && <ProductsManagementView />}
@@ -119,6 +128,7 @@ function AppContent() {
         {activeView === 'orders' && <OrdersView />}
         {activeView === 'customersMap' && <CustomersMapView />}
         {activeView === 'integrations' && <IntegrationsView />}
+        {activeView === 'auth/callback' && <GoogleAuthCallback />} 
         {activeView === 'vendors' && (
           <AdminRoute>
             <VendorsView />
@@ -127,10 +137,6 @@ function AppContent() {
       </>
     );
   };
-
-  if (!user) {
-    return <UnauthenticatedView />;
-  }
 
   return (
     <div 
@@ -168,20 +174,76 @@ function AppContent() {
   );
 }
 
-function App() {
+function AppWrapper() {
   return (
-    <GoogleOAuthProvider clientId={process.env.REACT_APP_GOOGLE_CLIENT_ID}>
-      <AuthProvider>
-        <LanguageProvider>
-          <AccountProvider>
-            <MapProvider>
-              <AppContent />
-            </MapProvider>
-          </AccountProvider>
-        </LanguageProvider>
-      </AuthProvider>
-    </GoogleOAuthProvider>
+    <Router>
+      <GoogleOAuthProvider clientId={process.env.REACT_APP_GOOGLE_CLIENT_ID}>
+        <AuthProvider>
+          <LanguageProvider>
+            <AccountProvider>
+              <MapProvider>
+                <App />
+              </MapProvider>
+            </AccountProvider>
+          </LanguageProvider>
+        </AuthProvider>
+      </GoogleOAuthProvider>
+    </Router>
   );
 }
 
-export default App;
+function App() {
+  const { user, isLoading } = useAuth();
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    if (!isLoading && user) {
+      navigate('/dashboard');
+    }
+  }, [user, isLoading, navigate]);
+
+  if (isLoading) {
+    return <div>Loading...</div>;
+  }
+
+  return (
+    <Routes>
+      <Route 
+        path="/" 
+        element={
+          user ? <Navigate to="/dashboard" replace /> : <UnauthenticatedView />
+        } 
+      />
+      <Route 
+        path="/dashboard/*" 
+        element={
+          <PrivateRoute>
+            <AppContent />
+          </PrivateRoute>
+        } 
+      />
+      <Route path="/auth/callback" element={<GoogleAuthCallback />} />
+    </Routes>
+  );
+}
+
+
+
+// Update PrivateRoute to handle redirects
+const PrivateRoute = ({ children }) => {
+  const { user, isLoading } = useAuth();
+  const location = useLocation();
+  
+  // Wait for auth to initialize before deciding
+  if (isLoading) {
+    return <div>Loading...</div>; // Or your loading component
+  }
+  
+  if (!user) {
+    // Save the attempted URL to redirect back after login
+    return <Navigate to="/" state={{ from: location }} replace />;
+  }
+  
+  return children;
+};
+export default AppWrapper;

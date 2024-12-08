@@ -1,5 +1,3 @@
-// src/components/UnauthenticatedView.jsx
-import React, { useState } from 'react';
 import { useLanguage } from '../contexts/LanguageContext';
 import { translations } from '../translations/translations';
 import LoginForm from './auth/LoginForm';
@@ -7,19 +5,33 @@ import RegisterForm from './auth/RegisterForm';
 import VerifyEmailForm from './auth/VerifyEmailForm';
 import { Scale, Languages } from 'lucide-react';
 import LandingPage from './LandingPage';
+import React, { useState, useEffect, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
 
 const UnauthenticatedView = () => {
-  const [view, setView] = useState('landing'); // Change default view to 'landing'
+  const [view, setView] = useState('landing');
   const [registeredEmail, setRegisteredEmail] = useState('');
   const { language, toggleLanguage } = useLanguage();
-  // Helper function to get translation
+  const navigate = useNavigate(); 
+
   const t = (key) => {
     if (translations[key] && translations[key][language]) {
       return translations[key][language];
     }
     return `Missing translation: ${key}`;
   };
-  const isRTL = language === 'he';
+
+  // Add useEffect at the top level
+  useEffect(() => {
+    console.log('View state changed to:', view);
+  }, [view]);
+
+  const handleAuthClick = useCallback(() => {
+    console.log('Setting view to login');
+    console.log('Current view before:', view);
+    setView('login');
+  }, []);
+
 
   const handleRegisterSuccess = (email) => {
     setRegisteredEmail(email);
@@ -27,12 +39,15 @@ const UnauthenticatedView = () => {
   };
 
   const handleLoginSuccess = () => {
-    window.location.reload();
+    navigate('/dashboard');
   };
+
+  const isRTL = language === 'he';
 
   // If we're showing the landing page
   if (view === 'landing') {
-    return <LandingPage onAuthClick={() => setView('login')} />;
+    console.log('Rendering landing page');
+    return <LandingPage onAuthClick={handleAuthClick} />;
   }
 
   // Otherwise show the auth forms
@@ -113,7 +128,7 @@ const UnauthenticatedView = () => {
 
           {/* Footer */}
           <div className="mt-6 text-center text-sm text-gray-600">
-            <p>© 2024 Scale Monitor. All rights reserved.</p>
+            <p>© 2024 Quantifyz. All rights reserved.</p>
           </div>
         </div>
       </div>
