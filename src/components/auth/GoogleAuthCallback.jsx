@@ -12,42 +12,31 @@ const GoogleAuthCallback = () => {
       try {
         const urlParams = new URLSearchParams(window.location.search);
         const code = urlParams.get('code');
-        
+
         if (!code) {
           setStatus('error');
-          setError('No authorization code found in the URL');
+          setError('No authorization code found');
           return;
         }
 
-        // Post the code to your backend to exchange for tokens
+        // Exchange the code for tokens
         const response = await fetch('/api/auth/google/callback', {
           method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({ code })
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ code }),
         });
 
-        if (!response.ok) {
-          throw new Error('Failed to authenticate with Google');
-        }
+        if (!response.ok) throw new Error('Google authentication failed');
 
         const authData = await response.json();
-        
-        // Complete the sign in process using the tokens
         await signInWithGoogle(authData);
 
         setStatus('success');
-        
-        // Redirect to main page after short delay
-        setTimeout(() => {
-          window.location.href = '/';
-        }, 1000);
-
+        setTimeout(() => (window.location.href = '/dashboard'), 1000);
       } catch (err) {
         console.error('Google auth callback error:', err);
         setStatus('error');
-        setError(err.message || 'Failed to complete Google authentication');
+        setError(err.message || 'Authentication failed');
       }
     };
 
@@ -61,7 +50,7 @@ const GoogleAuthCallback = () => {
           <div className="flex flex-col items-center">
             <Loader2 className="w-12 h-12 text-blue-600 animate-spin mb-4" />
             <h2 className="text-xl font-semibold mb-2">Completing Sign In</h2>
-            <p className="text-gray-600">Please wait while we complete your sign in...</p>
+            <p className="text-gray-600">Please wait while we complete your sign-in...</p>
           </div>
         );
 
@@ -81,7 +70,7 @@ const GoogleAuthCallback = () => {
             <h2 className="text-xl font-semibold mb-2">Authentication Failed</h2>
             <p className="text-red-600 text-center">{error}</p>
             <button
-              onClick={() => window.location.href = '/'}
+              onClick={() => (window.location.href = '/')}
               className="mt-4 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
             >
               Return to Login

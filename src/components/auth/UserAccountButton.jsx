@@ -9,6 +9,10 @@ const UserAccountButton = () => {
   const { language } = useLanguage();
   const [isOpen, setIsOpen] = useState(false);
   // Helper function to get translation
+  // Safely check if the user exists and has a valid email
+  const userName = user?.name || 'Guest';
+  const userEmail = user?.email || 'No Email Provided';
+
   const t = (key) => {
     if (translations[key] && translations[key][language]) {
       return translations[key][language];
@@ -29,7 +33,7 @@ const UserAccountButton = () => {
   if (!user) return null;
 
   // Get the most appropriate display name
-const displayName = user.email.length > 10 ? `${user.email.substring(0, 10)}...` : user.email;
+const displayName = userEmail.length > 10 ? `${userEmail.substring(0, 10)}...` : userEmail;
 
   return (
     <div className="relative">
@@ -47,9 +51,9 @@ const displayName = user.email.length > 10 ? `${user.email.substring(0, 10)}...`
 
       {isOpen && (
         <div className={`absolute ${isRTL ? 'right-0' : 'left-0'} mt-2 w-full bg-white rounded-lg shadow-lg py-2 z-50`}>
-          {user.email && (
+          {userEmail && (
             <div className="px-4 py-2 text-sm text-gray-600 border-b border-gray-100">
-              {user.email}
+              {userEmail}
             </div>
           )}
           <button
