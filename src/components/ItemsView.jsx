@@ -7,7 +7,8 @@ import {
   Loader2, 
   RefreshCw, 
   Search,
-  Sparkles
+  Sparkles,
+  CheckCircle2
 } from 'lucide-react';
 import apiService from '../services/api';
 
@@ -19,9 +20,9 @@ const ItemsView = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
   const [generatingProducts, setGeneratingProducts] = useState({});
+  const [monitoredItems, setMonitoredItems] = useState(new Set());
 
   const { language } = useLanguage();
-  // Helper function to get translation
   const t = (key) => {
     if (translations[key] && translations[key][language]) {
       return translations[key][language];
@@ -30,7 +31,6 @@ const ItemsView = () => {
   };
   const isRTL = language === 'he';
 
-  // Fetch items
   const fetchItems = async (showLoadingState = true) => {
     if (showLoadingState) {
       setIsLoading(true);
@@ -60,7 +60,6 @@ const ItemsView = () => {
     fetchItems(false);
   };
 
-  // Handle product generation for an item
   const handleGenerateProducts = async (itemId) => {
     setGeneratingProducts(prev => ({ ...prev, [itemId]: true }));
     try {
@@ -71,6 +70,7 @@ const ItemsView = () => {
         result.skipped_products.length} products already existed.`;
       
       showSuccessMessage(message);
+      setMonitoredItems(prev => new Set([...prev, itemId]));
     } catch (err) {
       setError('Failed to generate products');
       console.error('Error generating products:', err);
@@ -88,7 +88,6 @@ const ItemsView = () => {
     item.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
     item.itemCode?.toLowerCase().includes(searchTerm.toLowerCase())
   );
-  console.log('filteredItems', filteredItems);
 
   if (isLoading) {
     return (
@@ -159,84 +158,88 @@ const ItemsView = () => {
         </div>
       )}
 
-      {/* Loading State */}
-      {isLoading ? (
-        <div className="flex justify-center items-center h-64">
-          <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
-        </div>
-      ) : (
-        /* Main Content */
-        <div className="bg-white rounded-lg shadow overflow-hidden">
-          <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50">
-              <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  {t('itemCode')}
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  {t('name')}
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  {t('uom')}
-                </th>
-                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  {t('actions')}
-                </th>
+      {/* Main Content */}
+      <div className="bg-white rounded-lg shadow overflow-hidden">
+        <table className="min-w-full divide-y divide-gray-200">
+          <thead className="bg-gray-50">
+            <tr>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                {t('itemCode')}
+              </th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                {t('name')}
+              </th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                {t('uom')}
+              </th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                {t('status')}
+              </th>
+              <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                {t('actions')}
+              </th>
+            </tr>
+          </thead>
+          <tbody className="bg-white divide-y divide-gray-200">
+            {filteredItems.map((item) => (
+              <tr key={item.item_id} className="hover:bg-gray-50">
+                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                  {item.itemCode}
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                  {item.name}
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                  {item.uom}
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                  {monitoredItems.has(item.itemCode) && (
+                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                      <CheckCircle2 className="h-4 w-4 mr-1" />
+                      {t('monitored')}
+                    </span>
+                  )}
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                  <button
+                    onClick={() => handleGenerateProducts(item.itemCode)}
+                    disabled={generatingProducts[item.item_id]}
+                    className="inline-flex items-center px-3 py-1.5 border border-transparent 
+                      text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 
+                      focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500
+                      disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200"
+                  >
+                    {generatingProducts[item.item_id] ? (
+                      <>
+                        <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                        {t('generating')}
+                      </>
+                    ) : (
+                      <>
+                        <Sparkles className="h-4 w-4 mr-2" />
+                        {t('generateProducts')}
+                      </>
+                    )}
+                  </button>
+                </td>
               </tr>
-            </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
-              {filteredItems.map((item) => (
-                <tr key={item.item_id} className="hover:bg-gray-50">
-                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                    {item.itemCode}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    {item.name}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    {item.uom}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                    <button
-                      onClick={() => handleGenerateProducts(item.itemCode)}
-                      disabled={generatingProducts[item.item_id]}
-                      className="inline-flex items-center px-3 py-1.5 border border-transparent 
-                        text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 
-                        focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500
-                        disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200"
-                    >
-                      {generatingProducts[item.item_id] ? (
-                        <>
-                          <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                          {t('generating')}
-                        </>
-                      ) : (
-                        <>
-                          <Sparkles className="h-4 w-4 mr-2" />
-                          {t('generateProducts')}
-                        </>
-                      )}
-                    </button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+            ))}
+          </tbody>
+        </table>
 
-          {/* Empty State */}
-          {filteredItems.length === 0 && (
-            <div className="text-center py-12">
-              <Package className="mx-auto h-12 w-12 text-gray-400" />
-              <h3 className="mt-4 text-sm font-medium text-gray-900">
-                {t('noItemsFound')}
-              </h3>
-              <p className="mt-1 text-sm text-gray-500">
-                {searchTerm ? t('adjustSearch') : t('addItemsPrompt')}
-              </p>
-            </div>
-          )}
-        </div>
-      )}
+        {/* Empty State */}
+        {filteredItems.length === 0 && (
+          <div className="text-center py-12">
+            <Package className="mx-auto h-12 w-12 text-gray-400" />
+            <h3 className="mt-4 text-sm font-medium text-gray-900">
+              {t('noItemsFound')}
+            </h3>
+            <p className="mt-1 text-sm text-gray-500">
+              {searchTerm ? t('adjustSearch') : t('addItemsPrompt')}
+            </p>
+          </div>
+        )}
+      </div>
     </div>
   );
 };

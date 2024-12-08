@@ -96,19 +96,21 @@ const ExpandableRow = ({ children, isExpanded }) => {
 };
 
 const ProductsTable = ({
-  products,
-  customers,
-  scales,
-  measurements,
-  analytics,
-  isLoading,
-  hasMore,
-  loadMore,
-  onEdit,
-  onMessage,
-  selectedProducts,
-  onSelect,
-  onSelectAll
+    products,
+    customers,
+    scales,
+    measurements,
+    analytics,
+    isLoading,
+    hasMore,
+    loadMore,
+    onEdit,
+    onMessage,
+    selectedProducts,
+    onSelect,
+    onSelectAll,
+    sortConfig,
+    onSort
 }) => {
   const { language } = useLanguage();
   const t = (key) => {
@@ -119,16 +121,12 @@ const ProductsTable = ({
   };
   const isRTL = language === 'he';
   const [expandedRow, setExpandedRow] = useState(null);
-  const [sortConfig, setSortConfig] = useState({ key: 'severity', direction: 'desc' });
-
+//   const [sortConfig, setSortConfig] = useState({ key: 'severity', direction: 'desc' });
   const requestSort = (key) => {
-    setSortConfig(prevSort => ({
-      key,
-      direction: prevSort.key === key && prevSort.direction === 'asc' ? 'desc' : 'asc'
-    }));
+    onSort(key);
   };
 
-  const sortedProducts = sortProducts(products, sortConfig, measurements, analytics);
+  const sortedProducts = products;
   const lastElementRef = useInfiniteScroll(loadMore, hasMore, isLoading);
 
   return (

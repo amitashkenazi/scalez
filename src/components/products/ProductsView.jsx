@@ -51,8 +51,11 @@ const ProductsView = ({
     isLoading,
     loadMore,
     hasMore,
-    refreshData
+    refreshData,
+    sortConfig,
+    updateSort
   } = useDataHook();
+
 
   const {
     products = [],
@@ -242,20 +245,22 @@ const ProductsView = ({
       {/* Products Table */}
       {!error && filteredProducts.length > 0 && viewType === 'table' && (
         <ProductsTable
-          products={filteredProducts}
-          customers={customers}
-          scales={scales}
-          measurements={measurements}
-          analytics={analytics}
-          isLoading={isLoading}
-          hasMore={hasMore}
-          loadMore={loadMore}
-          onEdit={canEdit ? handleEdit : undefined}
-          onMessage={handleMessage}
-          selectedProducts={canDelete ? selectedProducts : []}
-          onSelect={canDelete ? handleSelect : undefined}
-          onSelectAll={canDelete ? handleSelectAll : undefined}
-        />
+        products={filteredProducts}
+        customers={customers}
+        scales={scales}
+        measurements={measurements}
+        analytics={analytics}
+        isLoading={isLoading}
+        hasMore={hasMore}
+        loadMore={loadMore}
+        onEdit={canEdit ? handleEdit : undefined}
+        onMessage={handleMessage}
+        selectedProducts={canDelete ? selectedProducts : []}
+        onSelect={canDelete ? handleSelect : undefined}
+        onSelectAll={canDelete ? handleSelectAll : undefined}
+        sortConfig={sortConfig}
+        onSort={updateSort}
+      />
       )}
 
       {/* Selection Manager */}

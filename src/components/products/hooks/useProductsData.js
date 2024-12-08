@@ -6,6 +6,10 @@ export const useProductsData = () => {
   const [error, setError] = useState(null);
   const [cursor, setCursor] = useState(null);
   const [hasMore, setHasMore] = useState(true);
+  const [sortConfig, setSortConfig] = useState({
+    key: 'name',
+    direction: 'desc'
+  });
   const [data, setData] = useState({
     products: [],
     scales: [],
@@ -14,24 +18,35 @@ export const useProductsData = () => {
     analytics: {}
   });
 
-  const fetchPage = useCallback(async (pageToken = null) => {
+  const fetchPage = useCallback(async (pageToken = null, shouldResetData = false) => {
     if (!hasMore && pageToken) return;
     
     setIsLoading(true);
     setError(null);
 
     try {
-      // Fetch products with pagination
-      const productsResponse = await apiService.request('products', {
-        method: 'GET',
-        params: {
-          cursor: pageToken,
-          limit: 20 // Adjust this value based on your needs
+      // Fetch products with pagination and sorting
+      console.log('Fetching products with cursor get params:', {
+        pageToken,
+        sortConfig
         }
+      );
+
+      var query_string = `products?`
+      if (pageToken) {
+        query_string += `page_token=${pageToken}&`;
+      }
+      console.log('sortConfig', sortConfig);
+        
+      if (sortConfig) {
+        query_string += `sort_by=${sortConfig.key}&sort_order=${sortConfig.direction}&`;
+      }
+      const productsResponse = await apiService.request(query_string, {
+        method: 'GET'
       });
 
-      // If it's the first page, fetch other data as well
-      if (!pageToken) {
+      // If it's the first page or resetting data, fetch other data as well
+      if (!pageToken || shouldResetData) {
         const [scales, customers] = await Promise.all([
           apiService.getScales(),
           apiService.getCustomers()
@@ -47,53 +62,34 @@ export const useProductsData = () => {
           return acc;
         }, {});
 
-        const analyticsItems = productsResponse.items.map(product => ({
-          customer_id: product.customer_id.split('_').pop(),
-          item_id: product.item_id.split('_').pop(),
-          product_id: product.product_id
-        }));
-        var analyticsResponse;
-        console.log('analyticsItems', analyticsItems);
+        const analyticsItems = productsResponse.items
+          .filter(product => product?.customer_id && product?.item_id)
+          .map(product => ({
+            customer_id: product.customer_id.split('_').pop(),
+            item_id: product.item_id.split('_').pop(),
+            product_id: product.product_id
+          }));
+
+        var analyticsResponse = { results: {} };
         if (analyticsItems.length > 0) {
-            analyticsResponse = await apiService.request('orders/customers/item-history', {
+          analyticsResponse = await apiService.request('orders/customers/item-history', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ items: analyticsItems })
-            });
-        } else {
-            analyticsResponse = { results: {} };
+          });
         }
 
-        setData(prev => ({
+        setData({
           products: productsResponse.items,
           scales,
           customers,
           measurements: measurementsMap,
           analytics: analyticsResponse.results || {}
-        }));
+        });
       } else {
-        // For subsequent pages, only update products and related analytics
-        const analyticsItems = productsResponse.items.map(product => ({
-          customer_id: product.customer_id.split('_').pop(),
-          item_id: product.item_id.split('_').pop(),
-          product_id: product.product_id
-        }));
-        console.log('analyticsItems', analyticsItems);
-        var analyticsResponse;
-        if (analyticsItems.length > 0) {
-            analyticsResponse = await apiService.request('orders/customers/item-history', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ items: analyticsItems })
-            });
-        } else {
-            analyticsResponse = { results: {} };
-        }
-
         setData(prev => ({
           ...prev,
-          products: [...prev.products, ...productsResponse.items],
-          analytics: { ...prev.analytics, ...analyticsResponse.results }
+          products: [...prev.products, ...productsResponse.items]
         }));
       }
 
@@ -105,23 +101,32 @@ export const useProductsData = () => {
     } finally {
       setIsLoading(false);
     }
-  }, [hasMore]);
+  }, [sortConfig, hasMore]);
 
-  const refreshData = useCallback(async () => {
+  // Function to update sort configuration
+  const updateSort = useCallback((newSortKey) => {
+    setSortConfig(prevSort => ({
+      key: newSortKey,
+      direction: prevSort.key === newSortKey && prevSort.direction === 'asc' ? 'desc' : 'asc'
+    }));
+  }, []);
+
+  const refreshData = useCallback(() => {
     setCursor(null);
     setHasMore(true);
-    await fetchPage(null);
+    fetchPage(null, true);
   }, [fetchPage]);
 
+  // Initial data fetch
+  useEffect(() => {
+    refreshData();
+  }, [sortConfig.key, sortConfig.direction]);
+
   const loadMore = useCallback(() => {
-    if (!isLoading && hasMore) {
+    if (!isLoading && hasMore && cursor) {
       fetchPage(cursor);
     }
   }, [isLoading, hasMore, cursor, fetchPage]);
-
-  useEffect(() => {
-    fetchPage(null);
-  }, [fetchPage]);
 
   return { 
     data,
@@ -129,6 +134,8 @@ export const useProductsData = () => {
     error,
     refreshData,
     loadMore,
-    hasMore
+    hasMore,
+    sortConfig,
+    updateSort
   };
 };
