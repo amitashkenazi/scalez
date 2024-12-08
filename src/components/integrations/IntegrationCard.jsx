@@ -29,7 +29,7 @@ const IntegrationCard = ({ integration, onConnect, onDisconnect, isLoading, t })
     }
   };
 
-  return (
+return (
     <div className="bg-white rounded-lg shadow-lg p-6 hover:shadow-xl transition-shadow">
       <div className="flex justify-between items-start mb-4">
         <div className="flex items-center gap-3">
@@ -50,16 +50,9 @@ const IntegrationCard = ({ integration, onConnect, onDisconnect, isLoading, t })
       {integration.instances?.length > 0 ? (
         <div className="mt-4">
           <div className="flex items-center justify-between border-t pt-4">
-            <div className="flex items-center gap-2 text-green-600">
-              <CheckCircle2 className="h-5 w-5" />
-              <div className="flex flex-col">
-                <span className="font-medium">{t('connectedInstance')}</span>
-                <span className="text-sm text-gray-500">ID: {integration.instances[0].id}</span>
-              </div>
-            </div>
             <button
               onClick={() => onDisconnect(integration.instances[0].id)}
-              className="px-3 py-1.5 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+              className="px-3 py-1.5 text-red-600 hover:bg-red-50 rounded-lg transition-colors bg-gray-100"
               disabled={isLoading}
             >
               {isLoading ? (
@@ -113,21 +106,23 @@ const IntegrationCard = ({ integration, onConnect, onDisconnect, isLoading, t })
             </div>
           )}
 
-          <button
-            type="submit"
-            className="w-full px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 
-              disabled:bg-blue-400 flex items-center justify-center gap-2"
-            disabled={isLoading}
-          >
-            {isLoading ? (
-              <>
-                <Loader2 className="h-4 w-4 animate-spin" />
-                {t('connecting')}
-              </>
-            ) : (
-              t('connect')
-            )}
-          </button>
+          <div className="flex justify-center">
+            <button
+              type="submit"
+              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 
+                disabled:bg-blue-400 flex items-center justify-center gap-2"
+              disabled={isLoading}
+            >
+              {isLoading ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  {t('connecting')}
+                </>
+              ) : (
+                t('connect')
+              )}
+            </button>
+          </div>
         </form>
       )}
     </div>

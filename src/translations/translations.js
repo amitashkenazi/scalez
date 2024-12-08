@@ -1074,5 +1074,9 @@ export const translations = {
   severityLevel: {
     en: 'Severity Level',
     he: 'רמת חומרה'
+  },
+  searchPlaceholder: {
+    en: "Search...",
+    he: "חיפוש..."
   }
 }
