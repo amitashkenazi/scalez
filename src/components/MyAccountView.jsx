@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useLanguage } from '../contexts/LanguageContext';
-import { translations } from '../translations/translations';
+// import { translations } from '../translations/translations';
 import { useAuth } from '../contexts/AuthContext';
 import { UserCircle, Loader2, AlertCircle, Check } from 'lucide-react';
 import apiService from '../services/api';
@@ -9,12 +9,12 @@ const MyAccountView = () => {
   const { user, refreshUser } = useAuth();
   const { language } = useLanguage();
   // Helper function to get translation
-  const t = (key) => {
-    if (translations[key] && translations[key][language]) {
-      return translations[key][language];
-    }
-    return `Missing translation: ${key}`;
-  };
+  // const t = (key) => {
+  //   if (translations[key] && translations[key][language]) {
+  //     return translations[key][language];
+  //   }
+  //   return `Missing translation: ${key}`;
+  // };
   const isRTL = language === 'he';
 
   const [formData, setFormData] = useState({

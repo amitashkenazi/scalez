@@ -8,9 +8,6 @@ import {
   BarChart3,
   Bell,
   Smartphone,
-  Globe2,
-  ShieldCheck,
-  Clock,
   ArrowRight,
   Languages,
   CheckCircle2

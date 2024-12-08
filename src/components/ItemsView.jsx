@@ -7,7 +7,6 @@ import {
   Loader2, 
   RefreshCw, 
   Search,
-  Plus,
   Sparkles
 } from 'lucide-react';
 import apiService from '../services/api';

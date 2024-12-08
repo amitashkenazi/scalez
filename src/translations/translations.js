@@ -1,19 +1,19 @@
 export const translations = {
   deleteProducts: {
-    en: "Delete Products",
-    he: "מחק מוצרים"
+    en: "Delete items",
+    he: "מחק פריטים"
   },
   deleteMultipleConfirmation: {
-    en: "Are you sure you want to delete {count} selected products? This action cannot be undone.",
-    he: "האם אתה בטוח שברצונך למחוק {count} מוצרים נבחרים? לא ניתן לבטל פעולה זו."
+    en: "Are you sure you want to delete {count} selected items? This action cannot be undone.",
+    he: "האם אתה בטוח שברצונך למחוק {count} פריטים נבחרים? לא ניתן לבטל פעולה זו."
   },
   productsDeleted: {
-    en: "Products deleted successfully",
-    he: "המוצרים נמחקו בהצלחה"
+    en: "items deleted successfully",
+    he: "הפריטים נמחקו בהצלחה"
   },
   failedToDeleteProducts: {
-    en: "Failed to delete products",
-    he: "נכשל במחיקת המוצרים"
+    en: "Failed to delete items",
+    he: "נכשל במחיקת הפריטים"
   },
   date: {
     en: "Date",
@@ -92,12 +92,12 @@ export const translations = {
     he: "עד תאריך"
   },
   productsDashboard: {
-    en: "Products Dashboard",
-    he: "לוח מוצרים"
+    en: "Monitored Items",
+    he: "פריטים מנוטרים"
   },
   productStatus: {
-    en: "Product Status",
-    he: "סטטוס מוצר"
+    en: "Item Status",
+    he: "סטטוס פריט"
   },
   upperThreshold: {
     en: "Upper Threshold",
@@ -112,12 +112,12 @@ export const translations = {
     he: "עדכון אחרון"
   },
   noProducts: {
-    en: "No products found",
-    he: "לא נמצאו מוצרים"
+    en: "No items found",
+    he: "לא נמצאו פריטים"
   },
   failedToFetchProducts: {
-    en: "Failed to fetch products data",
-    he: "נכשל בטעינת נתוני המוצרים"
+    en: "Failed to fetch items data",
+    he: "נכשל בטעינת נתוני הפריטים"
   },
   mapLabel: {
     en: "Map",
@@ -136,8 +136,8 @@ export const translations = {
     he: "צפה בכל המשקלים ובסטטוס הנוכחי שלהם בלוח בקרה מקיף"
   },
   customersDesc: {
-    en: "Manage and monitor customer scales, products, and inventory levels.",
-    he: "נהל ועקוב אחר משקלי הלקוחות, המוצרים ורמות המלאי"
+    en: "Manage and monitor customer scales, items, and inventory levels.",
+    he: "נהל ועקוב אחר משקלי הלקוחות, הפריטים ורמות המלאי"
   },
   notificationsDesc: {
     en: "Check alerts and notifications for low inventory levels.",
@@ -408,8 +408,8 @@ export const translations = {
     he: "תמיכת לקוחות מסביב לשעון כדי לעזור לך להצליח"
   },
   generateProducts: {
-    en: "Generate Products",
-    he: "יצירת מוצרים"
+    en: "Generate monitored items",
+    he: "יצירת פריטים מנוטרים"
   },
   generatingProducts: {
     en: "Generating...",
@@ -424,11 +424,11 @@ export const translations = {
     he: "...חיפוש פריטים"
   },
   productGenerationSuccess: {
-    en: "Successfully generated {count} products. {skipped} products already existed.",
-    he: "נוצרו {count} מוצרים בהצלחה. {skipped} מוצרים כבר קיימים."
+    en: "Successfully generated {count} monitored items. {skipped} monitored items already existed.",
+    he: "נוצרו {count} פריטים בהצלחה. {skipped} פריטים כבר קיימים."
   },
   productGenerationError: {
-    en: "Failed to generate products",
+    en: "Failed to generate monitored items",
     he: "שגיאה ביצירת מוצרים"
   },
   itemCode: {
@@ -480,8 +480,8 @@ export const translations = {
     he: "לקוח"
   },
   productName: {
-    en: "Product Name",
-    he: "שם מוצר"
+    en: "Name",
+    he: "שם"
   },
   time: {
     en: "Time",
@@ -552,8 +552,8 @@ export const translations = {
     he: "שגיאה בעדכון המשקל. אנא נסה שוב מאוחר יותר."
   },
   productsManagement: {
-    en: "My Products",
-    he: "המוצרים שלי"
+    en: "My monitored items",
+    he: "הפריטים שלי"
   },
   unitsPerDay: {
     en: "Units/Day",
@@ -592,8 +592,8 @@ export const translations = {
     he: "כמות משוער שנותרה"
   },
   addProduct: {
-    en: "Add Product",
-    he: "הוסף מוצר"
+    en: "Add Monitored Item",
+    he: "הוסף פריט מנוטר"
   },
   quantity: {
     en: "Quantity",
@@ -636,8 +636,8 @@ export const translations = {
     he: "בחר לקוח"
   },
   updateProduct: {
-    en: "Update Product",
-    he: "עדכן מוצר"
+    en: "Update Item",
+    he: "עדכן פריט"
   },
   linkedScales: {
     en: "Linked Scales",
@@ -692,11 +692,11 @@ export const translations = {
     he: "עדכן"
   },
   deleteProductConfirmation: {
-    en: "Are you sure you want to delete this product?",
-    he: "האם אתה בטוח שברצונך למחוק מוצר זה?"
+    en: "Are you sure you want to delete this monitored item?",
+    he: "האם אתה בטוח שברצונך למחוק פריט זה?"
   },
   deleteMultipleProductsConfirmation: {
-    en: "Are you sure you want to delete these products?",
+    en: "Are you sure you want to delete these monitored items?",
     he: "האם אתה בטוח שברצונך למחוק מוצרים אלה?"
   },
   selectedForDeletion: {
@@ -704,8 +704,8 @@ export const translations = {
     he: "נבחרו למחיקה"
   },
   products: {
-    en: "products",
-    he: "מוצרים"
+    en: "Monitored Items",
+    he: "פריטים מנוטרים"
   },
   delete: {
     en: "Delete",
@@ -952,12 +952,12 @@ export const translations = {
     he: "שותף איתך"
   },
   sharedProductsDesc: {
-    en: "View products that have been shared with you",
-    he: "צפה במוצרים ששותפו איתך"
+    en: "View monitored items that have been shared with you",
+    he: "צפה בפריטים מנוטרים ששותפו איתך"
   },
   noSharedProducts: {
-    en: "No products have been shared with you yet",
-    he: "טרם שותפו איתך מוצרים"
+    en: "No items have been shared with you yet",
+    he: "טרם שותפו איתך פריטים"
   },
   subtitle: {
     en: "Take control of your inventory with real-time weight-based monitoring",
@@ -1032,24 +1032,24 @@ export const translations = {
     he: "החשבון שלי"
   },
   searchProducts: {
-    en: "Search product...",
-    he: "חיפוש מוצר..."
+    en: "Search items...",
+    he: "חיפוש פריטים..."
   },
   cardView: {
     en: "Card View",
     he: "תצוגת כרטיסים"
   },
   noProductsFound: {
-    en: "No products found",
-    he: "לא נמצאו מוצרים"
+    en: "No items found",
+    he: "לא נמצאו פריטים"
   },
   tryAdjustingSearch: {
     en: "Try adjusting your search",
     he: "נסה לשנות את החיפוש"
   },
   noMoreProducts: {
-    en: "No more products",
-    he: "אין עוד מוצרים"
+    en: "No more items",
+    he: "אין עוד פריטים"
   },
   orderID: {
     en: "Invoice ID",
@@ -1066,5 +1066,13 @@ export const translations = {
   addNewScale: {
     en: "Add New Scale",
     he: "הוסף משקל חדש"
+  },
+  severity: {
+    en: "Severity",
+    he: 'חומרה'
+  },
+  severityLevel: {
+    en: 'Severity Level',
+    he: 'רמת חומרה'
   }
 }

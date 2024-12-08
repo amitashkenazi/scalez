@@ -2,7 +2,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useLanguage } from '../contexts/LanguageContext';
 import { translations } from '../translations/translations';
-import { X, Loader2, AlertCircle, Search, Plus } from 'lucide-react';
+import { X, Loader2, AlertCircle, Search } from 'lucide-react';
 import apiService from '../services/api';
 import CustomerModal from './CustomerModal';
 import ScaleModal from './ScaleModal';

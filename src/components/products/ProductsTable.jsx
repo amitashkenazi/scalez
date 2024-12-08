@@ -13,13 +13,19 @@ import {
   ArrowDown,
   ShoppingBag,
   Calendar,
-  Loader2
+  Loader2,
+  AlertTriangle
 } from 'lucide-react';
 import { ProductAnalytics } from './ProductAnalytics';
-
 import OrderHistory from './OrderHistory';
-import { getStatusColor, getAnalyticsWarningLevel, calculateAnalytics } from './utils/productUtils';
-import useSortableData from './hooks/useSortableData';
+import { 
+  getStatusColor, 
+  getAnalyticsWarningLevel, 
+  sortProducts,
+  calculateAnalytics,
+  calculateSeverityScore,
+  getSeverityLevel
+} from './utils/productUtils';
 
 const useInfiniteScroll = (loadMore, hasMore, isLoading) => {
   const observer = useRef();
@@ -68,7 +74,7 @@ const ExpandableRow = ({ children, isExpanded }) => {
   
   return (
     <tr>
-      <td colSpan="7"> {/* Updated colspan to account for checkbox column */}
+      <td colSpan="8">
         <div
           ref={contentRef}
           style={{
@@ -105,7 +111,6 @@ const ProductsTable = ({
   onSelectAll
 }) => {
   const { language } = useLanguage();
-  // Helper function to get translation
   const t = (key) => {
     if (translations[key] && translations[key][language]) {
       return translations[key][language];
@@ -114,13 +119,16 @@ const ProductsTable = ({
   };
   const isRTL = language === 'he';
   const [expandedRow, setExpandedRow] = useState(null);
+  const [sortConfig, setSortConfig] = useState({ key: 'severity', direction: 'desc' });
 
-  const { 
-    sortedItems: sortedProducts, 
-    sortConfig, 
-    requestSort 
-  } = useSortableData(products, { key: 'name', direction: 'asc' });
+  const requestSort = (key) => {
+    setSortConfig(prevSort => ({
+      key,
+      direction: prevSort.key === key && prevSort.direction === 'asc' ? 'desc' : 'asc'
+    }));
+  };
 
+  const sortedProducts = sortProducts(products, sortConfig, measurements, analytics);
   const lastElementRef = useInfiniteScroll(loadMore, hasMore, isLoading);
 
   return (
@@ -139,6 +147,13 @@ const ProductsTable = ({
             <SortHeader 
               label={t('productName')}
               sortKey="name"
+              currentSort={sortConfig}
+              onSort={requestSort}
+              isRTL={isRTL}
+            />
+            <SortHeader 
+              label={t('severity')}
+              sortKey="severity"
               currentSort={sortConfig}
               onSort={requestSort}
               isRTL={isRTL}
@@ -182,19 +197,21 @@ const ProductsTable = ({
             const customer = customers.find(c => c.customer_id === product.customer_id);
             const statusColor = getStatusColor(measurement, product.thresholds);
             const isExpanded = expandedRow === product.product_id;
-            const productAnalytics = analytics[`${product.customer_id.split('_').pop()}_${product.item_id.split('_').pop()}`];
+            const analyticsKey = `${product.customer_id.split('_').pop()}_${product.item_id.split('_').pop()}`;
+            const productAnalytics = analytics[analyticsKey];
             const analyticsData = productAnalytics ? calculateAnalytics(productAnalytics) : null;
             const quantityWarning = getAnalyticsWarningLevel('quantity', analyticsData);
             const daysWarning = getAnalyticsWarningLevel('days', analyticsData);
+            const severityScore = calculateSeverityScore(analyticsData);
+            const severityInfo = getSeverityLevel(severityScore);
 
             return (
               <React.Fragment key={product.product_id}>
                 <tr 
-                    ref={isLastElement ? lastElementRef : null}
-                    key={`row-${product.product_id}`}  // Add unique key for main row
-                    className={`hover:bg-gray-50 transition-colors duration-200 ${
+                  ref={isLastElement ? lastElementRef : null}
+                  className={`hover:bg-gray-50 transition-colors duration-200 ${
                     isExpanded ? 'bg-gray-50' : ''
-                    }`}
+                  }`}
                 >
                   <td className="px-6 py-4 w-12">
                     <input
@@ -220,6 +237,17 @@ const ProductsTable = ({
                           </div>
                         )}
                       </div>
+                    </div>
+                  </td>
+                  <td className={`px-6 py-4 ${severityInfo.className}`}>
+                    <div className="flex items-center gap-2">
+                      <AlertTriangle className={`h-4 w-4 ${severityScore >= 60 ? 'animate-pulse' : ''}`} />
+                      <span className="font-medium">
+                        {severityScore}
+                      </span>
+                      <span className="text-sm">
+                        ({severityInfo.level})
+                      </span>
                     </div>
                   </td>
                   <td className="px-6 py-4">
@@ -291,15 +319,14 @@ const ProductsTable = ({
                   </td>
                 </tr>
                 {productAnalytics && (
-                    <ExpandableRow 
-                    key={`expandable-${product.product_id}`}  // Add unique key for expandable row
+                  <ExpandableRow 
                     isExpanded={isExpanded}
-                    >
+                  >
                     <div className="space-y-4">
-                        <ProductAnalytics analytics={productAnalytics} />
-                        <OrderHistory orders={productAnalytics} />
+                      <ProductAnalytics analytics={productAnalytics} />
+                      <OrderHistory orders={productAnalytics} />
                     </div>
-                    </ExpandableRow>
+                  </ExpandableRow>
                 )}
               </React.Fragment>
             );
@@ -307,14 +334,12 @@ const ProductsTable = ({
         </tbody>
       </table>
       
-      {/* Loading indicator */}
       {isLoading && (
         <div className="flex justify-center items-center py-4">
           <Loader2 className="h-6 w-6 animate-spin text-blue-600" />
         </div>
       )}
       
-      {/* End of content indicator */}
       {!hasMore && products.length > 0 && (
         <div className="text-center py-4 text-gray-500">
           {t('noMoreProducts')}

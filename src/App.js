@@ -20,7 +20,7 @@ import { Menu as MenuIcon } from 'lucide-react';
 import CustomersMapView from './components/maps/CustomersMapView';
 import ScaleMonitor from './components/ScaleMonitor';
 import ItemsView from './components/ItemsView';
-
+import { GoogleOAuthProvider } from '@react-oauth/google';
 
 function AppContent() {
   const { user } = useAuth();
@@ -69,7 +69,7 @@ function AppContent() {
     touchStartX.current = null;
     touchEndX.current = null;
   }, [isMenuOpen, language]);
-
+  
   const getMenuStyles = () => {
     const baseStyles = 'fixed top-0 h-full bg-gray-800 transition-all duration-300 ease-in-out w-64 z-40';
     if (language === 'he') {
@@ -170,15 +170,17 @@ function AppContent() {
 
 function App() {
   return (
-    <AuthProvider>
-      <LanguageProvider>
-        <AccountProvider>
-          <MapProvider>
-            <AppContent />
-          </MapProvider>
-        </AccountProvider>
-      </LanguageProvider>
-    </AuthProvider>
+    <GoogleOAuthProvider clientId={process.env.REACT_APP_GOOGLE_CLIENT_ID}>
+      <AuthProvider>
+        <LanguageProvider>
+          <AccountProvider>
+            <MapProvider>
+              <AppContent />
+            </MapProvider>
+          </AccountProvider>
+        </LanguageProvider>
+      </AuthProvider>
+    </GoogleOAuthProvider>
   );
 }
 

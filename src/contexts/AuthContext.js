@@ -112,16 +112,91 @@ export function AuthProvider({ children }) {
     }
   };
 
+  const signInWithGoogle = async () => {
+    try {
+      const domain = authConfig.COGNITO_HOSTED_UI_DOMAIN;
+      const clientId = authConfig.USER_POOL_WEB_CLIENT_ID;
+      const redirectUri = `${window.location.origin}/auth/callback`;
+      
+      // Generate PKCE code verifier and challenge
+      const codeVerifier = generateCodeVerifier();
+      const codeChallenge = await generateCodeChallenge(codeVerifier);
+      
+      // Store code verifier in session storage for callback
+      sessionStorage.setItem('codeVerifier', codeVerifier);
+      
+      const queryParams = new URLSearchParams({
+        response_type: 'code',
+        client_id: clientId,
+        redirect_uri: redirectUri,
+        identity_provider: 'Google',
+        scope: 'email openid profile',
+        code_challenge: codeChallenge,
+        code_challenge_method: 'S256'
+      });
+
+      window.location.href = `${domain}/oauth2/authorize?${queryParams.toString()}`;
+    } catch (err) {
+      console.error('Google sign in error:', err);
+      throw new Error('Failed to initiate Google sign in');
+    }
+  };
+
+  const completeSignIn = async (code) => {
+    try {
+      const codeVerifier = sessionStorage.getItem('codeVerifier');
+      if (!codeVerifier) {
+        throw new Error('No code verifier found');
+      }
+
+      const result = await cognitoAuth.completeNewPasswordChallenge(code, codeVerifier);
+      const idToken = result.getIdToken().getJwtToken();
+      const role = extractUserRole(idToken);
+      const userData = await cognitoAuth.getCurrentUser();
+      
+      const userWithRole = { ...userData, role };
+      setUser(userWithRole);
+      setUserRole(role);
+      localStorage.setItem('userData', JSON.stringify(userWithRole));
+      
+      // Clean up
+      sessionStorage.removeItem('codeVerifier');
+      
+      return userWithRole;
+    } catch (err) {
+      console.error('Error completing sign in:', err);
+      throw err;
+    }
+  };
+
   const signOut = async () => {
     try {
       await cognitoAuth.signOut();
       setUser(null);
       setUserRole(null);
       localStorage.removeItem('userData');
+      sessionStorage.removeItem('codeVerifier');
     } catch (err) {
       console.error('Sign out failed:', err);
       throw err;
     }
+  };
+
+  // PKCE Helper Functions
+  const generateCodeVerifier = () => {
+    const array = new Uint8Array(32);
+    window.crypto.getRandomValues(array);
+    return Array.from(array, dec => ('0' + dec.toString(16)).substr(-2)).join('');
+  };
+
+  const generateCodeChallenge = async (verifier) => {
+    const encoder = new TextEncoder();
+    const data = encoder.encode(verifier);
+    const hash = await window.crypto.subtle.digest('SHA-256', data);
+    return btoa(String.fromCharCode(...new Uint8Array(hash)))
+      .replace(/\+/g, '-')
+      .replace(/\//g, '_')
+      .replace(/=/g, '');
   };
 
   const value = {
@@ -130,6 +205,8 @@ export function AuthProvider({ children }) {
     isLoading,
     error,
     signIn,
+    signInWithGoogle,
+    completeSignIn,
     signUp: cognitoAuth.signUp,
     signOut,
     confirmSignUp: cognitoAuth.confirmSignUp,
