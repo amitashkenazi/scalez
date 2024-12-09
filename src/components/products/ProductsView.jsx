@@ -36,6 +36,7 @@ const ProductsView = ({
   const [viewType, setViewType] = useState('table');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState(null);
   const [selectedProducts, setSelectedProducts] = useState([]);
   const [successMessage, setSuccessMessage] = useState('');
@@ -87,6 +88,7 @@ const ProductsView = ({
   };
 
   const handleDelete = async () => {
+    setIsDeleting(true);
     try {
       await Promise.all(selectedProducts.map(id => 
         apiService.request(`products/${id}`, { method: 'DELETE' })
@@ -98,6 +100,8 @@ const ProductsView = ({
       setSuccessMessage(t('productsDeleted'));
     } catch (err) {
       setError(err.message);
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -144,6 +148,7 @@ const ProductsView = ({
                 onClick={() => setIsModalOpen(true)}
                 className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg 
                   hover:bg-blue-700 transition-colors"
+                disabled={isDeleting}
               >
                 <Plus className="h-5 w-5" />
                 {t('addNewProduct')}
@@ -152,6 +157,7 @@ const ProductsView = ({
             <button
               onClick={() => setViewType(viewType === 'table' ? 'cards' : 'table')}
               className="flex items-center gap-2 px-4 py-2 text-gray-600 hover:text-gray-800 border rounded-lg"
+              disabled={isDeleting}
             >
               {viewType === 'table' ? (
                 <>
@@ -171,6 +177,7 @@ const ProductsView = ({
                 fetchNextPage(true);
               }}
               className="flex items-center gap-2 px-4 py-2 text-gray-600 hover:text-gray-800"
+              disabled={isDeleting}
             >
               <RefreshCw className={`h-5 w-5 ${isLoading ? 'animate-spin' : ''}`} />
               {t('refresh')}
@@ -186,6 +193,7 @@ const ProductsView = ({
           value={searchTerm}
           onChange={(e) => handleSearchChange(e.target.value)}
           className="w-full pl-10 pr-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+          disabled={isDeleting}
         />
         <div className="absolute left-3 top-2.5">
           {isSearching ? (
@@ -233,6 +241,7 @@ const ProductsView = ({
             onMessage={handleMessage}
             sortConfig={sortConfig}
             onSort={updateSort}
+            isDeleting={isDeleting}
           />
           {isLoading && page > 1 && (
             <div className="flex justify-center py-4">
@@ -247,6 +256,7 @@ const ProductsView = ({
               onDelete={() => setIsDeleteModalOpen(true)}
               totalProducts={filteredProducts.length}
               isRTL={isRTL}
+              isDeleting={isDeleting}
             />
           )}
         </>
@@ -276,6 +286,7 @@ const ProductsView = ({
           onConfirm={handleDelete}
           itemCount={selectedProducts.length}
           itemType="product"
+          isLoading={isDeleting}
         />
       )}
     </div>

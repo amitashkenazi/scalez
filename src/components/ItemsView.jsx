@@ -203,13 +203,16 @@ const ItemsView = () => {
                 <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                   <button
                     onClick={() => handleGenerateProducts(item.itemCode)}
-                    disabled={generatingProducts[item.item_id]}
-                    className="inline-flex items-center px-3 py-1.5 border border-transparent 
-                      text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 
+                    disabled={generatingProducts[item.itemCode]}
+                    className={`inline-flex items-center px-3 py-1.5 border border-transparent 
+                      text-sm font-medium rounded-md text-white
+                      ${generatingProducts[item.itemCode] 
+                        ? 'bg-blue-400 cursor-not-allowed' 
+                        : 'bg-blue-600 hover:bg-blue-700'}
                       focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500
-                      disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200"
+                      transition-all duration-200 min-w-[150px] justify-center`}
                   >
-                    {generatingProducts[item.item_id] ? (
+                    {generatingProducts[item.itemCode] ? (
                       <>
                         <Loader2 className="h-4 w-4 animate-spin mr-2" />
                         {t('generating')}

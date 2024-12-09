@@ -104,7 +104,7 @@ const IntegrationsView = () => {
           <div>
             <h2 className="text-2xl font-bold flex items-center gap-2">
               <Plug className="h-6 w-6" />
-              {t('integrations.title')}
+              {t('integrationstitle')}
             </h2>
             <p className="text-gray-600 mt-1">{t('integrations.description')}</p>
           </div>

@@ -8,7 +8,8 @@ const ProductsSelectionManager = ({
   onClearSelection, 
   onDelete, 
   totalProducts,
-  isRTL 
+  isRTL,
+  isDeleting
 }) => {
   const selectionCount = selectedProducts.length;
   const allSelected = selectionCount === totalProducts && totalProducts > 0;
@@ -27,6 +28,7 @@ const ProductsSelectionManager = ({
             <button
               onClick={onClearSelection}
               className="text-gray-500 hover:text-gray-700"
+              disabled={isDeleting}
             >
               <X size={20} />
             </button>
@@ -34,8 +36,9 @@ const ProductsSelectionManager = ({
           
           <button
             onClick={onDelete}
-            className="flex items-center gap-2 px-4 py-2 bg-red-600 text-white rounded-lg 
-              hover:bg-red-700 transition-colors"
+            className={`flex items-center gap-2 px-4 py-2 bg-red-600 text-white rounded-lg 
+              hover:bg-red-700 transition-colors ${isDeleting ? 'opacity-50 cursor-not-allowed' : ''}`}
+            disabled={isDeleting}
           >
             <Trash2 size={20} />
             <span>Delete Selected</span>

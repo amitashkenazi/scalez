@@ -176,8 +176,8 @@ export const translations = {
     he: "אני רואה שנגמר לך - "
   },
   productLeft: {
-    en: "I have only ",
-    he: "נשאר לי רק "
+    en: "It seems that you might have only ",
+    he: "נראה כי יש לך רק "
   },
   doYouWantToOrder: {
     en: "Do you want to order more?",
@@ -1086,5 +1086,17 @@ export const translations = {
   addNewProduct:{
     en: "Add New Monitored Item",
     he: "הוסף פריט מנוטר חדש"
+  },
+  generating: {
+    en: "Generating...",
+    he: "יוצר..."
+  },
+  notConnected: {
+    en: "Not Connected",
+    he: "לא מחובר"
+  },
+  integrationstitle: {
+    en: "Integrations",
+    he: "אינטגרציות"
   }
 }

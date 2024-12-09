@@ -28,7 +28,7 @@ import {
 } from './utils/productUtils';
 
 const SortHeader = ({ label, sortKey, currentSort, onSort, isRTL }) => {
-  const isActive = currentSort.key === sortKey;
+  const isActive = currentSort?.key === sortKey;
   
   return (
     <th 
@@ -51,18 +51,18 @@ const SortHeader = ({ label, sortKey, currentSort, onSort, isRTL }) => {
 };
 
 const ProductsTable = ({
-  products,
-  customers,
-  scales,
-  measurements,
-  analytics,
+  products = [],
+  customers = [],
+  scales = [],
+  measurements = {},
   onEdit,
   onMessage,
-  selectedProducts,
+  selectedProducts = [],
   onSelect,
   onSelectAll,
-  sortConfig,
-  onSort
+  sortConfig = { key: null, direction: 'asc' },
+  onSort,
+  isDeleting = false
 }) => {
   const { language } = useLanguage();
   const t = (key) => translations[key]?.[language] || `Missing translation: ${key}`;
@@ -71,6 +71,8 @@ const ProductsTable = ({
   const { loadHistory, histories, loadingStates, errors } = useItemHistory();
 
   const handleExpand = async (product) => {
+    if (!product?.product_id) return;
+    
     if (expandedRow === product.product_id) {
       setExpandedRow(null);
     } else {
@@ -82,15 +84,19 @@ const ProductsTable = ({
   };
 
   const getProductAnalytics = (product) => {
-    const preloadedAnalytics = analytics[product.product_id];
-    if (preloadedAnalytics) return preloadedAnalytics;
-
-    const history = histories[product.product_id];
-    return history ? calculateAnalytics(history) : null;
+    if (!product) return null;
+    
+    return {
+      estimationQuantityLeft: product.estimation_quantity_left,
+      quantityLastOrder: product.quantity_last_order,
+      daysFromLastOrder: product.days_from_last_order,
+      averageDaysBetweenOrders: product.average_days_between_orders,
+      dailyAverage: product.daily_average
+    };
   };
 
   const sortProducts = (productsToSort) => {
-    if (!sortConfig.key) return productsToSort;
+    if (!sortConfig?.key || !Array.isArray(productsToSort)) return productsToSort;
 
     return [...productsToSort].sort((a, b) => {
       let aValue = 0;
@@ -98,35 +104,31 @@ const ProductsTable = ({
 
       switch (sortConfig.key) {
         case 'weight': {
-          aValue = measurements[a.scale_id]?.weight || 0;
-          bValue = measurements[b.scale_id]?.weight || 0;
+          aValue = measurements?.[a?.scale_id]?.weight || 0;
+          bValue = measurements?.[b?.scale_id]?.weight || 0;
           break;
         }
         case 'estimationQuantityLeft': {
-          const aAnalytics = getProductAnalytics(a);
-          const bAnalytics = getProductAnalytics(b);
-          aValue = parseFloat(aAnalytics?.estimationQuantityLeft || 0);
-          bValue = parseFloat(bAnalytics?.estimationQuantityLeft || 0);
+          aValue = parseFloat(a?.estimation_quantity_left || 0);
+          bValue = parseFloat(b?.estimation_quantity_left || 0);
           break;
         }
         case 'daysFromLastOrder': {
-          const aAnalytics = getProductAnalytics(a);
-          const bAnalytics = getProductAnalytics(b);
-          aValue = parseFloat(aAnalytics?.daysFromLastOrder || 0);
-          bValue = parseFloat(bAnalytics?.daysFromLastOrder || 0);
+          aValue = parseFloat(a?.days_from_last_order || 0);
+          bValue = parseFloat(b?.days_from_last_order || 0);
           break;
         }
         case 'severity': {
           const aAnalytics = getProductAnalytics(a);
           const bAnalytics = getProductAnalytics(b);
-          aValue = calculateSeverityScore(aAnalytics);
-          bValue = calculateSeverityScore(bAnalytics);
+          aValue = calculateSeverityScore(aAnalytics) || 0;
+          bValue = calculateSeverityScore(bAnalytics) || 0;
           break;
         }
         case 'name':
           return sortConfig.direction === 'asc' 
-            ? (a.name || '').localeCompare(b.name || '')
-            : (b.name || '').localeCompare(a.name || '');
+            ? (a?.name || '').localeCompare(b?.name || '')
+            : (b?.name || '').localeCompare(a?.name || '');
         default:
           return 0;
       }
@@ -137,7 +139,16 @@ const ProductsTable = ({
   };
 
   return (
-    <div className="bg-white rounded-lg shadow overflow-hidden">
+    <div className="bg-white rounded-lg shadow overflow-hidden relative">
+      {isDeleting && (
+        <div className="absolute inset-0 bg-white bg-opacity-75 z-10 flex items-center justify-center">
+          <div className="flex items-center gap-3 bg-white px-6 py-4 rounded-lg shadow-lg">
+            <Loader2 className="h-6 w-6 animate-spin text-blue-600" />
+            <span className="text-gray-700 font-medium">{t('deletingProducts')}</span>
+          </div>
+        </div>
+      )}
+
       <table className="min-w-full divide-y divide-gray-200">
         <thead className="bg-gray-50">
           <tr>
@@ -145,8 +156,9 @@ const ProductsTable = ({
               <input
                 type="checkbox"
                 checked={selectedProducts.length === products.length && products.length > 0}
-                onChange={(e) => onSelectAll(e.target.checked)}
+                onChange={(e) => onSelectAll?.(e.target.checked)}
                 className="w-4 h-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500"
+                disabled={isDeleting}
               />
             </th>
             <SortHeader 
@@ -196,18 +208,32 @@ const ProductsTable = ({
         </thead>
         <tbody className="bg-white divide-y divide-gray-200">
           {sortProducts(products).map((product) => {
+            if (!product?.product_id) return null;
+
             const measurement = measurements[product.scale_id];
             const scale = scales.find(s => s.scale_id === product.scale_id);
             const customer = customers.find(c => c.customer_id === product.customer_id);
             const statusColor = getStatusColor(measurement, product.thresholds);
-            const estimationQuantityLeft = product.estimation_quantity_left;
-            const quantityLastOrder = product.quantity_last_order;
-            const daysFromLastOrder = product.days_from_last_order;
-            const averageDaysBetweenOrders = product.average_days_between_orders;
-            const quantityWarning = getAnalyticsWarningLevel('quantity', estimationQuantityLeft, quantityLastOrder, daysFromLastOrder, averageDaysBetweenOrders);
-            const daysWarning = getAnalyticsWarningLevel('days', estimationQuantityLeft, quantityLastOrder, daysFromLastOrder, averageDaysBetweenOrders);
-            const severityScore = parseFloat(product.severity_score);
+            
+            const quantityWarning = getAnalyticsWarningLevel(
+              'quantity',
+              product.estimation_quantity_left,
+              product.quantity_last_order,
+              product.days_from_last_order,
+              product.average_days_between_orders
+            );
+            
+            const daysWarning = getAnalyticsWarningLevel(
+              'days',
+              product.estimation_quantity_left,
+              product.quantity_last_order,
+              product.days_from_last_order,
+              product.average_days_between_orders
+            );
+            
+            const severityScore = calculateSeverityScore(getProductAnalytics(product)) || 0;
             const severityInfo = getSeverityLevel(severityScore);
+
             return (
               <React.Fragment key={product.product_id}>
                 <tr className="hover:bg-gray-50">
@@ -215,8 +241,9 @@ const ProductsTable = ({
                     <input
                       type="checkbox"
                       checked={selectedProducts.includes(product.product_id)}
-                      onChange={(e) => onSelect(product.product_id, e.target.checked)}
+                      onChange={(e) => onSelect?.(product.product_id, e.target.checked)}
                       className="w-4 h-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500"
+                      disabled={isDeleting}
                     />
                   </td>
                   <td className="px-6 py-4">
@@ -224,7 +251,7 @@ const ProductsTable = ({
                       <Package className="h-5 w-5 text-gray-400" />
                       <div className="ml-4">
                         <div className="text-sm font-medium text-gray-900">
-                          {product.name}
+                          {product.name || t('unnamed')}
                         </div>
                         {scale && (
                           <div className="text-sm text-gray-500 flex items-center gap-1">
@@ -249,7 +276,7 @@ const ProductsTable = ({
                   </td>
                   <td className="px-6 py-4">
                     <span className={`text-sm font-medium ${statusColor}`}>
-                      {measurement ? `${measurement.weight} kg` : t('noData')}
+                      {measurement?.weight ? `${measurement.weight} kg` : t('noData')}
                     </span>
                   </td>
                   <td className={`px-6 py-4 ${quantityWarning.className}`}>
@@ -271,20 +298,23 @@ const ProductsTable = ({
                   <td className="px-6 py-4">
                     <div className="flex items-center space-x-3">
                       <button
-                        onClick={() => onEdit(product)}
+                        onClick={() => onEdit?.(product)}
                         className="text-blue-600 hover:text-blue-900"
+                        disabled={isDeleting}
                       >
                         <Pencil className="h-5 w-5" />
                       </button>
                       <button
-                        onClick={() => onMessage(customer, product)}
+                        onClick={() => onMessage?.(customer, product)}
                         className="text-green-600 hover:text-green-900"
+                        disabled={isDeleting}
                       >
                         <MessageSquare className="h-5 w-5" />
                       </button>
                       <button
                         onClick={() => handleExpand(product)}
                         className="text-gray-600 hover:text-gray-900"
+                        disabled={isDeleting}
                       >
                         {expandedRow === product.product_id ? (
                           <ChevronUp className="h-5 w-5" />
