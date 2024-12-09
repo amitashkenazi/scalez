@@ -1,26 +1,28 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useLanguage } from '../../contexts/LanguageContext';
-import { useProductAnalytics } from './useProductAnalytics';
-
 import { translations } from '../../translations/translations';
 import { 
   Package, 
   Pencil, 
   MessageSquare, 
   Scale,
-  Clock,
-  TrendingUp,
-  ChevronDown,
   ChevronUp,
+  ChevronDown,
+  ArrowUpDown,
+  ArrowUp,
+  ArrowDown,
   ShoppingBag,
   Calendar,
-  AlertCircle,
-  Loader2,
-  ArrowDown,
-  ArrowUp,
-  ArrowUpDown
+  AlertTriangle
 } from 'lucide-react';
-import apiService from '../../services/api';
+import { ProductAnalytics } from './ProductAnalytics';
+import OrderHistory from './OrderHistory';
+import { 
+  getStatusColor, 
+  getAnalyticsWarningLevel, 
+  calculateSeverityScore,
+  getSeverityLevel
+} from './utils/productUtils';
 
 const SortHeader = ({ label, sortKey, currentSort, onSort, isRTL }) => {
   const isActive = currentSort.key === sortKey;
@@ -45,48 +47,21 @@ const SortHeader = ({ label, sortKey, currentSort, onSort, isRTL }) => {
   );
 };
 
-const calculateSeverityScore = (analyticsData, type) => {
-  if (!analyticsData) return 0;
-
-  if (type === 'quantity') {
-    const estimatedLeft = parseFloat(analyticsData.estimationQuantityLeft);
-    const lastOrder = parseFloat(analyticsData.quantityLastOrder);
-    if (isNaN(estimatedLeft) || isNaN(lastOrder) || lastOrder === 0) return 0;
-    
-    const percentageLeft = (estimatedLeft / lastOrder) * 100;
-    
-    if (percentageLeft <= 25) return 100;
-    if (percentageLeft <= 50) return 75;
-    if (percentageLeft <= 75) return 50;
-    return 25;
-  }
-
-  if (type === 'days') {
-    const daysFromLast = parseFloat(analyticsData.daysFromLastOrder);
-    const avgDays = parseFloat(analyticsData.averageDaysBetweenOrders);
-    if (isNaN(daysFromLast) || isNaN(avgDays) || avgDays === 0) return 0;
-    
-    const percentageOfCycle = (daysFromLast / avgDays) * 100;
-    
-    if (percentageOfCycle >= 100) return 100;
-    if (percentageOfCycle >= 90) return 75;
-    if (percentageOfCycle >= 75) return 50;
-    return 25;
-  }
-
-  return 0;
-};
-
-const ProductsTableView = ({ 
-  products = [], 
-  scales = [], 
-  customers = [], 
-  measurements = {}, 
-  onProductClick, 
-  onMessageClick 
+const ProductsTable = ({
+  products,
+  customers,
+  scales,
+  measurements,
+  analytics,
+  onEdit,
+  onMessage,
+  selectedProducts,
+  onSelect,
+  onSelectAll,
+  sortConfig,
+  onSort
 }) => {
   const { language } = useLanguage();
-  // Helper function to get translation
   const t = (key) => {
     if (translations[key] && translations[key][language]) {
       return translations[key][language];
@@ -95,11 +70,7 @@ const ProductsTableView = ({
   };
   const isRTL = language === 'he';
   const [expandedRow, setExpandedRow] = useState(null);
-  const { analytics, isLoading: isLoadingAnalytics } = useProductAnalytics(products);
-  const [sortConfig, setSortConfig] = useState({
-    key: 'estimationQuantityLeft',
-    direction: 'desc'
-  });
+
   const sortProducts = (productsToSort) => {
     if (!sortConfig.key) return productsToSort;
 
@@ -116,13 +87,24 @@ const ProductsTableView = ({
           break;
         }
         case 'estimationQuantityLeft': {
-          aValue = calculateSeverityScore(analytics[a.product_id], 'quantity');
-          bValue = calculateSeverityScore(analytics[b.product_id], 'quantity');
+          const aAnalytics = analytics[a.product_id];
+          const bAnalytics = analytics[b.product_id];
+          aValue = calculateSeverityScore(aAnalytics, 'quantity');
+          bValue = calculateSeverityScore(bAnalytics, 'quantity');
           break;
         }
         case 'daysFromLastOrder': {
-          aValue = calculateSeverityScore(analytics[a.product_id], 'days');
-          bValue = calculateSeverityScore(analytics[b.product_id], 'days');
+          const aAnalytics = analytics[a.product_id];
+          const bAnalytics = analytics[b.product_id];
+          aValue = calculateSeverityScore(aAnalytics, 'days');
+          bValue = calculateSeverityScore(bAnalytics, 'days');
+          break;
+        }
+        case 'severity': {
+          const aAnalytics = analytics[a.product_id];
+          const bAnalytics = analytics[b.product_id];
+          aValue = calculateSeverityScore(aAnalytics);
+          bValue = calculateSeverityScore(bAnalytics);
           break;
         }
         case 'name': {
@@ -140,87 +122,36 @@ const ProductsTableView = ({
     });
   };
 
-  const handleSort = (key) => {
-    setSortConfig(prevSort => ({
-      key,
-      direction: prevSort.key === key && prevSort.direction === 'asc' ? 'desc' : 'asc'
-    }));
-  };
-
-  const formatDate = (timestamp) => {
-    if (!timestamp) return t('noData');
-    return new Date(timestamp).toLocaleString(language === 'he' ? 'he-IL' : 'en-US', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
-      hour12: false
-    });
-  };
-
-  const getStatusColor = (measurement, thresholds) => {
-    if (!measurement?.weight || !thresholds) return 'text-gray-400';
-    const weight = measurement.weight;
-    if (weight >= thresholds.upper) return 'text-green-600';
-    if (weight >= thresholds.lower) return 'text-orange-500';
-    return 'text-red-600';
-  };
-
   const getCustomerName = (customerId) => {
     const customer = customers.find(c => c.customer_id === customerId);
-    if (!customer) return t('unknownCustomer');
-    return customer.name;
+    return customer?.name || t('unknownCustomer');
   };
-
-  const getAnalyticsWarningLevel = (type, productAnalytics) => {
-    if (!productAnalytics) return { className: '', warningLevel: 'normal' };
-
-    if (type === 'quantity') {
-      const value = parseFloat(productAnalytics.estimationQuantityLeft);
-      const threshold = parseFloat(productAnalytics.quantityLastOrder * 0.75);
-      
-      if (value <= threshold * 0.5) {
-        return { className: 'bg-red-50 text-red-700 font-medium', warningLevel: 'critical' };
-      }
-      if (value <= threshold) {
-        return { className: 'bg-orange-50 text-orange-700 font-medium', warningLevel: 'warning' };
-      }
-    }
-
-    if (type === 'days') {
-      const value = parseFloat(productAnalytics.daysFromLastOrder);
-      const avgDays = parseFloat(productAnalytics.averageDaysBetweenOrders);
-      
-      if (value >= avgDays) {
-        return { className: 'bg-red-50 text-red-700 font-medium', warningLevel: 'critical' };
-      }
-      if (value >= avgDays * 0.9) {
-        return { className: 'bg-orange-50 text-orange-700 font-medium', warningLevel: 'warning' };
-      }
-    }
-
-    return { className: '', warningLevel: 'normal' };
-  };
-
-  if (!Array.isArray(products)) {
-    return (
-      <div className="bg-white rounded-lg shadow p-6 text-center text-gray-500">
-        {t('noProducts')}
-      </div>
-    );
-  }
 
   return (
     <div className="bg-white rounded-lg shadow overflow-hidden">
       <table className="min-w-full divide-y divide-gray-200">
         <thead className="bg-gray-50">
           <tr>
+            <th className="px-6 py-3 w-12">
+              <input
+                type="checkbox"
+                checked={selectedProducts.length === products.length && products.length > 0}
+                onChange={(e) => onSelectAll(e.target.checked)}
+                className="w-4 h-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500"
+              />
+            </th>
             <SortHeader 
               label={t('productName')}
               sortKey="name"
               currentSort={sortConfig}
-              onSort={handleSort}
+              onSort={onSort}
+              isRTL={isRTL}
+            />
+            <SortHeader 
+              label={t('severity')}
+              sortKey="severity"
+              currentSort={sortConfig}
+              onSort={onSort}
               isRTL={isRTL}
             />
             <th className={`px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider
@@ -231,21 +162,21 @@ const ProductsTableView = ({
               label={t('weight')}
               sortKey="weight"
               currentSort={sortConfig}
-              onSort={handleSort}
+              onSort={onSort}
               isRTL={isRTL}
             />
             <SortHeader 
-              label={t('estimationQuntityLeft')}
+              label={t('estimationQuantityLeft')}
               sortKey="estimationQuantityLeft"
               currentSort={sortConfig}
-              onSort={handleSort}
+              onSort={onSort}
               isRTL={isRTL}
             />
             <SortHeader 
               label={t('daysFromLastOrder')}
               sortKey="daysFromLastOrder"
               currentSort={sortConfig}
-              onSort={handleSort}
+              onSort={onSort}
               isRTL={isRTL}
             />
             <th className={`px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider
@@ -258,19 +189,28 @@ const ProductsTableView = ({
           {sortProducts(products).map((product) => {
             const measurement = measurements[product.scale_id];
             const scale = scales.find(s => s.scale_id === product.scale_id);
+            const customer = customers.find(c => c.customer_id === product.customer_id);
             const statusColor = getStatusColor(measurement, product.thresholds);
             const productAnalytics = analytics[product.product_id];
             const quantityWarning = getAnalyticsWarningLevel('quantity', productAnalytics);
             const daysWarning = getAnalyticsWarningLevel('days', productAnalytics);
-            console.log('Product analytics:', productAnalytics);
+            const severityScore = calculateSeverityScore(productAnalytics);
+            const severityInfo = getSeverityLevel(severityScore);
+
             return (
               <React.Fragment key={product.product_id}>
-                <tr className={`group hover:bg-gray-50`}>
+                <tr className="hover:bg-gray-50">
+                  <td className="px-6 py-4 w-12">
+                    <input
+                      type="checkbox"
+                      checked={selectedProducts.includes(product.product_id)}
+                      onChange={(e) => onSelect(product.product_id, e.target.checked)}
+                      className="w-4 h-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500"
+                    />
+                  </td>
                   <td className="px-6 py-4">
                     <div className="flex items-center">
-                      <div className="flex-shrink-0">
-                        <Package className="h-5 w-5 text-gray-400" />
-                      </div>
+                      <Package className="h-5 w-5 text-gray-400" />
                       <div className="ml-4">
                         <div className="text-sm font-medium text-gray-900">
                           {product.name}
@@ -282,6 +222,13 @@ const ProductsTableView = ({
                           </div>
                         )}
                       </div>
+                    </div>
+                  </td>
+                  <td className={`px-6 py-4 ${severityInfo.className}`}>
+                    <div className="flex items-center gap-2">
+                      <AlertTriangle className={`h-4 w-4 ${severityScore >= 60 ? 'animate-pulse' : ''}`} />
+                      <span className="font-medium">{severityScore}</span>
+                      <span className="text-sm">({severityInfo.level})</span>
                     </div>
                   </td>
                   <td className="px-6 py-4">
@@ -297,176 +244,55 @@ const ProductsTableView = ({
                   <td className={`px-6 py-4 ${quantityWarning.className}`}>
                     <div className="flex items-center gap-2">
                       <ShoppingBag className="h-4 w-4" />
-                      {isLoadingAnalytics ? (
-                        <Loader2 className="h-4 w-4 animate-spin text-gray-400" />
-                      ) : productAnalytics ? (
-                        <span>
-                          {productAnalytics.estimationQuantityLeft} {t('units')}
-                        </span>
-                      ) : (
-                        <span className="text-gray-400">{t('noData')}</span>
-                      )}
+                      <span>{productAnalytics?.estimationQuantityLeft || t('noData')}</span>
                     </div>
                   </td>
                   <td className={`px-6 py-4 ${daysWarning.className}`}>
                     <div className="flex items-center gap-2">
                       <Calendar className="h-4 w-4" />
-                      {isLoadingAnalytics ? (
-                        <Loader2 className="h-4 w-4 animate-spin text-gray-400" />
-                      ) : productAnalytics ? (
-                        <span>
-                          {productAnalytics.daysFromLastOrder} {t('days')}
-                        </span>
-                      ) : (
-                        <span className="text-gray-400">{t('noData')}</span>
-                      )}
+                      <span>
+                        {productAnalytics?.daysFromLastOrder 
+                          ? `${productAnalytics.daysFromLastOrder} ${t('days')}`
+                          : t('noData')}
+                      </span>
                     </div>
                   </td>
                   <td className="px-6 py-4">
                     <div className="flex items-center space-x-3">
                       <button
-                        onClick={() => onProductClick(product)}
+                        onClick={() => onEdit(product)}
                         className="text-blue-600 hover:text-blue-900"
                       >
                         <Pencil className="h-5 w-5" />
                       </button>
                       <button
-                        onClick={() => onMessageClick(product)}
+                        onClick={() => onMessage(customer, product)}
                         className="text-green-600 hover:text-green-900"
                       >
                         <MessageSquare className="h-5 w-5" />
                       </button>
-                      {isLoadingAnalytics ? (
-                        <Loader2 className="h-5 w-5 animate-spin text-gray-400" />
-                      ) : productAnalytics && (
-                        <button
-                          onClick={() => setExpandedRow(expandedRow === product.product_id ? null : product.product_id)}
-                          className="text-gray-600 hover:text-gray-900"
-                        >
-                          {expandedRow === product.product_id ? (
-                            <ChevronUp className="h-5 w-5" />
-                          ) : (
-                            <ChevronDown className="h-5 w-5" />
-                          )}
-                        </button>
-                      )}
+                      <button
+                        onClick={() => setExpandedRow(
+                          expandedRow === product.product_id ? null : product.product_id
+                        )}
+                        className="text-gray-600 hover:text-gray-900"
+                      >
+                        {expandedRow === product.product_id ? (
+                          <ChevronUp className="h-5 w-5" />
+                        ) : (
+                          <ChevronDown className="h-5 w-5" />
+                        )}
+                      </button>
                     </div>
                   </td>
                 </tr>
                 {expandedRow === product.product_id && (
                   <tr>
-                    <td colSpan="6" className="px-6 py-4 bg-gray-50">
-                      {isLoadingAnalytics ? (
-                        <div className="flex justify-center items-center py-8">
-                          <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
-                        </div>
-                      ) : productAnalytics ? (
-                        <div className="space-y-4">
-                          <div className="flex items-center gap-2">
-                            <TrendingUp className="h-5 w-5 text-gray-500" />
-                            <span className="font-medium text-gray-700">
-                              {t('ConsumptionAnalytics')}
-                            </span>
-                          </div>
-                          <div className="grid grid-cols-4 gap-4">
-                            <div className="bg-white rounded-lg p-3 shadow-sm">
-                              <span className="text-sm text-gray-500 font-medium">
-                                {t('averageConsumption')}
-                              </span>
-                              <div className="mt-1 text-gray-900">
-                                <span className="text-lg font-semibold">
-                                  {productAnalytics.dailyAverage}
-                                </span>
-                                <span className="text-sm text-gray-500 ml-1">
-                                  {t('unitsPerDay')}
-                                </span>
-                              </div>
-                            </div>
-
-                            <div className="bg-white rounded-lg p-3 shadow-sm">
-                              <span className="text-sm text-gray-500 font-medium">
-                                {t('averageDaysBetweenOrders')}
-                              </span>
-                              <div className="mt-1 text-gray-900">
-                                <span className="text-lg font-semibold">
-                                  {productAnalytics.averageDaysBetweenOrders}
-                                </span>
-                                <span className="text-sm text-gray-500 ml-1">
-                                  {t('days')}
-                                </span>
-                              </div>
-                            </div>
-
-                            <div className="bg-white rounded-lg p-3 shadow-sm">
-                              <span className="text-sm text-gray-500 font-medium">
-                                Last Order Quantity
-                              </span>
-                              <div className="mt-1 text-gray-900">
-                                <span className="text-lg font-semibold">
-                                  {productAnalytics.quantityLastOrder}
-                                </span>
-                                <span className="text-sm text-gray-500 ml-1">
-                                  {t('units')}
-                                </span>
-                              </div>
-                            </div>
-
-                            <div className="bg-white rounded-lg p-3 shadow-sm">
-                              <span className="text-sm text-gray-500 font-medium">
-                                Daily Consumption Rate
-                              </span>
-                              <div className="mt-1 text-gray-900">
-                                <span className="text-lg font-semibold">
-                                  {((parseFloat(productAnalytics.dailyAverage) / 
-                                    parseFloat(productAnalytics.quantityLastOrder)) * 100).toFixed(1)}%
-                                </span>
-                                <span className="text-sm text-gray-500 ml-1">
-                                  per day
-                                </span>
-                              </div>
-                            </div>
-                          </div>
-
-                          {/* Warning Indicators */}
-                          {(quantityWarning.warningLevel !== 'normal' || 
-                            daysWarning.warningLevel !== 'normal') && (
-                            <div className="mt-4 flex gap-4">
-                              {quantityWarning.warningLevel !== 'normal' && (
-                                <div className={`flex items-center gap-2 p-2 rounded-lg ${
-                                  quantityWarning.warningLevel === 'critical' 
-                                    ? 'bg-red-50 text-red-700' 
-                                    : 'bg-orange-50 text-orange-700'
-                                }`}>
-                                  <AlertCircle className="h-5 w-5" />
-                                  <span className="text-sm font-medium">
-                                    {quantityWarning.warningLevel === 'critical'
-                                      ? 'Critical inventory level'
-                                      : 'Low inventory warning'}
-                                  </span>
-                                </div>
-                              )}
-                              {daysWarning.warningLevel !== 'normal' && (
-                                <div className={`flex items-center gap-2 p-2 rounded-lg ${
-                                  daysWarning.warningLevel === 'critical'
-                                    ? 'bg-red-50 text-red-700'
-                                    : 'bg-orange-50 text-orange-700'
-                                }`}>
-                                  <AlertCircle className="h-5 w-5" />
-                                  <span className="text-sm font-medium">
-                                    {daysWarning.warningLevel === 'critical'
-                                      ? 'Order urgently needed'
-                                      : 'Order soon'}
-                                  </span>
-                                </div>
-                              )}
-                            </div>
-                          )}
-                        </div>
-                      ) : (
-                        <div className="text-center py-8 text-gray-500">
-                          {t('noData')}
-                        </div>
-                      )}
+                    <td colSpan="8" className="px-6 py-4 bg-gray-50">
+                      <div className="space-y-4">
+                        <ProductAnalytics analytics={productAnalytics} />
+                        <OrderHistory orders={productAnalytics?.orderHistory || []} />
+                      </div>
                     </td>
                   </tr>
                 )}
@@ -479,4 +305,4 @@ const ProductsTableView = ({
   );
 };
 
-export default ProductsTableView;
+export default ProductsTable;

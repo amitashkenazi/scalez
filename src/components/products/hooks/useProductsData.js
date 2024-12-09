@@ -1,11 +1,10 @@
 import { useState, useEffect, useCallback } from 'react';
 import apiService from '../../../services/api';
+import { calculateAnalytics } from '../utils/productUtils';
 
 export const useProductsData = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [cursor, setCursor] = useState(null);
-  const [hasMore, setHasMore] = useState(true);
   const [sortConfig, setSortConfig] = useState({
     key: 'name',
     direction: 'desc'
@@ -18,92 +17,99 @@ export const useProductsData = () => {
     analytics: {}
   });
 
-  const fetchPage = useCallback(async (pageToken = null, shouldResetData = false) => {
-    if (!hasMore && pageToken) return;
-    
+  const fetchOrdersHistory = async (products) => {
+    try {
+      const items = products.map(product => ({
+        customer_id: product.customer_id.split('_').pop(),
+        item_id: product.item_id.split('_').pop()
+      }));
+
+      console.log('Requesting orders history for:', items);
+
+      const response = await apiService.request('orders/customers/item-history', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ items })
+      });
+
+      console.log('Orders history response:', response);
+
+      const analyticsMap = {};
+      if (response?.results) {
+        Object.entries(response.results).forEach(([key, orders]) => {
+          const [customerId, itemId] = key.split('_');
+          const product = products.find(p => 
+            p.customer_id.split('_').pop() === customerId && 
+            p.item_id.split('_').pop() === itemId
+          );
+          
+          if (product && orders) {
+            const analytics = calculateAnalytics(orders);
+            if (analytics) {
+              analyticsMap[product.product_id] = analytics;
+            }
+          }
+        });
+      }
+
+      console.log('Processed analytics map:', analyticsMap);
+      return analyticsMap;
+    } catch (error) {
+      console.error('Error fetching orders history:', error);
+      return {};
+    }
+  };
+
+  const fetchData = useCallback(async (shouldResetData = true) => {
     setIsLoading(true);
     setError(null);
 
     try {
-      // Fetch products with pagination and sorting
-      console.log('Fetching products with cursor get params:', {
-        pageToken,
-        sortConfig
-        }
-      );
+      const query_string = `products?${
+        sortConfig ? `sort_by=${sortConfig.key}&sort_order=${sortConfig.direction}&` : ''
+      }`;
+      
+      console.log('Fetching products...');
 
-      var query_string = `products?`
-      if (pageToken) {
-        query_string += `page_token=${pageToken}&`;
-      }
-      console.log('sortConfig', sortConfig);
-        
-      if (sortConfig) {
-        query_string += `sort_by=${sortConfig.key}&sort_order=${sortConfig.direction}&`;
-      }
-      const productsResponse = await apiService.request(query_string, {
-        method: 'GET'
-      });
+      const [productsResponse, scales, customers] = await Promise.all([
+        apiService.request(query_string, { method: 'GET' }),
+        shouldResetData ? apiService.getScales() : Promise.resolve(data.scales),
+        shouldResetData ? apiService.getCustomers() : Promise.resolve(data.customers)
+      ]);
 
-      // If it's the first page or resetting data, fetch other data as well
-      if (!pageToken || shouldResetData) {
-        const [scales, customers] = await Promise.all([
-          apiService.getScales(),
-          apiService.getCustomers()
-        ]);
+      const products = productsResponse.items || [];
+      console.log('Products fetched:', products);
 
-        const measurementsPromises = scales.map(scale => 
-          apiService.getLatestMeasurement(scale.scale_id)
+      // Process measurements
+      let measurementsMap = data.measurements;
+      if (shouldResetData) {
+        const measurements = await Promise.all(
+          scales.map(scale => apiService.getLatestMeasurement(scale.scale_id))
         );
-
-        const measurements = await Promise.all(measurementsPromises);
-        const measurementsMap = scales.reduce((acc, scale, index) => {
+        measurementsMap = scales.reduce((acc, scale, index) => {
           acc[scale.scale_id] = measurements[index];
           return acc;
         }, {});
-
-        const analyticsItems = productsResponse.items
-          .filter(product => product?.customer_id && product?.item_id)
-          .map(product => ({
-            customer_id: product.customer_id.split('_').pop(),
-            item_id: product.item_id.split('_').pop(),
-            product_id: product.product_id
-          }));
-
-        var analyticsResponse = { results: {} };
-        if (analyticsItems.length > 0) {
-          analyticsResponse = await apiService.request('orders/customers/item-history', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ items: analyticsItems })
-          });
-        }
-
-        setData({
-          products: productsResponse.items,
-          scales,
-          customers,
-          measurements: measurementsMap,
-          analytics: analyticsResponse.results || {}
-        });
-      } else {
-        setData(prev => ({
-          ...prev,
-          products: [...prev.products, ...productsResponse.items]
-        }));
       }
 
-      setCursor(productsResponse.next_cursor);
-      setHasMore(!!productsResponse.next_cursor);
+      // Fetch and process analytics
+      const analyticsMap = await fetchOrdersHistory(products);
+
+      setData({
+        products,
+        scales: shouldResetData ? scales : data.scales,
+        customers: shouldResetData ? customers : data.customers,
+        measurements: measurementsMap,
+        analytics: analyticsMap
+      });
     } catch (err) {
       console.error('Error fetching data:', err);
       setError(err.message);
     } finally {
       setIsLoading(false);
     }
-  }, [sortConfig, hasMore]);
+  }, [sortConfig, data]);
 
-  // Function to update sort configuration
   const updateSort = useCallback((newSortKey) => {
     setSortConfig(prevSort => ({
       key: newSortKey,
@@ -111,30 +117,15 @@ export const useProductsData = () => {
     }));
   }, []);
 
-  const refreshData = useCallback(() => {
-    setCursor(null);
-    setHasMore(true);
-    fetchPage(null, true);
-  }, [fetchPage]);
-
-  // Initial data fetch
   useEffect(() => {
-    refreshData();
+    fetchData();
   }, [sortConfig.key, sortConfig.direction]);
 
-  const loadMore = useCallback(() => {
-    if (!isLoading && hasMore && cursor) {
-      fetchPage(cursor);
-    }
-  }, [isLoading, hasMore, cursor, fetchPage]);
-
-  return { 
+  return {
     data,
     isLoading,
     error,
-    refreshData,
-    loadMore,
-    hasMore,
+    refreshData: () => fetchData(true),
     sortConfig,
     updateSort
   };

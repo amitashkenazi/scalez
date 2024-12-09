@@ -49,13 +49,10 @@ const ProductsView = ({
   const {
     data,
     isLoading,
-    loadMore,
-    hasMore,
     refreshData,
     sortConfig,
     updateSort
   } = useDataHook();
-
 
   const {
     products = [],
@@ -128,14 +125,7 @@ const ProductsView = ({
     }
   };
 
-  const formatTime = (date) => {
-    return date.toLocaleTimeString(language === 'he' ? 'he-IL' : 'en-US', {
-      hour: '2-digit',
-      minute: '2-digit'
-    });
-  };
-
-  if (isLoading && (!products || products.length === 0)) {
+  if (isLoading) {
     return (
       <div className="flex justify-center items-center h-64">
         <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
@@ -241,26 +231,26 @@ const ProductsView = ({
           <p className="text-gray-500 text-sm">{t('tryAdjustingSearch')}</p>
         </div>
       )}
+      {console.log('Products from API:', products)}
+      {console.log('Sample product analytics:', products[0]?.analytics)}
+      {console.log('Sample product full object:', products[0])}
 
       {/* Products Table */}
       {!error && filteredProducts.length > 0 && viewType === 'table' && (
         <ProductsTable
-        products={filteredProducts}
-        customers={customers}
-        scales={scales}
-        measurements={measurements}
-        analytics={analytics}
-        isLoading={isLoading}
-        hasMore={hasMore}
-        loadMore={loadMore}
-        onEdit={canEdit ? handleEdit : undefined}
-        onMessage={handleMessage}
-        selectedProducts={canDelete ? selectedProducts : []}
-        onSelect={canDelete ? handleSelect : undefined}
-        onSelectAll={canDelete ? handleSelectAll : undefined}
-        sortConfig={sortConfig}
-        onSort={updateSort}
-      />
+          products={filteredProducts}
+          customers={customers}
+          scales={scales}
+          measurements={measurements}
+          analytics={analytics}
+          onEdit={canEdit ? handleEdit : undefined}
+          onMessage={handleMessage}
+          selectedProducts={canDelete ? selectedProducts : []}
+          onSelect={canDelete ? handleSelect : undefined}
+          onSelectAll={canDelete ? handleSelectAll : undefined}
+          sortConfig={sortConfig}
+          onSort={updateSort}
+        />
       )}
 
       {/* Selection Manager */}

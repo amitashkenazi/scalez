@@ -26,6 +26,7 @@ export const parseNumericValue = (value) => {
     return 'text-red-600';
   };
   
+  
   // Parse date string in DD-MM-YY format
   export const parseDate = (dateStr) => {
     if (!dateStr) return null;
@@ -101,82 +102,67 @@ export const parseNumericValue = (value) => {
   };
   
   // Calculate severity score for a product
-  export const calculateSeverityScore = (analyticsData) => {
-    if (!analyticsData) return 0;
+  export const calculateSeverityScore = (analytics) => {
+    if (!analytics) return 0;
   
     let score = 0;
-    const currentDate = new Date();
-    const threeMonthsAgo = new Date();
-    threeMonthsAgo.setMonth(threeMonthsAgo.getMonth() - 3);
-  
-    // Get recent orders (last 3 months)
-    const recentOrders = analyticsData.orderHistory?.filter(order => {
-      const orderDate = parseDate(order.order_date);
-      return orderDate >= threeMonthsAgo;
-    }) || [];
-  
-    // Factor 1: Recent order frequency (0-30 points)
-    const orderFrequencyScore = Math.min(30, recentOrders.length * 10);
-    score += orderFrequencyScore;
-  
-    // Factor 2: Days since last order vs average (0-35 points)
-    const daysFromLast = parseFloat(analyticsData.daysFromLastOrder);
-    const avgDays = parseFloat(analyticsData.averageDaysBetweenOrders);
+    
+    // Factor 1: Days since last order vs average (0-50 points)
+    const daysFromLast = parseFloat(analytics.daysFromLastOrder);
+    const avgDays = parseFloat(analytics.averageDaysBetweenOrders);
     
     if (!isNaN(daysFromLast) && !isNaN(avgDays) && avgDays > 0) {
       const daysRatio = daysFromLast / avgDays;
-      if (daysRatio >= 1.5) score += 35; // Critical
-      else if (daysRatio >= 1.2) score += 25; // Warning
-      else if (daysRatio >= 1.0) score += 15; // Attention needed
-      else score += 5; // Normal
+      if (daysRatio >= 1.5) score += 50;
+      else if (daysRatio >= 1.2) score += 35;
+      else if (daysRatio >= 1.0) score += 20;
+      else score += 10;
     }
   
-    // Factor 3: Estimated quantity remaining vs last order quantity (0-35 points)
-    const estimatedLeft = parseFloat(analyticsData.estimationQuantityLeft);
-    const lastOrderQty = parseFloat(analyticsData.quantityLastOrder);
+    // Factor 2: Estimated quantity remaining vs last order quantity (0-50 points)
+    const estimatedLeft = parseFloat(analytics.estimationQuantityLeft);
+    const lastOrderQty = parseFloat(analytics.quantityLastOrder);
     
     if (!isNaN(estimatedLeft) && !isNaN(lastOrderQty) && lastOrderQty > 0) {
       const qtyRatio = estimatedLeft / lastOrderQty;
-      if (qtyRatio <= 0.25) score += 35; // Critical
-      else if (qtyRatio <= 0.5) score += 25; // Warning
-      else if (qtyRatio <= 0.75) score += 15; // Attention needed
-      else score += 5; // Normal
+      if (qtyRatio <= 0.25) score += 50;
+      else if (qtyRatio <= 0.5) score += 35;
+      else if (qtyRatio <= 0.75) score += 20;
+      else score += 10;
     }
   
     return Math.round(score);
   };
   
+  
+  
   // Get severity level information based on score
   export const getSeverityLevel = (score) => {
     if (score >= 80) return { 
       level: 'Critical', 
-      className: 'bg-red-100 text-red-800',
-      description: 'Immediate attention required'
+      className: 'bg-red-100 text-red-800'
     };
     if (score >= 60) return { 
       level: 'High', 
-      className: 'bg-orange-100 text-orange-800',
-      description: 'Urgent attention needed'
+      className: 'bg-orange-100 text-orange-800'
     };
     if (score >= 40) return { 
       level: 'Medium', 
-      className: 'bg-yellow-100 text-yellow-800',
-      description: 'Monitor closely'
+      className: 'bg-yellow-100 text-yellow-800'
     };
     return { 
       level: 'Low', 
-      className: 'bg-green-100 text-green-800',
-      description: 'Normal operation'
+      className: 'bg-green-100 text-green-800'
     };
   };
   
   // Get analytics warning level
-  export const getAnalyticsWarningLevel = (type, analyticsData) => {
-    if (!analyticsData) return { className: '', warningLevel: 'normal' };
+  export const getAnalyticsWarningLevel = (type, analytics) => {
+    if (!analytics) return { className: '', warningLevel: 'normal' };
   
     if (type === 'quantity') {
-      const value = parseFloat(analyticsData.estimationQuantityLeft);
-      const threshold = parseFloat(analyticsData.quantityLastOrder * 0.75);
+      const value = parseFloat(analytics.estimationQuantityLeft);
+      const threshold = parseFloat(analytics.quantityLastOrder * 0.75);
       
       if (value <= threshold * 0.5) {
         return { className: 'bg-red-50 text-red-700 font-medium', warningLevel: 'critical' };
@@ -187,8 +173,8 @@ export const parseNumericValue = (value) => {
     }
   
     if (type === 'days') {
-      const value = parseFloat(analyticsData.daysFromLastOrder);
-      const avgDays = parseFloat(analyticsData.averageDaysBetweenOrders);
+      const value = parseFloat(analytics.daysFromLastOrder);
+      const avgDays = parseFloat(analytics.averageDaysBetweenOrders);
       
       if (value >= avgDays) {
         return { className: 'bg-red-50 text-red-700 font-medium', warningLevel: 'critical' };
@@ -200,6 +186,7 @@ export const parseNumericValue = (value) => {
   
     return { className: '', warningLevel: 'normal' };
   };
+  
   
   // Sort products based on various criteria
   export const sortProducts = (products, sortConfig, measurements, analytics) => {

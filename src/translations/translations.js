@@ -1078,5 +1078,9 @@ export const translations = {
   searchPlaceholder: {
     en: "Search...",
     he: "חיפוש..."
+  },
+  monitored: {
+    en: "Monitored",
+    he: "מנוטר"
   }
 }

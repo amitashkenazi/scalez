@@ -1,10 +1,10 @@
-import React, { useState, useRef, useCallback } from 'react';
+import React, { useState } from 'react';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { translations } from '../../translations/translations';
 import { 
-  Package,
-  Pencil,
-  MessageSquare,
+  Package, 
+  Pencil, 
+  MessageSquare, 
   Scale,
   ChevronUp,
   ChevronDown,
@@ -13,7 +13,6 @@ import {
   ArrowDown,
   ShoppingBag,
   Calendar,
-  Loader2,
   AlertTriangle
 } from 'lucide-react';
 import { ProductAnalytics } from './ProductAnalytics';
@@ -21,30 +20,9 @@ import OrderHistory from './OrderHistory';
 import { 
   getStatusColor, 
   getAnalyticsWarningLevel, 
-  sortProducts,
-  calculateAnalytics,
   calculateSeverityScore,
   getSeverityLevel
 } from './utils/productUtils';
-
-const useInfiniteScroll = (loadMore, hasMore, isLoading) => {
-  const observer = useRef();
-  
-  const lastElementRef = useCallback(node => {
-    if (isLoading) return;
-    if (observer.current) observer.current.disconnect();
-    
-    observer.current = new IntersectionObserver(entries => {
-      if (entries[0].isIntersecting && hasMore) {
-        loadMore();
-      }
-    });
-    
-    if (node) observer.current.observe(node);
-  }, [loadMore, hasMore, isLoading]);
-
-  return lastElementRef;
-};
 
 const SortHeader = ({ label, sortKey, currentSort, onSort, isRTL }) => {
   const isActive = currentSort.key === sortKey;
@@ -69,48 +47,19 @@ const SortHeader = ({ label, sortKey, currentSort, onSort, isRTL }) => {
   );
 };
 
-const ExpandableRow = ({ children, isExpanded }) => {
-  const contentRef = useRef(null);
-  
-  return (
-    <tr>
-      <td colSpan="8">
-        <div
-          ref={contentRef}
-          style={{
-            maxHeight: isExpanded ? `${contentRef.current?.scrollHeight || 1000}px` : '0',
-            transition: 'all 0.3s ease-in-out',
-            overflow: 'hidden'
-          }}
-          className={`bg-gray-50 transition-opacity duration-300 ${
-            isExpanded ? 'opacity-100' : 'opacity-0'
-          }`}
-        >
-          <div className="px-6 py-4">
-            {children}
-          </div>
-        </div>
-      </td>
-    </tr>
-  );
-};
-
 const ProductsTable = ({
-    products,
-    customers,
-    scales,
-    measurements,
-    analytics,
-    isLoading,
-    hasMore,
-    loadMore,
-    onEdit,
-    onMessage,
-    selectedProducts,
-    onSelect,
-    onSelectAll,
-    sortConfig,
-    onSort
+  products,
+  customers,
+  scales,
+  measurements,
+  analytics,
+  onEdit,
+  onMessage,
+  selectedProducts,
+  onSelect,
+  onSelectAll,
+  sortConfig,
+  onSort
 }) => {
   const { language } = useLanguage();
   const t = (key) => {
@@ -121,13 +70,62 @@ const ProductsTable = ({
   };
   const isRTL = language === 'he';
   const [expandedRow, setExpandedRow] = useState(null);
-//   const [sortConfig, setSortConfig] = useState({ key: 'severity', direction: 'desc' });
-  const requestSort = (key) => {
-    onSort(key);
+
+  const sortProducts = (productsToSort) => {
+    if (!sortConfig.key) return productsToSort;
+
+    return [...productsToSort].sort((a, b) => {
+      let aValue = 0;
+      let bValue = 0;
+
+      switch (sortConfig.key) {
+        case 'weight': {
+          const aWeight = measurements[a.scale_id]?.weight || 0;
+          const bWeight = measurements[b.scale_id]?.weight || 0;
+          aValue = aWeight;
+          bValue = bWeight;
+          break;
+        }
+        case 'estimationQuantityLeft': {
+          const aAnalytics = analytics[a.product_id];
+          const bAnalytics = analytics[b.product_id];
+          aValue = parseFloat(aAnalytics?.estimationQuantityLeft || 0);
+          bValue = parseFloat(bAnalytics?.estimationQuantityLeft || 0);
+          break;
+        }
+        case 'daysFromLastOrder': {
+          const aAnalytics = analytics[a.product_id];
+          const bAnalytics = analytics[b.product_id];
+          aValue = parseFloat(aAnalytics?.daysFromLastOrder || 0);
+          bValue = parseFloat(bAnalytics?.daysFromLastOrder || 0);
+          break;
+        }
+        case 'severity': {
+          const aAnalytics = analytics[a.product_id];
+          const bAnalytics = analytics[b.product_id];
+          aValue = calculateSeverityScore(aAnalytics);
+          bValue = calculateSeverityScore(bAnalytics);
+          break;
+        }
+        case 'name': {
+          return sortConfig.direction === 'asc' 
+            ? (a.name || '').localeCompare(b.name || '')
+            : (b.name || '').localeCompare(a.name || '');
+        }
+        default:
+          return 0;
+      }
+
+      if (aValue === bValue) return 0;
+      const comparison = aValue > bValue ? 1 : -1;
+      return sortConfig.direction === 'asc' ? comparison : -comparison;
+    });
   };
 
-  const sortedProducts = products;
-  const lastElementRef = useInfiniteScroll(loadMore, hasMore, isLoading);
+  const getCustomerName = (customerId) => {
+    const customer = customers.find(c => c.customer_id === customerId);
+    return customer?.name || t('unknownCustomer');
+  };
 
   return (
     <div className="bg-white rounded-lg shadow overflow-hidden">
@@ -146,14 +144,14 @@ const ProductsTable = ({
               label={t('productName')}
               sortKey="name"
               currentSort={sortConfig}
-              onSort={requestSort}
+              onSort={onSort}
               isRTL={isRTL}
             />
             <SortHeader 
               label={t('severity')}
               sortKey="severity"
               currentSort={sortConfig}
-              onSort={requestSort}
+              onSort={onSort}
               isRTL={isRTL}
             />
             <th className={`px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider
@@ -164,21 +162,21 @@ const ProductsTable = ({
               label={t('weight')}
               sortKey="weight"
               currentSort={sortConfig}
-              onSort={requestSort}
+              onSort={onSort}
               isRTL={isRTL}
             />
             <SortHeader 
               label={t('estimationQuantityLeft')}
               sortKey="estimationQuantityLeft"
               currentSort={sortConfig}
-              onSort={requestSort}
+              onSort={onSort}
               isRTL={isRTL}
             />
             <SortHeader 
               label={t('daysFromLastOrder')}
               sortKey="daysFromLastOrder"
               currentSort={sortConfig}
-              onSort={requestSort}
+              onSort={onSort}
               isRTL={isRTL}
             />
             <th className={`px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider
@@ -188,29 +186,20 @@ const ProductsTable = ({
           </tr>
         </thead>
         <tbody className="bg-white divide-y divide-gray-200">
-          {sortedProducts.map((product, index) => {
-            const isLastElement = index === sortedProducts.length - 1;
+          {sortProducts(products).map((product) => {
             const measurement = measurements[product.scale_id];
             const scale = scales.find(s => s.scale_id === product.scale_id);
             const customer = customers.find(c => c.customer_id === product.customer_id);
             const statusColor = getStatusColor(measurement, product.thresholds);
-            const isExpanded = expandedRow === product.product_id;
-            const analyticsKey = `${product.customer_id.split('_').pop()}_${product.item_id.split('_').pop()}`;
-            const productAnalytics = analytics[analyticsKey];
-            const analyticsData = productAnalytics ? calculateAnalytics(productAnalytics) : null;
-            const quantityWarning = getAnalyticsWarningLevel('quantity', analyticsData);
-            const daysWarning = getAnalyticsWarningLevel('days', analyticsData);
-            const severityScore = calculateSeverityScore(analyticsData);
+            const productAnalytics = analytics[product.product_id] || {};
+            const quantityWarning = getAnalyticsWarningLevel('quantity', productAnalytics);
+            const daysWarning = getAnalyticsWarningLevel('days', productAnalytics);
+            const severityScore = calculateSeverityScore(productAnalytics);
             const severityInfo = getSeverityLevel(severityScore);
 
             return (
               <React.Fragment key={product.product_id}>
-                <tr 
-                  ref={isLastElement ? lastElementRef : null}
-                  className={`hover:bg-gray-50 transition-colors duration-200 ${
-                    isExpanded ? 'bg-gray-50' : ''
-                  }`}
-                >
+                <tr className="hover:bg-gray-50">
                   <td className="px-6 py-4 w-12">
                     <input
                       type="checkbox"
@@ -221,9 +210,7 @@ const ProductsTable = ({
                   </td>
                   <td className="px-6 py-4">
                     <div className="flex items-center">
-                      <div className="flex-shrink-0">
-                        <Package className="h-5 w-5 text-gray-400" />
-                      </div>
+                      <Package className="h-5 w-5 text-gray-400" />
                       <div className="ml-4">
                         <div className="text-sm font-medium text-gray-900">
                           {product.name}
@@ -240,17 +227,13 @@ const ProductsTable = ({
                   <td className={`px-6 py-4 ${severityInfo.className}`}>
                     <div className="flex items-center gap-2">
                       <AlertTriangle className={`h-4 w-4 ${severityScore >= 60 ? 'animate-pulse' : ''}`} />
-                      <span className="font-medium">
-                        {severityScore}
-                      </span>
-                      <span className="text-sm">
-                        ({severityInfo.level})
-                      </span>
+                      <span className="font-medium">{severityScore}</span>
+                      <span className="text-sm">({severityInfo.level})</span>
                     </div>
                   </td>
                   <td className="px-6 py-4">
                     <div className="text-sm text-gray-900">
-                      {customer?.name || t('unknownCustomer')}
+                      {getCustomerName(product.customer_id)}
                     </div>
                   </td>
                   <td className="px-6 py-4">
@@ -261,88 +244,63 @@ const ProductsTable = ({
                   <td className={`px-6 py-4 ${quantityWarning.className}`}>
                     <div className="flex items-center gap-2">
                       <ShoppingBag className="h-4 w-4" />
-                      {analyticsData ? (
-                        <span>
-                          {analyticsData.estimationQuantityLeft} 
-                        </span>
-                      ) : (
-                        <span className="text-gray-400">{t('noData')}</span>
-                      )}
+                      <span>{productAnalytics?.estimationQuantityLeft || t('noData')}</span>
                     </div>
                   </td>
                   <td className={`px-6 py-4 ${daysWarning.className}`}>
                     <div className="flex items-center gap-2">
                       <Calendar className="h-4 w-4" />
-                      {analyticsData ? (
-                        <span>
-                          {analyticsData.daysFromLastOrder} {t('days')}
-                        </span>
-                      ) : (
-                        <span className="text-gray-400">{t('noData')}</span>
-                      )}
+                      <span>
+                        {productAnalytics?.daysFromLastOrder 
+                          ? `${productAnalytics.daysFromLastOrder} ${t('days')}`
+                          : t('noData')}
+                      </span>
                     </div>
                   </td>
                   <td className="px-6 py-4">
                     <div className="flex items-center space-x-3">
                       <button
                         onClick={() => onEdit(product)}
-                        className="text-blue-600 hover:text-blue-900 transition-colors duration-200"
+                        className="text-blue-600 hover:text-blue-900"
                       >
                         <Pencil className="h-5 w-5" />
                       </button>
                       <button
-                        onClick={() => {
-                          const message = encodeURIComponent(
-                            `${t('runningLowMessage')} ${product.name}\n${t('productLeft')}: ${measurement?.weight || 0}kg\n${t('doYouWantToOrder')}`
-                          );
-                          onMessage(customer, message);
-                        }}
-                        className="text-green-600 hover:text-green-900 transition-colors duration-200"
+                        onClick={() => onMessage(customer, product)}
+                        className="text-green-600 hover:text-green-900"
                       >
                         <MessageSquare className="h-5 w-5" />
                       </button>
-                      {productAnalytics && (
-                        <button
-                          onClick={() => setExpandedRow(isExpanded ? null : product.product_id)}
-                          className="text-gray-600 hover:text-gray-900 transition-colors duration-200"
-                        >
-                          {isExpanded ? (
-                            <ChevronUp className="h-5 w-5 transform transition-transform duration-200" />
-                          ) : (
-                            <ChevronDown className="h-5 w-5 transform transition-transform duration-200" />
-                          )}
-                        </button>
-                      )}
+                      <button
+                        onClick={() => setExpandedRow(
+                          expandedRow === product.product_id ? null : product.product_id
+                        )}
+                        className="text-gray-600 hover:text-gray-900"
+                      >
+                        {expandedRow === product.product_id ? (
+                          <ChevronUp className="h-5 w-5" />
+                        ) : (
+                          <ChevronDown className="h-5 w-5" />
+                        )}
+                      </button>
                     </div>
                   </td>
                 </tr>
-                {productAnalytics && (
-                  <ExpandableRow 
-                    isExpanded={isExpanded}
-                  >
-                    <div className="space-y-4">
-                      <ProductAnalytics analytics={productAnalytics} />
-                      <OrderHistory orders={productAnalytics} />
-                    </div>
-                  </ExpandableRow>
+                {expandedRow === product.product_id && (
+                  <tr>
+                    <td colSpan="8" className="px-6 py-4 bg-gray-50">
+                      <div className="space-y-4">
+                        <ProductAnalytics analytics={productAnalytics} />
+                        <OrderHistory orders={productAnalytics?.orderHistory || []} />
+                      </div>
+                    </td>
+                  </tr>
                 )}
               </React.Fragment>
             );
           })}
         </tbody>
       </table>
-      
-      {isLoading && (
-        <div className="flex justify-center items-center py-4">
-          <Loader2 className="h-6 w-6 animate-spin text-blue-600" />
-        </div>
-      )}
-      
-      {!hasMore && products.length > 0 && (
-        <div className="text-center py-4 text-gray-500">
-          {t('noMoreProducts')}
-        </div>
-      )}
     </div>
   );
 };
