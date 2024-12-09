@@ -157,12 +157,11 @@ export const parseNumericValue = (value) => {
   };
   
   // Get analytics warning level
-  export const getAnalyticsWarningLevel = (type, analytics) => {
-    if (!analytics) return { className: '', warningLevel: 'normal' };
+  export const getAnalyticsWarningLevel = (type, estimationQuantityLeft, quantityLastOrder, daysFromLastOrder, averageDaysBetweenOrders) => {
   
     if (type === 'quantity') {
-      const value = parseFloat(analytics.estimationQuantityLeft);
-      const threshold = parseFloat(analytics.quantityLastOrder * 0.75);
+      const value = parseFloat(estimationQuantityLeft);
+      const threshold = parseFloat(quantityLastOrder * 0.75);
       
       if (value <= threshold * 0.5) {
         return { className: 'bg-red-50 text-red-700 font-medium', warningLevel: 'critical' };
@@ -173,8 +172,8 @@ export const parseNumericValue = (value) => {
     }
   
     if (type === 'days') {
-      const value = parseFloat(analytics.daysFromLastOrder);
-      const avgDays = parseFloat(analytics.averageDaysBetweenOrders);
+      const value = parseFloat(daysFromLastOrder);
+      const avgDays = parseFloat(averageDaysBetweenOrders);
       
       if (value >= avgDays) {
         return { className: 'bg-red-50 text-red-700 font-medium', warningLevel: 'critical' };

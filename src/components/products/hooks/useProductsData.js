@@ -26,31 +26,27 @@ export const useProductsData = () => {
 
       console.log('Requesting orders history for:', items);
 
-      const response = await apiService.request('orders/customers/item-history', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ items })
-      });
+    //   const response = await apiService.request('orders/customers/item-history', {
+    //     method: 'POST',
+    //     headers: { 'Content-Type': 'application/json' },
+    //     body: JSON.stringify({ items })
+    //   });
 
-      console.log('Orders history response:', response);
+    //   console.log('Orders history response:', response);
 
       const analyticsMap = {};
-      if (response?.results) {
-        Object.entries(response.results).forEach(([key, orders]) => {
-          const [customerId, itemId] = key.split('_');
-          const product = products.find(p => 
-            p.customer_id.split('_').pop() === customerId && 
-            p.item_id.split('_').pop() === itemId
-          );
-          
-          if (product && orders) {
-            const analytics = calculateAnalytics(orders);
-            if (analytics) {
-              analyticsMap[product.product_id] = analytics;
-            }
-          }
+        products.forEach(product => {
+        //     dailyAverage: dailyAverage.toFixed(2),
+        // quantityLastOrder,
+        // daysFromLastOrder: daysFromLastOrder.toString(),
+        // estimationQuantityLeft,
+        // averageDaysBetweenOrders,
+        // lastOrderDate: sortedOrders[sortedOrders.length - 1].order_date,
+        // totalOrders: sortedOrders.length,
+        // totalQuantity: totalQuantity.toFixed(2),
+        // orderHistory: sortedOrders
+        analyticsMap[product.product_id] = product;
         });
-      }
 
       console.log('Processed analytics map:', analyticsMap);
       return analyticsMap;

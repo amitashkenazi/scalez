@@ -13,13 +13,16 @@ import {
   ArrowDown,
   ShoppingBag,
   Calendar,
-  AlertTriangle
+  AlertTriangle,
+  Loader2
 } from 'lucide-react';
 import { ProductAnalytics } from './ProductAnalytics';
 import OrderHistory from './OrderHistory';
+import { useItemHistory } from './hooks/useItemHistory';
 import { 
   getStatusColor, 
   getAnalyticsWarningLevel, 
+  calculateAnalytics,
   calculateSeverityScore,
   getSeverityLevel
 } from './utils/productUtils';
@@ -62,14 +65,29 @@ const ProductsTable = ({
   onSort
 }) => {
   const { language } = useLanguage();
-  const t = (key) => {
-    if (translations[key] && translations[key][language]) {
-      return translations[key][language];
-    }
-    return `Missing translation: ${key}`;
-  };
+  const t = (key) => translations[key]?.[language] || `Missing translation: ${key}`;
   const isRTL = language === 'he';
   const [expandedRow, setExpandedRow] = useState(null);
+  const { loadHistory, histories, loadingStates, errors } = useItemHistory();
+
+  const handleExpand = async (product) => {
+    if (expandedRow === product.product_id) {
+      setExpandedRow(null);
+    } else {
+      setExpandedRow(product.product_id);
+      if (!histories[product.product_id]) {
+        await loadHistory(product);
+      }
+    }
+  };
+
+  const getProductAnalytics = (product) => {
+    const preloadedAnalytics = analytics[product.product_id];
+    if (preloadedAnalytics) return preloadedAnalytics;
+
+    const history = histories[product.product_id];
+    return history ? calculateAnalytics(history) : null;
+  };
 
   const sortProducts = (productsToSort) => {
     if (!sortConfig.key) return productsToSort;
@@ -80,51 +98,42 @@ const ProductsTable = ({
 
       switch (sortConfig.key) {
         case 'weight': {
-          const aWeight = measurements[a.scale_id]?.weight || 0;
-          const bWeight = measurements[b.scale_id]?.weight || 0;
-          aValue = aWeight;
-          bValue = bWeight;
+          aValue = measurements[a.scale_id]?.weight || 0;
+          bValue = measurements[b.scale_id]?.weight || 0;
           break;
         }
         case 'estimationQuantityLeft': {
-          const aAnalytics = analytics[a.product_id];
-          const bAnalytics = analytics[b.product_id];
+          const aAnalytics = getProductAnalytics(a);
+          const bAnalytics = getProductAnalytics(b);
           aValue = parseFloat(aAnalytics?.estimationQuantityLeft || 0);
           bValue = parseFloat(bAnalytics?.estimationQuantityLeft || 0);
           break;
         }
         case 'daysFromLastOrder': {
-          const aAnalytics = analytics[a.product_id];
-          const bAnalytics = analytics[b.product_id];
+          const aAnalytics = getProductAnalytics(a);
+          const bAnalytics = getProductAnalytics(b);
           aValue = parseFloat(aAnalytics?.daysFromLastOrder || 0);
           bValue = parseFloat(bAnalytics?.daysFromLastOrder || 0);
           break;
         }
         case 'severity': {
-          const aAnalytics = analytics[a.product_id];
-          const bAnalytics = analytics[b.product_id];
+          const aAnalytics = getProductAnalytics(a);
+          const bAnalytics = getProductAnalytics(b);
           aValue = calculateSeverityScore(aAnalytics);
           bValue = calculateSeverityScore(bAnalytics);
           break;
         }
-        case 'name': {
+        case 'name':
           return sortConfig.direction === 'asc' 
             ? (a.name || '').localeCompare(b.name || '')
             : (b.name || '').localeCompare(a.name || '');
-        }
         default:
           return 0;
       }
 
-      if (aValue === bValue) return 0;
-      const comparison = aValue > bValue ? 1 : -1;
+      const comparison = aValue > bValue ? 1 : aValue < bValue ? -1 : 0;
       return sortConfig.direction === 'asc' ? comparison : -comparison;
     });
-  };
-
-  const getCustomerName = (customerId) => {
-    const customer = customers.find(c => c.customer_id === customerId);
-    return customer?.name || t('unknownCustomer');
   };
 
   return (
@@ -191,12 +200,15 @@ const ProductsTable = ({
             const scale = scales.find(s => s.scale_id === product.scale_id);
             const customer = customers.find(c => c.customer_id === product.customer_id);
             const statusColor = getStatusColor(measurement, product.thresholds);
-            const productAnalytics = analytics[product.product_id] || {};
-            const quantityWarning = getAnalyticsWarningLevel('quantity', productAnalytics);
-            const daysWarning = getAnalyticsWarningLevel('days', productAnalytics);
-            const severityScore = calculateSeverityScore(productAnalytics);
+            const estimationQuantityLeft = product.estimation_quantity_left;
+            const quantityLastOrder = product.quantity_last_order;
+            const daysFromLastOrder = product.days_from_last_order;
+            const averageDaysBetweenOrders = product.average_days_between_orders;
+            const quantityWarning = getAnalyticsWarningLevel('quantity', estimationQuantityLeft, quantityLastOrder, daysFromLastOrder, averageDaysBetweenOrders);
+            const daysWarning = getAnalyticsWarningLevel('days', estimationQuantityLeft, quantityLastOrder, daysFromLastOrder, averageDaysBetweenOrders);
+            const severityScore = parseFloat(product.severity_score);
             const severityInfo = getSeverityLevel(severityScore);
-
+            console.log('prosuct:', product);
             return (
               <React.Fragment key={product.product_id}>
                 <tr className="hover:bg-gray-50">
@@ -233,7 +245,7 @@ const ProductsTable = ({
                   </td>
                   <td className="px-6 py-4">
                     <div className="text-sm text-gray-900">
-                      {getCustomerName(product.customer_id)}
+                      {customer?.name || t('unknownCustomer')}
                     </div>
                   </td>
                   <td className="px-6 py-4">
@@ -244,15 +256,15 @@ const ProductsTable = ({
                   <td className={`px-6 py-4 ${quantityWarning.className}`}>
                     <div className="flex items-center gap-2">
                       <ShoppingBag className="h-4 w-4" />
-                      <span>{productAnalytics?.estimationQuantityLeft || t('noData')}</span>
+                      <span>{product.estimation_quantity_left || t('noData')}</span>
                     </div>
                   </td>
                   <td className={`px-6 py-4 ${daysWarning.className}`}>
                     <div className="flex items-center gap-2">
                       <Calendar className="h-4 w-4" />
                       <span>
-                        {productAnalytics?.daysFromLastOrder 
-                          ? `${productAnalytics.daysFromLastOrder} ${t('days')}`
+                        {product.days_from_last_order 
+                          ? `${product.days_from_last_order} ${t('days')}`
                           : t('noData')}
                       </span>
                     </div>
@@ -272,9 +284,7 @@ const ProductsTable = ({
                         <MessageSquare className="h-5 w-5" />
                       </button>
                       <button
-                        onClick={() => setExpandedRow(
-                          expandedRow === product.product_id ? null : product.product_id
-                        )}
+                        onClick={() => handleExpand(product)}
                         className="text-gray-600 hover:text-gray-900"
                       >
                         {expandedRow === product.product_id ? (
@@ -289,10 +299,24 @@ const ProductsTable = ({
                 {expandedRow === product.product_id && (
                   <tr>
                     <td colSpan="8" className="px-6 py-4 bg-gray-50">
-                      <div className="space-y-4">
-                        <ProductAnalytics analytics={productAnalytics} />
-                        <OrderHistory orders={productAnalytics?.orderHistory || []} />
-                      </div>
+                      {loadingStates[product.product_id] ? (
+                        <div className="flex justify-center items-center py-8">
+                          <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
+                        </div>
+                      ) : errors[product.product_id] ? (
+                        <div className="text-red-600 text-center py-4">
+                          {errors[product.product_id]}
+                        </div>
+                      ) : histories[product.product_id] ? (
+                        <div className="space-y-4">
+                          <ProductAnalytics analytics={calculateAnalytics(histories[product.product_id])} />
+                          <OrderHistory orders={histories[product.product_id]} />
+                        </div>
+                      ) : (
+                        <div className="text-center py-4 text-gray-500">
+                          {t('noData')}
+                        </div>
+                      )}
                     </td>
                   </tr>
                 )}
