@@ -1082,5 +1082,9 @@ export const translations = {
   monitored: {
     en: "Monitored",
     he: "מנוטר"
+  },
+  addNewProduct:{
+    en: "Add New Monitored Item",
+    he: "הוסף פריט מנוטר חדש"
   }
 }

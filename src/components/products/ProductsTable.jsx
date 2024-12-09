@@ -208,7 +208,6 @@ const ProductsTable = ({
             const daysWarning = getAnalyticsWarningLevel('days', estimationQuantityLeft, quantityLastOrder, daysFromLastOrder, averageDaysBetweenOrders);
             const severityScore = parseFloat(product.severity_score);
             const severityInfo = getSeverityLevel(severityScore);
-            console.log('prosuct:', product);
             return (
               <React.Fragment key={product.product_id}>
                 <tr className="hover:bg-gray-50">

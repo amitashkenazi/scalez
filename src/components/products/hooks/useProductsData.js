@@ -1,127 +1,101 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import apiService from '../../../services/api';
-import { calculateAnalytics } from '../utils/productUtils';
 
 export const useProductsData = () => {
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState(null);
-  const [sortConfig, setSortConfig] = useState({
-    key: 'name',
-    direction: 'desc'
-  });
   const [data, setData] = useState({
     products: [],
     scales: [],
     customers: [],
     measurements: {},
-    analytics: {}
   });
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [hasNextPage, setHasNextPage] = useState(true);
+  const [sortConfig, setSortConfig] = useState({
+    key: 'name',
+    direction: 'desc'
+  });
+  const [pageSize] = useState(20);
 
-  const fetchOrdersHistory = async (products) => {
-    try {
-      const items = products.map(product => ({
-        customer_id: product.customer_id.split('_').pop(),
-        item_id: product.item_id.split('_').pop()
-      }));
-
-      console.log('Requesting orders history for:', items);
-
-    //   const response = await apiService.request('orders/customers/item-history', {
-    //     method: 'POST',
-    //     headers: { 'Content-Type': 'application/json' },
-    //     body: JSON.stringify({ items })
-    //   });
-
-    //   console.log('Orders history response:', response);
-
-      const analyticsMap = {};
-        products.forEach(product => {
-        //     dailyAverage: dailyAverage.toFixed(2),
-        // quantityLastOrder,
-        // daysFromLastOrder: daysFromLastOrder.toString(),
-        // estimationQuantityLeft,
-        // averageDaysBetweenOrders,
-        // lastOrderDate: sortedOrders[sortedOrders.length - 1].order_date,
-        // totalOrders: sortedOrders.length,
-        // totalQuantity: totalQuantity.toFixed(2),
-        // orderHistory: sortedOrders
-        analyticsMap[product.product_id] = product;
-        });
-
-      console.log('Processed analytics map:', analyticsMap);
-      return analyticsMap;
-    } catch (error) {
-      console.error('Error fetching orders history:', error);
-      return {};
-    }
-  };
-
-  const fetchData = useCallback(async (shouldResetData = true) => {
+  const fetchNextPage = useCallback(async (reset = false) => {
+    if (isLoading && !reset) return;
+    
     setIsLoading(true);
     setError(null);
 
     try {
-      const query_string = `products?${
-        sortConfig ? `sort_by=${sortConfig.key}&sort_order=${sortConfig.direction}&` : ''
-      }`;
-      
-      console.log('Fetching products...');
+      const currentProducts = reset ? [] : data.products;
+      const page = reset ? 1 : Math.floor(currentProducts.length / pageSize) + 1;
 
+      const query = `products?${
+        sortConfig ? `sort_by=${sortConfig.key}&sort_order=${sortConfig.direction}&` : ''
+      }page=${page}&limit=${pageSize}`;
+      
       const [productsResponse, scales, customers] = await Promise.all([
-        apiService.request(query_string, { method: 'GET' }),
-        shouldResetData ? apiService.getScales() : Promise.resolve(data.scales),
-        shouldResetData ? apiService.getCustomers() : Promise.resolve(data.customers)
+        apiService.request(query),
+        reset ? apiService.getScales() : Promise.resolve(data.scales),
+        reset ? apiService.getCustomers() : Promise.resolve(data.customers)
       ]);
 
-      const products = productsResponse.items || [];
-      console.log('Products fetched:', products);
+      const newProducts = productsResponse.items || [];
+      setHasNextPage(newProducts.length === pageSize);
 
-      // Process measurements
-      let measurementsMap = data.measurements;
-      if (shouldResetData) {
+      const newMeasurements = reset ? {} : { ...data.measurements };
+      if (reset || !data.scales.length) {
+        const validScales = scales.filter(scale => scale.scale_id);
         const measurements = await Promise.all(
-          scales.map(scale => apiService.getLatestMeasurement(scale.scale_id))
+          validScales.map(scale => apiService.getLatestMeasurement(scale.scale_id))
         );
-        measurementsMap = scales.reduce((acc, scale, index) => {
-          acc[scale.scale_id] = measurements[index];
-          return acc;
-        }, {});
+        validScales.forEach((scale, index) => {
+          newMeasurements[scale.scale_id] = measurements[index];
+        });
+      } else {
+        const newScaleIds = newProducts
+          .map(p => p.scale_id)
+          .filter(id => id && !newMeasurements[id]);
+        
+        if (newScaleIds.length > 0) {
+          const newMeasurementsData = await Promise.all(
+            newScaleIds.map(scaleId => apiService.getLatestMeasurement(scaleId))
+          );
+          newScaleIds.forEach((scaleId, index) => {
+            newMeasurements[scaleId] = newMeasurementsData[index];
+          });
+        }
       }
-
-      // Fetch and process analytics
-      const analyticsMap = await fetchOrdersHistory(products);
-
-      setData({
-        products,
-        scales: shouldResetData ? scales : data.scales,
-        customers: shouldResetData ? customers : data.customers,
-        measurements: measurementsMap,
-        analytics: analyticsMap
-      });
+      
+      setData(prev => ({
+        products: reset ? newProducts : [...prev.products, ...newProducts],
+        scales: reset ? scales : prev.scales,
+        customers: reset ? customers : prev.customers,
+        measurements: newMeasurements
+      }));
     } catch (err) {
       console.error('Error fetching data:', err);
       setError(err.message);
     } finally {
       setIsLoading(false);
     }
-  }, [sortConfig, data]);
+  }, [data, isLoading, sortConfig, pageSize]);
 
   const updateSort = useCallback((newSortKey) => {
-    setSortConfig(prevSort => ({
+    setSortConfig(prev => ({
       key: newSortKey,
-      direction: prevSort.key === newSortKey && prevSort.direction === 'asc' ? 'desc' : 'asc'
+      direction: prev.key === newSortKey && prev.direction === 'asc' ? 'desc' : 'asc'
     }));
-  }, []);
+    fetchNextPage(true);
+  }, [fetchNextPage]);
 
   useEffect(() => {
-    fetchData();
-  }, [sortConfig.key, sortConfig.direction]);
+    fetchNextPage(true);
+  }, []);
 
   return {
     data,
     isLoading,
     error,
-    refreshData: () => fetchData(true),
+    hasNextPage,
+    fetchNextPage,
     sortConfig,
     updateSort
   };
