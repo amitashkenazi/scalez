@@ -12,7 +12,7 @@ export const useProductsData = () => {
   const [error, setError] = useState(null);
   const [hasNextPage, setHasNextPage] = useState(true);
   const [sortConfig, setSortConfig] = useState({
-    key: 'name',
+    key: 'severity',
     direction: 'desc'
   });
   const [pageSize] = useState(20);
@@ -36,6 +36,7 @@ export const useProductsData = () => {
         reset ? apiService.getScales() : Promise.resolve(data.scales),
         reset ? apiService.getCustomers() : Promise.resolve(data.customers)
       ]);
+      console.log('Products response:', productsResponse);
 
       const newProducts = productsResponse.items || [];
       setHasNextPage(newProducts.length === pageSize);

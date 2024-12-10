@@ -93,7 +93,8 @@ export const parseNumericValue = (value) => {
         lastOrderDate: sortedOrders[sortedOrders.length - 1].order_date,
         totalOrders: sortedOrders.length,
         totalQuantity: totalQuantity.toFixed(2),
-        orderHistory: sortedOrders
+        orderHistory: sortedOrders,
+        dailyConsumptionRate: (orders.length - 1) / (totalPeriod - 1),
       };
     } catch (error) {
       console.error('Error calculating analytics:', error);

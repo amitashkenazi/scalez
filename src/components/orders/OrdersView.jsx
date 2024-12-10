@@ -1,5 +1,4 @@
-// src/components/orders/OrdersView.jsx
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { translations } from '../../translations/translations';
 import { Package, AlertCircle, Loader2, RefreshCw, Search, ChevronDown, ChevronUp } from 'lucide-react';
@@ -41,12 +40,14 @@ const StatusBadge = ({ status }) => {
 };
 
 const OrderDetails = ({ items, customerName }) => {
+  console.log('[OrderDetails] Rendering with items:', items, 'customerName:', customerName);
+  
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedItem, setSelectedItem] = useState(null);
   const [customers, setCustomers] = useState([]);
   const [successMessage, setSuccessMessage] = useState('');
   const { language } = useLanguage();
-  // Helper function to get translation
+
   const t = (key) => {
     if (translations[key] && translations[key][language]) {
       return translations[key][language];
@@ -56,70 +57,74 @@ const OrderDetails = ({ items, customerName }) => {
 
   useEffect(() => {
     const fetchCustomers = async () => {
+      console.log('[OrderDetails] Fetching customers');
       try {
         const response = await apiService.getCustomers();
+        console.log('[OrderDetails] Customers fetched:', response);
         setCustomers(response);
       } catch (error) {
-        console.error('Error fetching customers:', error);
+        console.error('[OrderDetails] Error fetching customers:', error);
       }
     };
     fetchCustomers();
   }, []);
 
   const handleCreateProduct = (item) => {
-    console.log('Creating product from item:', item);
+    console.log('[OrderDetails] Creating product for item:', item);
     setSelectedItem(item);
     setIsModalOpen(true);
   };
 
   const handleAddProduct = async (productData) => {
+    console.log('[OrderDetails] Adding product:', productData);
     try {
       await apiService.createProduct(productData);
-      setSuccessMessage((t('productAdded')) || 'Product created successfully');
+      setSuccessMessage(t('productAdded') || 'Product created successfully');
       setIsModalOpen(false);
       setTimeout(() => setSuccessMessage(''), 3000);
     } catch (error) {
-      console.error('Error creating product:', error);
+      console.error('[OrderDetails] Error creating product:', error);
       throw error;
     }
   };
 
   const handleCustomerAdded = (newCustomer) => {
+    console.log('[OrderDetails] Customer added:', newCustomer);
     setCustomers(prev => [...prev, newCustomer]);
   };
 
-  if (!Array.isArray(items)) return null;
-  
+  if (!Array.isArray(items)) {
+    console.log('[OrderDetails] Invalid items array:', items);
+    return null;
+  }
+
   return (
-    <>
-      <div className="p-4 bg-gray-50 rounded-lg">
-        {successMessage && (
-          <div className="mb-4 bg-green-50 border border-green-400 rounded-lg p-3">
-            <p className="text-green-700">{successMessage}</p>
-          </div>
-        )}
-        <h4 className="font-medium mb-2">Order Items:</h4>
-        <div className="space-y-2">
-          {items.map((item, index) => (
-            <div key={index} className="flex justify-between items-center bg-white p-3 rounded-lg shadow-sm">
-              <div className="flex-1">
-                <span className="font-medium">{item.item_external_id} - {item.item_name || 'Unknown Item'}</span>
-                <div className="text-sm text-gray-500 space-x-4">
-                  <span>Price: ₪{item.price || 0}</span>
-                  <span>Quantity: {item.quantity || 0}</span>
-                  <span className="font-medium">Total: ₪{item.total || 0}</span>
-                </div>
-              </div>
-              <button
-                onClick={() => handleCreateProduct(item)}
-                className="px-3 py-1.5 bg-blue-100 text-blue-700 hover:bg-blue-200 
-                  rounded-lg flex items-center gap-1 transition-colors"
-              >
-                + Create Product
-              </button>
-            </div>
-          ))}
+    <div className="p-4 bg-gray-50 rounded-lg">
+      {successMessage && (
+        <div className="mb-4 bg-green-50 border border-green-400 rounded-lg p-3">
+          <p className="text-green-700">{successMessage}</p>
         </div>
+      )}
+      <h4 className="font-medium mb-2">Order Items:</h4>
+      <div className="space-y-2">
+        {items.map((item, index) => (
+          <div key={index} className="flex justify-between items-center bg-white p-3 rounded-lg shadow-sm">
+            <div className="flex-1">
+              <span className="font-medium">{item.item_external_id} - {item.item_name || 'Unknown Item'}</span>
+              <div className="text-sm text-gray-500 space-x-4">
+                <span>Price: ₪{item.price || 0}</span>
+                <span>Quantity: {item.quantity || 0}</span>
+                <span className="font-medium">Total: ₪{item.total || 0}</span>
+              </div>
+            </div>
+            <button
+              onClick={() => handleCreateProduct(item)}
+              className="px-3 py-1.5 bg-blue-100 text-blue-700 hover:bg-blue-200 rounded-lg flex items-center gap-1 transition-colors"
+            >
+              + Create Product
+            </button>
+          </div>
+        ))}
       </div>
 
       {isModalOpen && (
@@ -139,11 +144,13 @@ const OrderDetails = ({ items, customerName }) => {
           onCustomerAdded={handleCustomerAdded}
         />
       )}
-    </>
+    </div>
   );
 };
 
 const OrdersView = () => {
+  console.log('[OrdersView] Component rendering');
+  
   const [orders, setOrders] = useState([]);
   const [expandedOrder, setExpandedOrder] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -152,36 +159,55 @@ const OrdersView = () => {
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [statusFilter, setStatusFilter] = useState('all');
   const [searchTerm, setSearchTerm] = useState('');
-  const [nextPageToken, setNextPageToken] = useState(null);
+  const [pageToken, setPageToken] = useState(null);
   const [hasMore, setHasMore] = useState(true);
-
+  
+  const observerRef = useRef(null);
+  const loadingRef = useRef(false);
+  const debouncedFilterChangeRef = useRef(null);
+  
   const { language } = useLanguage();
-  // Helper function to get translation
+  const isRTL = language === 'he';
+
   const t = (key) => {
     if (translations[key] && translations[key][language]) {
       return translations[key][language];
     }
     return `Missing translation: ${key}`;
   };
-  const isRTL = language === 'he';
 
-  const fetchOrders = async (showLoadingState = true, pageToken = null, filters = { status: statusFilter, search: searchTerm }) => {
-    if (showLoadingState) {
-      if (pageToken) {
-        setIsLoading(true);
-      } else {
-        setIsFilterLoading(true);
-        setOrders([]);
-      }
+  const fetchOrders = useCallback(async (isLoadingMore = false, currentPageToken = null, filters = { status: statusFilter, search: searchTerm }) => {
+    console.log('[OrdersView] fetchOrders called with:', {
+      isLoadingMore,
+      currentPageToken,
+      filters,
+      currentLoadingState: loadingRef.current
+    });
+
+    if (loadingRef.current) {
+      console.log('[OrdersView] Skipping fetch - already loading');
+      return;
     }
+    
+    loadingRef.current = true;
+
+    if (!isLoadingMore) {
+      console.log('[OrdersView] Starting new search');
+      setIsFilterLoading(true);
+    } else {
+      console.log('[OrdersView] Loading more results');
+      setIsLoading(true);
+    }
+
     setError(null);
 
     try {
       const queryParams = new URLSearchParams();
       queryParams.append('limit', ITEMS_PER_PAGE.toString());
       
-      if (pageToken) {
-        queryParams.append('start_key', pageToken);
+      // Use the correct parameter name for DynamoDB pagination
+      if (currentPageToken) {
+        queryParams.append('start_key', currentPageToken);
       }
       
       if (filters.status && filters.status !== 'all') {
@@ -195,73 +221,141 @@ const OrdersView = () => {
         }
       }
 
+      console.log('[OrdersView] Fetching with params:', queryParams.toString());
+      
       const response = await apiService.request(`orders?${queryParams.toString()}`, { 
         method: 'GET' 
       });
 
-      if (pageToken) {
-        setOrders(prev => [...prev, ...response.orders]);
+      console.log('[OrdersView] API response:', response);
+
+      const newOrders = response?.orders || [];
+      const pageSize = response?.page_size || 0;
+      const newPageToken = response?.next_page_token;
+
+      if (isLoadingMore && currentPageToken) {
+        console.log('[OrdersView] Appending new orders');
+        setOrders(prev => [...prev, ...newOrders]);
       } else {
-        setOrders(response.orders || []);
+        console.log('[OrdersView] Setting new orders');
+        setOrders(newOrders);
       }
       
-      setNextPageToken(response.next_page_token);
-      setHasMore(!!response.next_page_token);
+      setPageToken(newPageToken);
+      // DynamoDB pagination: hasMore is determined by the presence of next_page_token
+      setHasMore(!!newPageToken);
+      
+      console.log('[OrdersView] Updated state:', {
+        ordersCount: newOrders.length,
+        pageSize,
+        newPageToken,
+        hasMore: !!newPageToken
+      });
+
     } catch (err) {
-      console.error('Error fetching orders:', err);
+      console.error('[OrdersView] Error fetching orders:', err);
       setError(err.message || 'Failed to fetch orders');
-      setOrders([]);
+      if (!currentPageToken) {
+        setOrders([]);
+      }
       setHasMore(false);
     } finally {
+      console.log('[OrdersView] Fetch completed');
       setIsLoading(false);
       setIsFilterLoading(false);
       setIsRefreshing(false);
+      loadingRef.current = false;
     }
-  };
+}, [statusFilter, searchTerm]);
 
-  const handleFiltersChange = useCallback((newFilters) => {
-    setOrders([]);
-    return fetchOrders(true, null, newFilters);
-  }, []);
+const lastOrderElementRef = useCallback(node => {
+    console.log('[OrdersView] Setting up intersection observer', {
+      node,
+      isLoading,
+      isFilterLoading,
+      hasMore,
+      loadingRef: loadingRef.current,
+      pageToken
+    });
 
-  const debouncedFilterChange = useCallback(
-    debounce((filters) => {
-      handleFiltersChange(filters);
-    }, DEBOUNCE_DELAY),
-    [handleFiltersChange]
-  );
+    if (isLoading || isFilterLoading) {
+      console.log('[OrdersView] Skipping observer setup - loading in progress');
+      return;
+    }
+
+    if (observerRef.current) {
+      console.log('[OrdersView] Disconnecting previous observer');
+      observerRef.current.disconnect();
+    }
+
+    observerRef.current = new IntersectionObserver(entries => {
+      const first = entries[0];
+      console.log('[OrdersView] Intersection observed:', {
+        isIntersecting: first.isIntersecting,
+        hasMore,
+        loadingRef: loadingRef.current,
+        pageToken
+      });
+      
+      // Only load more if we have a pageToken (DynamoDB LastEvaluatedKey)
+      if (first.isIntersecting && hasMore && !loadingRef.current && pageToken) {
+        console.log('[OrdersView] Loading more content');
+        fetchOrders(true, pageToken);
+      }
+    }, {
+      rootMargin: '200px',
+      threshold: 0.1
+    });
+
+    if (node) {
+      console.log('[OrdersView] Observing new node');
+      observerRef.current.observe(node);
+    }
+}, [isLoading, isFilterLoading, hasMore, pageToken, fetchOrders]);
 
   useEffect(() => {
-    debouncedFilterChange({ status: statusFilter, search: searchTerm });
+    debouncedFilterChangeRef.current = debounce((filters) => {
+      console.log('[OrdersView] Debounced filter change:', filters);
+      setOrders([]);
+      setPageToken(null);
+      fetchOrders(false, null, filters);
+    }, DEBOUNCE_DELAY);
+
     return () => {
-      debouncedFilterChange.cancel();
+      if (debouncedFilterChangeRef.current) {
+        debouncedFilterChangeRef.current.cancel();
+      }
     };
-  }, [statusFilter, searchTerm, debouncedFilterChange]);
+  }, [fetchOrders]);
 
-  const handleRefresh = () => {
-    setIsRefreshing(true);
-    setNextPageToken(null);
-    fetchOrders(false, null, { status: statusFilter, search: searchTerm });
-  };
-
-  const handleLoadMore = () => {
-    if (nextPageToken && !isLoading) {
-      fetchOrders(false, nextPageToken, { status: statusFilter, search: searchTerm });
+  useEffect(() => {
+    console.log('[OrdersView] Filter/search changed:', { statusFilter, searchTerm });
+    if (debouncedFilterChangeRef.current) {
+      debouncedFilterChangeRef.current({ status: statusFilter, search: searchTerm });
     }
+  }, [statusFilter, searchTerm]);
+
+  
+  const handleRefresh = () => {
+    console.log('[OrdersView] Manual refresh triggered');
+    setIsRefreshing(true);
+    setPageToken(null);
+    fetchOrders(false, null, { status: statusFilter, search: searchTerm });
   };
 
   const formatDate = (dateString) => {
     if (!dateString) return '';
     try {
-      return new Date(dateString).toLocaleString(language === 'he' ? 'he-IL' : 'en-US', {
-        year: 'numeric',
-        month: 'short',
-        day: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit',
-        hour12: false
-      });
+      console.log('[OrdersView] Formatting date:', dateString);
+      const date = new Date(dateString);
+      const day = String(date.getDate()).padStart(2, '0');
+      const month = String(date.getMonth() + 1).padStart(2, '0');
+      const year = date.getFullYear();
+      const hours = String(date.getHours()).padStart(2, '0');
+      const minutes = String(date.getMinutes()).padStart(2, '0');
+      return `${day}-${month}-${year}`;
     } catch (err) {
+      console.error('[OrdersView] Date formatting error:', err);
       return dateString;
     }
   };
@@ -289,7 +383,7 @@ const OrdersView = () => {
           <div>
             <h2 className="text-2xl font-bold flex items-center gap-2">
               <Package className="h-6 w-6" />
-              Orders
+              {t("invoicesTitle")}
             </h2>
             <p className="text-gray-600 mt-1">Track and manage your orders</p>
           </div>
@@ -371,61 +465,78 @@ const OrdersView = () => {
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
-              {orders.map((order) => (
-                <React.Fragment key={order.order_id || Math.random()}>
-                  <tr className="hover:bg-gray-50">
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {order.customer_name || 'Unknown Customer'}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <StatusBadge status={order.status || 'N/A'} />
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {(order.items && Array.isArray(order.items) ? order.items.length : 0) || '0'} items
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {formatCurrency(order.total_amount)}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {order.order_date}
-                    </td>
-                    <td className="px-6 py-4 text-sm text-gray-500 max-w-xs truncate">
-                      {order.notes || ''}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      <button
-                        onClick={() => setExpandedOrder(expandedOrder === order.order_id ? null : order.order_id)}
-                        className="text-blue-600 hover:text-blue-800"
-                      >
-                        {expandedOrder === order.order_id ? (
-                          <ChevronUp className="h-5 w-5" />
-                        ) : (
-                          <ChevronDown className="h-5 w-5" />
-                        )}
-                      </button>
-                    </td>
-                  </tr>
-                  {expandedOrder === order.order_id && (
-                    <tr>
-                      <td colSpan="8" className="px-6 py-4">
-                        <OrderDetails 
-                          items={order.items || []} 
-                          customerName={order.customer_name}
-                        />
+              {orders.map((order, index) => {
+                console.log(`[OrdersView] Rendering order ${index}:`, {
+                  orderId: order.order_id,
+                  isLastItem: index === orders.length - 1,
+                  shouldAttachRef: index === orders.length - 1 && !isFilterLoading
+                });
+                
+                return (
+                  <React.Fragment key={order.order_id || Math.random()}>
+                    <tr 
+                      ref={index === orders.length - 1 ? lastOrderElementRef : null}
+                      className="hover:bg-gray-50"
+                    >
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        {order.customer_name || 'Unknown Customer'}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <StatusBadge status={order.status || 'N/A'} />
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        {(order.items && Array.isArray(order.items) ? order.items.length : 0) || '0'} items
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        {formatCurrency(order.total_amount)}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        {order.order_date}
+                      </td>
+                      <td className="px-6 py-4 text-sm text-gray-500 max-w-xs truncate">
+                        {order.notes || ''}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        <button
+                          onClick={() => {
+                            console.log('[OrdersView] Toggling order expansion:', {
+                              orderId: order.order_id,
+                              currentExpanded: expandedOrder,
+                              willExpand: expandedOrder !== order.order_id
+                            });
+                            setExpandedOrder(expandedOrder === order.order_id ? null : order.order_id);
+                          }}
+                          className="text-blue-600 hover:text-blue-800"
+                        >
+                          {expandedOrder === order.order_id ? (
+                            <ChevronUp className="h-5 w-5" />
+                          ) : (
+                            <ChevronDown className="h-5 w-5" />
+                          )}
+                        </button>
                       </td>
                     </tr>
-                  )}
-                </React.Fragment>
-              ))}
+                    {expandedOrder === order.order_id && (
+                      <tr>
+                        <td colSpan="7" className="px-6 py-4">
+                          <OrderDetails 
+                            items={order.items || []} 
+                            customerName={order.customer_name}
+                          />
+                        </td>
+                      </tr>
+                    )}
+                  </React.Fragment>
+                );
+              })}
             </tbody>
           </table>
         )}
 
-        {/* If no orders and not loading filters */}
         {!isFilterLoading && orders.length === 0 && !error && (
           <div className="text-center py-12">
             <Package className="mx-auto h-12 w-12 text-gray-400 mb-4" />
-            <h3 className="mt-2 text-sm font-medium text-gray-900">No orders found</h3>
+            <h3 className="mt-2 text-sm font-medium text-gray-900">{t("Noordersfound")}</h3>
             <p className="mt-1 text-sm text-gray-500">
               {searchTerm || statusFilter !== 'all'
                 ? 'Try adjusting your filters'
@@ -434,14 +545,7 @@ const OrdersView = () => {
             <div className="mt-4">
               <button
                 onClick={() => {
-                  // Replace this with the navigation logic you use to switch to the integrations tab
-                  // For example, if you have a context or prop function like onViewChange:
-                  // onViewChange('integrations');
-                  
-                  // If you're using React Router:
-                  // navigate('/integrations');
-                  
-                  // Adjust according to your app's routing or view change logic.
+                  console.log('[OrdersView] Add integration clicked');
                 }}
                 className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
               >
@@ -451,19 +555,11 @@ const OrdersView = () => {
           </div>
         )}
 
-        {hasMore && !isFilterLoading && orders.length > 0 && (
-          <div className="px-6 py-4 border-t border-gray-200">
-            <button
-              onClick={handleLoadMore}
-              disabled={isLoading}
-              className="w-full flex justify-center items-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-            >
-              {isLoading ? (
-                <Loader2 className="h-5 w-5 animate-spin" />
-              ) : (
-                'Load More'
-              )}
-            </button>
+        {hasMore && !isFilterLoading && orders.length > 0 && isLoading && (
+          <div className="px-6 py-8 border-t border-gray-200 flex justify-center">
+            <div className="h-8 flex items-center justify-center">
+              <Loader2 className="h-8 w-8 animate-spin text-gray-400" />
+            </div>
           </div>
         )}
       </div>

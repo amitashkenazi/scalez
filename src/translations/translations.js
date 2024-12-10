@@ -1098,5 +1098,13 @@ export const translations = {
   integrationstitle: {
     en: "Integrations",
     he: "אינטגרציות"
+  },
+  deleteingProducts: {
+    en: "Deleting...",
+    he: "מוחק..."
+  },
+  invoicesTitle: {
+    en: "Invoices",
+    he: "חשבוניות"
   }
 }

@@ -16,7 +16,7 @@ import {
   AlertTriangle,
   Loader2
 } from 'lucide-react';
-import { ProductAnalytics } from './ProductAnalytics';
+import ProductAnalytics from './ProductAnalytics';
 import OrderHistory from './OrderHistory';
 import { useItemHistory } from './hooks/useItemHistory';
 import { 
@@ -26,6 +26,15 @@ import {
   calculateSeverityScore,
   getSeverityLevel
 } from './utils/productUtils';
+
+const calculateDaysFromLastOrder = (lastOrderDate) => {
+  if (!lastOrderDate) return 0;
+  const [day, month, year] = lastOrderDate.split('-').map(num => parseInt(num));
+  const orderDate = new Date(2000 + year, month - 1, day);
+  const today = new Date();
+  const diffTime = Math.abs(today - orderDate);
+  return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+};
 
 const SortHeader = ({ label, sortKey, currentSort, onSort, isRTL }) => {
   const isActive = currentSort?.key === sortKey;
@@ -83,18 +92,6 @@ const ProductsTable = ({
     }
   };
 
-  const getProductAnalytics = (product) => {
-    if (!product) return null;
-    
-    return {
-      estimationQuantityLeft: product.estimation_quantity_left,
-      quantityLastOrder: product.quantity_last_order,
-      daysFromLastOrder: product.days_from_last_order,
-      averageDaysBetweenOrders: product.average_days_between_orders,
-      dailyAverage: product.daily_average
-    };
-  };
-
   const sortProducts = (productsToSort) => {
     if (!sortConfig?.key || !Array.isArray(productsToSort)) return productsToSort;
 
@@ -114,15 +111,13 @@ const ProductsTable = ({
           break;
         }
         case 'daysFromLastOrder': {
-          aValue = parseFloat(a?.days_from_last_order || 0);
-          bValue = parseFloat(b?.days_from_last_order || 0);
+          aValue = calculateDaysFromLastOrder(a.last_order_date);
+          bValue = calculateDaysFromLastOrder(b.last_order_date);
           break;
         }
         case 'severity': {
-          const aAnalytics = getProductAnalytics(a);
-          const bAnalytics = getProductAnalytics(b);
-          aValue = calculateSeverityScore(aAnalytics) || 0;
-          bValue = calculateSeverityScore(bAnalytics) || 0;
+          aValue = parseInt(a.severity_score || 0);
+          bValue = parseInt(b.severity_score || 0);
           break;
         }
         case 'name':
@@ -210,29 +205,31 @@ const ProductsTable = ({
           {sortProducts(products).map((product) => {
             if (!product?.product_id) return null;
 
+            const metrics = {
+              ...product,
+              daysFromLastOrder: calculateDaysFromLastOrder(product.last_order_date)
+            };
             const measurement = measurements[product.scale_id];
             const scale = scales.find(s => s.scale_id === product.scale_id);
             const customer = customers.find(c => c.customer_id === product.customer_id);
             const statusColor = getStatusColor(measurement, product.thresholds);
+            const severityInfo = getSeverityLevel(parseInt(product.severity_score || 0));
             
             const quantityWarning = getAnalyticsWarningLevel(
               'quantity',
-              product.estimation_quantity_left,
-              product.quantity_last_order,
-              product.days_from_last_order,
-              product.average_days_between_orders
+              metrics.estimation_quantity_left,
+              metrics.quantity_last_order,
+              metrics.daysFromLastOrder,
+              metrics.average_days_between_orders
             );
             
             const daysWarning = getAnalyticsWarningLevel(
               'days',
-              product.estimation_quantity_left,
-              product.quantity_last_order,
-              product.days_from_last_order,
-              product.average_days_between_orders
+              metrics.estimation_quantity_left,
+              metrics.quantity_last_order,
+              metrics.daysFromLastOrder,
+              metrics.average_days_between_orders
             );
-            
-            const severityScore = calculateSeverityScore(getProductAnalytics(product)) || 0;
-            const severityInfo = getSeverityLevel(severityScore);
 
             return (
               <React.Fragment key={product.product_id}>
@@ -264,8 +261,8 @@ const ProductsTable = ({
                   </td>
                   <td className={`px-6 py-4 ${severityInfo.className}`}>
                     <div className="flex items-center gap-2">
-                      <AlertTriangle className={`h-4 w-4 ${severityScore >= 60 ? 'animate-pulse' : ''}`} />
-                      <span className="font-medium">{severityScore}</span>
+                      <AlertTriangle className={`h-4 w-4 ${parseInt(product.severity_score || 0) >= 60 ? 'animate-pulse' : ''}`} />
+                      <span className="font-medium">{product.severity_score || '0'}</span>
                       <span className="text-sm">({severityInfo.level})</span>
                     </div>
                   </td>
@@ -273,7 +270,7 @@ const ProductsTable = ({
                     <div className="text-sm text-gray-900">
                       {customer?.name || t('unknownCustomer')}
                     </div>
-                  </td>
+                    </td>
                   <td className="px-6 py-4">
                     <span className={`text-sm font-medium ${statusColor}`}>
                       {measurement?.weight ? `${measurement.weight} kg` : t('noData')}
@@ -282,15 +279,15 @@ const ProductsTable = ({
                   <td className={`px-6 py-4 ${quantityWarning.className}`}>
                     <div className="flex items-center gap-2">
                       <ShoppingBag className="h-4 w-4" />
-                      <span>{product.estimation_quantity_left || t('noData')}</span>
+                      <span>{metrics.estimation_quantity_left || t('noData')}</span>
                     </div>
                   </td>
                   <td className={`px-6 py-4 ${daysWarning.className}`}>
                     <div className="flex items-center gap-2">
                       <Calendar className="h-4 w-4" />
                       <span>
-                        {product.days_from_last_order 
-                          ? `${product.days_from_last_order} ${t('days')}`
+                        {metrics.daysFromLastOrder
+                          ? `${metrics.daysFromLastOrder} ${t('days')}`
                           : t('noData')}
                       </span>
                     </div>
