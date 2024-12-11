@@ -1106,5 +1106,9 @@ export const translations = {
   invoicesTitle: {
     en: "Invoices",
     he: "חשבוניות"
+  },
+  notEnoughData: {
+    en: "Not enough data",
+    he: "אין מספיק נתונים"
   }
 }

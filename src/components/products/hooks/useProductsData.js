@@ -1,3 +1,4 @@
+// Client-Side (React Hook)
 import { useState, useCallback, useEffect } from 'react';
 import apiService from '../../../services/api';
 
@@ -8,40 +9,35 @@ export const useProductsData = () => {
     customers: [],
     measurements: {},
   });
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
   const [hasNextPage, setHasNextPage] = useState(true);
-  const [sortConfig, setSortConfig] = useState({
-    key: 'severity',
-    direction: 'desc'
-  });
+  const [sortConfig, setSortConfig] = useState({ key: 'severity', direction: 'desc' });
+  const [cursor, setCursor] = useState(null);
   const [pageSize] = useState(20);
 
   const fetchNextPage = useCallback(async (reset = false) => {
-    if (isLoading && !reset) return;
-    
+    if (isLoading) return;
+
     setIsLoading(true);
     setError(null);
 
     try {
-      const currentProducts = reset ? [] : data.products;
-      const page = reset ? 1 : Math.floor(currentProducts.length / pageSize) + 1;
-
-      const query = `products?${
-        sortConfig ? `sort_by=${sortConfig.key}&sort_order=${sortConfig.direction}&` : ''
-      }page=${page}&limit=${pageSize}`;
+      const nextCursor = reset ? null : cursor;
+      const query = `products?$${sortConfig ? `sort_by=${sortConfig.key}&sort_order=${sortConfig.direction}&` : ''}limit=${pageSize}&cursor=${nextCursor || ''}`;
       
       const [productsResponse, scales, customers] = await Promise.all([
         apiService.request(query),
         reset ? apiService.getScales() : Promise.resolve(data.scales),
         reset ? apiService.getCustomers() : Promise.resolve(data.customers)
       ]);
-      console.log('Products response:', productsResponse);
-
+      console.log('Products response:', productsResponse); // Debug log
       const newProducts = productsResponse.items || [];
-      setHasNextPage(newProducts.length === pageSize);
+      setCursor(productsResponse.next_cursor);
+      setHasNextPage(!!productsResponse.next_cursor);
 
       const newMeasurements = reset ? {} : { ...data.measurements };
+
       if (reset || !data.scales.length) {
         const validScales = scales.filter(scale => scale.scale_id);
         const measurements = await Promise.all(
@@ -50,21 +46,8 @@ export const useProductsData = () => {
         validScales.forEach((scale, index) => {
           newMeasurements[scale.scale_id] = measurements[index];
         });
-      } else {
-        const newScaleIds = newProducts
-          .map(p => p.scale_id)
-          .filter(id => id && !newMeasurements[id]);
-        
-        if (newScaleIds.length > 0) {
-          const newMeasurementsData = await Promise.all(
-            newScaleIds.map(scaleId => apiService.getLatestMeasurement(scaleId))
-          );
-          newScaleIds.forEach((scaleId, index) => {
-            newMeasurements[scaleId] = newMeasurementsData[index];
-          });
-        }
       }
-      
+
       setData(prev => ({
         products: reset ? newProducts : [...prev.products, ...newProducts],
         scales: reset ? scales : prev.scales,
@@ -77,7 +60,7 @@ export const useProductsData = () => {
     } finally {
       setIsLoading(false);
     }
-  }, [data, isLoading, sortConfig, pageSize]);
+  }, [data, isLoading, sortConfig, pageSize, cursor]);
 
   const updateSort = useCallback((newSortKey) => {
     setSortConfig(prev => ({
@@ -91,13 +74,5 @@ export const useProductsData = () => {
     fetchNextPage(true);
   }, []);
 
-  return {
-    data,
-    isLoading,
-    error,
-    hasNextPage,
-    fetchNextPage,
-    sortConfig,
-    updateSort
-  };
+  return { data, isLoading, error, hasNextPage, fetchNextPage, sortConfig, updateSort };
 };

@@ -35,9 +35,9 @@ export const parseNumericValue = (value) => {
   };
   
   // Calculate analytics for orders
-  export const calculateAnalytics = (orders) => {
+  export const calculateAnalytics = (product, orders) => {
     if (!Array.isArray(orders) || orders.length === 0) return null;
-  
+    console.log('calculateAnalytics product',product);
     try {
       // Sort orders by date
       const sortedOrders = [...orders].sort((a, b) => {
@@ -54,7 +54,7 @@ export const parseNumericValue = (value) => {
       // Calculate time periods
       const daysFromLastOrder = Math.floor((now - lastDate) / (1000 * 60 * 60 * 24));
       const totalPeriod = Math.floor((lastDate - firstDate) / (1000 * 60 * 60 * 24)) + 1;
-  
+      
       // Extract quantities
       const quantities = sortedOrders.map(order => parseFloat(order.quantity || 0));
       const quantityLastOrder = quantities[quantities.length - 1];
@@ -83,9 +83,10 @@ export const parseNumericValue = (value) => {
       const averageDaysBetweenOrders = orderIntervals.length > 0 
         ? (orderIntervals.reduce((sum, interval) => sum + interval, 0) / orderIntervals.length).toFixed(2)
         : totalPeriod.toString();
-  
+      console.log("productproduct: ",product);
+      console.log("productproduct: ",product.daily_average);
       return {
-        dailyAverage: dailyAverage.toFixed(2),
+        dailyAverage: product.daily_average,
         quantityLastOrder,
         daysFromLastOrder: daysFromLastOrder.toString(),
         estimationQuantityLeft,
@@ -94,7 +95,7 @@ export const parseNumericValue = (value) => {
         totalOrders: sortedOrders.length,
         totalQuantity: totalQuantity.toFixed(2),
         orderHistory: sortedOrders,
-        dailyConsumptionRate: (orders.length - 1) / (totalPeriod - 1),
+        dailyConsumptionRate: product.daily_consumption_percentage,
       };
     } catch (error) {
       console.error('Error calculating analytics:', error);
@@ -199,6 +200,7 @@ export const parseNumericValue = (value) => {
         case 'severity': {
           const aAnalyticsKey = `${a.customer_id.split('_').pop()}_${a.item_id.split('_').pop()}`;
           const bAnalyticsKey = `${b.customer_id.split('_').pop()}_${b.item_id.split('_').pop()}`;
+          console.log("utils product: ", products);
           const aAnalytics = analytics[aAnalyticsKey] ? calculateAnalytics(analytics[aAnalyticsKey]) : null;
           const bAnalytics = analytics[bAnalyticsKey] ? calculateAnalytics(analytics[bAnalyticsKey]) : null;
           

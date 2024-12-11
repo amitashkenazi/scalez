@@ -1,10 +1,10 @@
 import React, { useState } from 'react';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { translations } from '../../translations/translations';
-import { 
-  Package, 
-  Pencil, 
-  MessageSquare, 
+import {
+  Package,
+  Pencil,
+  MessageSquare,
   Scale,
   ChevronUp,
   ChevronDown,
@@ -19,9 +19,9 @@ import {
 import ProductAnalytics from './ProductAnalytics';
 import OrderHistory from './OrderHistory';
 import { useItemHistory } from './hooks/useItemHistory';
-import { 
-  getStatusColor, 
-  getAnalyticsWarningLevel, 
+import {
+  getStatusColor,
+  getAnalyticsWarningLevel,
   calculateAnalytics,
   calculateSeverityScore,
   getSeverityLevel
@@ -38,9 +38,9 @@ const calculateDaysFromLastOrder = (lastOrderDate) => {
 
 const SortHeader = ({ label, sortKey, currentSort, onSort, isRTL }) => {
   const isActive = currentSort?.key === sortKey;
-  
+
   return (
-    <th 
+    <th
       className={`px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100
         ${isRTL ? 'text-right' : 'text-left'}`}
       onClick={() => onSort(sortKey)}
@@ -48,8 +48,8 @@ const SortHeader = ({ label, sortKey, currentSort, onSort, isRTL }) => {
       <div className={`flex items-center gap-2 ${isRTL ? 'flex-row-reverse' : ''}`}>
         <span>{label}</span>
         {isActive ? (
-          currentSort.direction === 'asc' ? 
-            <ArrowUp className="h-4 w-4" /> : 
+          currentSort.direction === 'asc' ?
+            <ArrowUp className="h-4 w-4" /> :
             <ArrowDown className="h-4 w-4" />
         ) : (
           <ArrowUpDown className="h-4 w-4 text-gray-400" />
@@ -81,7 +81,7 @@ const ProductsTable = ({
 
   const handleExpand = async (product) => {
     if (!product?.product_id) return;
-    
+
     if (expandedRow === product.product_id) {
       setExpandedRow(null);
     } else {
@@ -121,7 +121,7 @@ const ProductsTable = ({
           break;
         }
         case 'name':
-          return sortConfig.direction === 'asc' 
+          return sortConfig.direction === 'asc'
             ? (a?.name || '').localeCompare(b?.name || '')
             : (b?.name || '').localeCompare(a?.name || '');
         default:
@@ -156,14 +156,14 @@ const ProductsTable = ({
                 disabled={isDeleting}
               />
             </th>
-            <SortHeader 
+            <SortHeader
               label={t('productName')}
               sortKey="name"
               currentSort={sortConfig}
               onSort={onSort}
               isRTL={isRTL}
             />
-            <SortHeader 
+            <SortHeader
               label={t('severity')}
               sortKey="severity"
               currentSort={sortConfig}
@@ -174,21 +174,21 @@ const ProductsTable = ({
               ${isRTL ? 'text-right' : 'text-left'}`}>
               {t('customer')}
             </th>
-            <SortHeader 
+            <SortHeader
               label={t('weight')}
               sortKey="weight"
               currentSort={sortConfig}
               onSort={onSort}
               isRTL={isRTL}
             />
-            <SortHeader 
+            <SortHeader
               label={t('estimationQuantityLeft')}
               sortKey="estimationQuantityLeft"
               currentSort={sortConfig}
               onSort={onSort}
               isRTL={isRTL}
             />
-            <SortHeader 
+            <SortHeader
               label={t('daysFromLastOrder')}
               sortKey="daysFromLastOrder"
               currentSort={sortConfig}
@@ -214,7 +214,7 @@ const ProductsTable = ({
             const customer = customers.find(c => c.customer_id === product.customer_id);
             const statusColor = getStatusColor(measurement, product.thresholds);
             const severityInfo = getSeverityLevel(parseInt(product.severity_score || 0));
-            
+
             const quantityWarning = getAnalyticsWarningLevel(
               'quantity',
               metrics.estimation_quantity_left,
@@ -222,7 +222,7 @@ const ProductsTable = ({
               metrics.daysFromLastOrder,
               metrics.average_days_between_orders
             );
-            
+
             const daysWarning = getAnalyticsWarningLevel(
               'days',
               metrics.estimation_quantity_left,
@@ -270,7 +270,7 @@ const ProductsTable = ({
                     <div className="text-sm text-gray-900">
                       {customer?.name || t('unknownCustomer')}
                     </div>
-                    </td>
+                  </td>
                   <td className="px-6 py-4">
                     <span className={`text-sm font-medium ${statusColor}`}>
                       {measurement?.weight ? `${measurement.weight} kg` : t('noData')}
@@ -279,7 +279,11 @@ const ProductsTable = ({
                   <td className={`px-6 py-4 ${quantityWarning.className}`}>
                     <div className="flex items-center gap-2">
                       <ShoppingBag className="h-4 w-4" />
-                      <span>{metrics.estimation_quantity_left || t('noData')}</span>
+                      <span>
+                        {metrics.recent_orders_count > 3
+                          ? metrics.estimation_quantity_left
+                          : t('notEnoughData')}
+                      </span>
                     </div>
                   </td>
                   <td className={`px-6 py-4 ${daysWarning.className}`}>
@@ -335,7 +339,8 @@ const ProductsTable = ({
                         </div>
                       ) : histories[product.product_id] ? (
                         <div className="space-y-4">
-                          <ProductAnalytics analytics={calculateAnalytics(histories[product.product_id])} />
+                          {console.log('product:', product)}
+                          <ProductAnalytics analytics={calculateAnalytics(product, histories[product.product_id])} />
                           <OrderHistory orders={histories[product.product_id]} />
                         </div>
                       ) : (

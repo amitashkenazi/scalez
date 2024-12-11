@@ -7,8 +7,8 @@ import { TrendingUp, AlertCircle } from 'lucide-react';
 const ProductAnalytics = ({ analytics }) => {
   const { language } = useLanguage();
   const t = (key) => translations[key]?.[language] || `Missing translation: ${key}`;
-
-  if (!analytics || analytics.length <= 3) {
+  console.log('aaaaAnalytics:', analytics, analytics.orderHistory.length);
+  if (!analytics || analytics.orderHistory.length <= 3) {
     return (
       <div className="space-y-4">
         <div className="flex items-center gap-2">
@@ -84,7 +84,7 @@ const ProductAnalytics = ({ analytics }) => {
           </span>
           <div className="mt-1">
             <span className="text-lg font-semibold">
-              {analytics.daily_consumption_percentage || "0"}
+              {analytics.dailyConsumptionRate || "0"}
             </span>
             <span className="text-sm text-gray-500 ml-1">% per day</span>
           </div>
