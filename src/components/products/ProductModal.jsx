@@ -1,11 +1,79 @@
 // src/components/ProductModal.jsx
 import React, { useState, useEffect, useRef } from 'react';
-import { useLanguage } from '../contexts/LanguageContext';
-import { translations } from '../translations/translations';
+import { useLanguage } from '../../contexts/LanguageContext';
+import { translations } from '../../translations/translations';
 import { X, Loader2, AlertCircle, Search } from 'lucide-react';
-import apiService from '../services/api';
-import CustomerModal from './CustomerModal';
-import ScaleModal from './ScaleModal';
+import apiService from '../../services/api';
+import CustomerModal from '../CustomerModal';
+import ScaleModal from '../ScaleModal';
+
+const ItemSelectorField = ({
+  itemSearchQuery,
+  onSearchChange,
+  selectedItem,
+  showDropdown,
+  onFocus,
+  isLoading,
+  filteredItems,
+  onItemSelect,
+  placeholder,
+  label,
+  error
+}) => {
+  return (
+    <div className="relative dropdown-container">
+      <label className="block text-sm font-medium text-gray-700 mb-1">
+        {label}
+      </label>
+      <div className="relative">
+        <input
+          type="text"
+          value={itemSearchQuery}
+          onChange={onSearchChange}
+          onFocus={onFocus}
+          placeholder={placeholder}
+          className={`w-full p-2 pr-10 border rounded-lg ${
+            error ? 'border-red-500' : 'border-gray-300'
+          } ${isLoading ? 'bg-gray-50' : 'bg-white'}`}
+          disabled={isLoading}
+        />
+        <div className="absolute right-3 top-2.5">
+          {isLoading ? (
+            <Loader2 className="h-5 w-5 text-gray-400 animate-spin" />
+          ) : (
+            <Search className="h-5 w-5 text-gray-400" />
+          )}
+        </div>
+      </div>
+      {showDropdown && !isLoading && (
+        <div className="absolute z-10 w-full mt-1 bg-white border rounded-lg shadow-lg max-h-60 overflow-y-auto">
+          {filteredItems.length > 0 ? (
+            filteredItems.map(item => (
+              <div
+                key={item.item_id}
+                onClick={() => onItemSelect(item)}
+                className={`p-2 cursor-pointer ${
+                  selectedItem?.item_id === item.item_id 
+                    ? 'bg-blue-50 text-blue-600' 
+                    : 'hover:bg-gray-100'
+                }`}
+              >
+                {item.name} ({item.itemCode})
+              </div>
+            ))
+          ) : (
+            <div className="p-2 text-gray-500 text-center">
+              No items found
+            </div>
+          )}
+        </div>
+      )}
+      {error && (
+        <p className="text-red-500 text-sm mt-1">{error}</p>
+      )}
+    </div>
+  );
+};
 
 const ProductModal = ({ 
   isOpen, 
@@ -17,6 +85,7 @@ const ProductModal = ({
   onCustomerAdded 
 }) => {
   const itemsCache = useRef(null);
+  const [isLoadingItems, setIsLoadingItems] = useState(true);
   
   const [formData, setFormData] = useState({
     name: '',
@@ -45,61 +114,52 @@ const ProductModal = ({
   const [productId, setProductId] = useState(null);
 
   const { language } = useLanguage();
-  // Helper function to get translation
-  const t = (key) => {
-    if (translations[key] && translations[key][language]) {
-      return translations[key][language];
-    }
-    return `Missing translation: ${key}`;
-  };
+  const t = (key) => translations[key]?.[language] || `Missing translation: ${key}`;
   const isRTL = language === 'he';
 
   const fetchItems = async () => {
+    setIsLoadingItems(true);
     try {
-      // If we have cached items, use them
       if (itemsCache.current) {
         console.log('Using cached items');
         setAvailableItems(itemsCache.current);
         
-        // Set selected item if we have initialData
         if (initialData?.item_id) {
           const matchingItem = itemsCache.current.find(
-            item => item.external_id === initialData.item_id // Changed here
+            item => item.external_id === initialData.item_id
           );
           if (matchingItem) {
             setSelectedItem(matchingItem);
             setItemSearchQuery(matchingItem.name);
           }
         }
-        return;
-      }
-
-      // If no cache, fetch from server
-      console.log('Fetching items from server');
-      const response = await apiService.request('items', {
-        method: 'GET'
-      });
-      
-      itemsCache.current = response;
-      setAvailableItems(response);
-      
-      // Set selected item if we have initialData
-      if (initialData?.item_id && response) {
-        const matchingItem = response.find(
-          item => item.external_id === initialData.item_id // Changed here as well, just to be consistent
-        );
-        if (matchingItem) {
-          setSelectedItem(matchingItem);
-          setItemSearchQuery(matchingItem.name);
+      } else {
+        console.log('Fetching items from server');
+        const response = await apiService.request('items', {
+          method: 'GET'
+        });
+        
+        itemsCache.current = response;
+        setAvailableItems(response);
+        
+        if (initialData?.item_id && response) {
+          const matchingItem = response.find(
+            item => item.external_id === initialData.item_id
+          );
+          if (matchingItem) {
+            setSelectedItem(matchingItem);
+            setItemSearchQuery(matchingItem.name);
+          }
         }
       }
     } catch (error) {
       console.error('Error fetching items:', error);
       setErrors(prev => ({ ...prev, items: 'Error loading items' }));
+    } finally {
+      setIsLoadingItems(false);
     }
   };
 
-  // Fetch available items and scales when modal opens
   useEffect(() => {
     const fetchScales = async () => {
       try {
@@ -117,11 +177,9 @@ const ProductModal = ({
     }
   }, [isOpen, initialData]);
 
-  // Initialize or reset form data when modal opens
   useEffect(() => {
     if (isOpen) {
       if (initialData) {
-        // Find customer either by preSelectedCustomerName or from initialData
         let customer = null;
         if (preSelectedCustomerName) {
           customer = customers.find(c => {
@@ -171,7 +229,6 @@ const ProductModal = ({
     }
   }, [isOpen, initialData, customers, preSelectedCustomerName]);
 
-  // Handle clicks outside dropdowns
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (!event.target.closest('.dropdown-container')) {
@@ -188,20 +245,20 @@ const ProductModal = ({
     const newErrors = {};
 
     if (!formData.name.trim()) {
-      newErrors.name = t('productNameRequired') || 'Product name is required';
+      newErrors.name = t('productNameRequired');
     }
 
     if (!formData.customer_id) {
-      newErrors.customer_id = t('customerRequired') || 'Customer is required';
+      newErrors.customer_id = t('customerRequired');
     }
 
     const upperThreshold = Number(formData.thresholds.upper);
     const lowerThreshold = Number(formData.thresholds.lower);
 
     if (isNaN(upperThreshold) || isNaN(lowerThreshold)) {
-      newErrors.thresholds = t('invalidThresholds') || 'Invalid thresholds';
+      newErrors.thresholds = t('invalidThresholds');
     } else if (upperThreshold <= lowerThreshold) {
-      newErrors.thresholds = t('thresholdError') || 'Upper threshold must be greater than lower threshold';
+      newErrors.thresholds = t('thresholdError');
     }
 
     setErrors(newErrors);
@@ -231,7 +288,7 @@ const ProductModal = ({
       onClose();
     } catch (err) {
       console.error('Submission error:', err);
-      setErrors({ submit: err.message || t('failedToSaveProduct') || 'Failed to save product' });
+      setErrors({ submit: err.message || t('failedToSaveProduct') });
     } finally {
       setIsSubmitting(false);
     }
@@ -296,7 +353,7 @@ const ProductModal = ({
       >
         <div className="flex justify-between items-center mb-6">
           <h2 className="text-xl font-bold">
-            {initialData ? t('updateProduct') || 'Update Product' : t('addProduct') || 'Add Product'}
+            {initialData ? t('updateProduct') : t('addProduct')}
           </h2>
           <button 
             onClick={onClose}
@@ -307,56 +364,35 @@ const ProductModal = ({
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
-          {/* Item Selection */}
-          <div className="relative dropdown-container">
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              {t('selectItem') || 'Select Item'}
-            </label>
-            <div className="relative">
-              <input
-                type="text"
-                value={itemSearchQuery}
-                onChange={(e) => {
-                  setItemSearchQuery(e.target.value);
-                  setShowItemDropdown(true);
-                  if (!e.target.value) {
-                    setSelectedItem(null);
-                    setFormData(prev => ({
-                      ...prev,
-                      item_id: '',
-                      name: ''
-                    }));
-                  }
-                }}
-                onFocus={() => setShowItemDropdown(true)}
-                placeholder={t('searchItems') || 'Search items'}
-                className="w-full p-2 pr-10 border rounded-lg"
-              />
-              <Search className="absolute right-3 top-2.5 text-gray-400" size={20} />
-            </div>
-            {showItemDropdown && (
-              <div className="absolute z-10 w-full mt-1 bg-white border rounded-lg shadow-lg max-h-60 overflow-y-auto">
-                {filteredItems.map(item => (
-                  <div
-                    key={item.item_id}
-                    onClick={() => handleItemSelect(item)}
-                    className={`p-2 cursor-pointer ${
-                      selectedItem?.item_id === item.item_id 
-                        ? 'bg-blue-50 text-blue-600' 
-                        : 'hover:bg-gray-100'
-                    }`}
-                  >
-                    {item.name} ({item.itemCode})
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
+          <ItemSelectorField
+            itemSearchQuery={itemSearchQuery}
+            onSearchChange={(e) => {
+              setItemSearchQuery(e.target.value);
+              setShowItemDropdown(true);
+              if (!e.target.value) {
+                setSelectedItem(null);
+                setFormData(prev => ({
+                  ...prev,
+                  item_id: '',
+                  name: ''
+                }));
+              }
+            }}
+            selectedItem={selectedItem}
+            showDropdown={showItemDropdown}
+            onFocus={() => setShowItemDropdown(true)}
+            isLoading={isLoadingItems}
+            filteredItems={filteredItems}
+            onItemSelect={handleItemSelect}
+            placeholder={t('searchItems')}
+            label={t('selectItem')}
+            error={errors.item_id}
+          />
 
-          {/* Product Name */}
+          {/* Rest of the form fields */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              {t('productName') || 'Product Name'}
+              {t('productName')}
             </label>
             <input
               type="text"
@@ -372,7 +408,7 @@ const ProductModal = ({
           {/* Customer Selection */}
           <div className="relative dropdown-container">
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              {t('customer') || 'Customer'}
+              {t('customer')}
             </label>
             <div className="relative">
               <input
@@ -391,7 +427,7 @@ const ProductModal = ({
                   }
                 }}
                 onFocus={() => setShowCustomerDropdown(true)}
-                placeholder={t('searchCustomers') || 'Search customers...'}
+                placeholder={t('searchCustomers')}
                 className={`w-full p-2 pr-10 border rounded-lg ${
                   errors.customer_id ? 'border-red-500' : 'border-gray-300'
                 }`}
@@ -420,7 +456,7 @@ const ProductModal = ({
                   }}
                   className="p-2 hover:bg-blue-50 cursor-pointer text-blue-600 border-t"
                 >
-                  + {t('addNewCustomer') || 'Add New Customer'}
+                  + {t('addNewCustomer')}
                 </div>
               </div>
             )}
@@ -432,30 +468,30 @@ const ProductModal = ({
           {/* Scale Selection */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              {t('scaleSelection') || 'Scale Selection'}
+              {t('scaleSelection')}
             </label>
             <select
               value={formData.scale_id}
               onChange={handleScaleChange}
               className="w-full p-2 border rounded-lg border-gray-300"
             >
-              <option value="">{t('noScale') || 'No Scale'}</option>
+              <option value="">{t('noScale')}</option>
               {availableScales.map(scale => (
                 <option key={scale.scale_id} value={scale.scale_id}>
                   {scale.name || `Scale ${scale.scale_id}`}
                 </option>
               ))}
-              <option value="new">{t('addNewScale') || 'Add New Scale'}</option>
+              <option value="new">{t('addNewScale')}</option>
             </select>
           </div>
 
           {/* Thresholds */}
           <div className="space-y-4">
-            <h3 className="text-lg font-medium text-gray-900">{t('thresholds') || 'Thresholds'}</h3>
+            <h3 className="text-lg font-medium text-gray-900">{t('thresholds')}</h3>
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  {t('upperThreshold') || 'Upper Threshold (kg)'}
+                  {t('upperThreshold')}
                 </label>
                 <input
                   type="number"
@@ -473,7 +509,7 @@ const ProductModal = ({
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  {t('lowerThreshold') || 'Lower Threshold (kg)'}
+                  {t('lowerThreshold')}
                 </label>
                 <input
                   type="number"
@@ -512,7 +548,7 @@ const ProductModal = ({
               className="px-4 py-2 text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50"
               disabled={isSubmitting}
             >
-              {t('cancel') || 'Cancel'}
+              {t('cancel')}
             </button>
             <button
               type="submit"
@@ -521,7 +557,7 @@ const ProductModal = ({
               disabled={isSubmitting}
             >
               {isSubmitting && <Loader2 className="h-4 w-4 animate-spin" />}
-              {isSubmitting ? t('saving') || 'Saving...' : (initialData ? t('update') || 'Update' : t('add') || 'Add')}
+              {isSubmitting ? t('saving') : (initialData ? t('update') : t('add'))}
             </button>
           </div>
         </form>
@@ -540,6 +576,8 @@ const ProductModal = ({
               customer_id: newCustomer.customer_id,
               customer_name: newCustomer.name
             }));
+            setSelectedCustomer(newCustomer);
+            setCustomerSearchQuery(newCustomer.name);
             setIsCustomerModalOpen(false);
           }}
         />

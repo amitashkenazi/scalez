@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { useLanguage } from '../contexts/LanguageContext';
-import { translations } from '../translations/translations';
+import { useLanguage } from '../../contexts/LanguageContext';
+import { translations } from '../../translations/translations';
 import { Plus, Pencil, Trash2, Loader2, RefreshCw, AlertCircle } from 'lucide-react';
-import apiService from '../services/api';
+import apiService from '../../services/api';
 import ProductModal from './ProductModal';
-import DeleteConfirmationModal from './modals/DeleteConfirmationModal';
+import DeleteConfirmationModal from '../modals/DeleteConfirmationModal';
 
 export default function ProductsManagementView() {
   const [products, setProducts] = useState([]);

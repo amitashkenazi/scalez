@@ -14,7 +14,7 @@ import { useLanguage } from '../../contexts/LanguageContext';
 import { translations } from '../../translations/translations';
 import { useProductSearch } from './hooks/useProductSearch';
 import ProductsTable from './ProductsTable';
-import ProductModal from '../ProductModal';
+import ProductModal from './ProductModal';
 import ProductsSelectionManager from './ProductsSelectionManager';
 import DeleteConfirmationModal from '../modals/DeleteConfirmationModal';
 import apiService from '../../services/api';
@@ -264,19 +264,40 @@ const ProductsView = ({
 
       {isModalOpen && (
         <ProductModal
-          isOpen={isModalOpen}
-          onClose={() => {
-            setIsModalOpen(false);
-            setSelectedProduct(null);
-          }}
-          product={selectedProduct}
-          onSuccess={() => {
+        isOpen={isModalOpen}
+        onClose={() => {
+          setIsModalOpen(false);
+          setSelectedProduct(null);
+        }}
+        onSubmit={async (productData) => {
+          try {
+            if (selectedProduct) {
+              await apiService.request(`products/${selectedProduct.product_id}`, {
+                method: 'PUT',
+                body: JSON.stringify(productData)
+              });
+            } else {
+              await apiService.request('products', {
+                method: 'POST',
+                body: JSON.stringify(productData)
+              });
+            }
             setPage(1);
             fetchNextPage(true);
             setIsModalOpen(false);
             setSelectedProduct(null);
-          }}
-        />
+          } catch (error) {
+            console.error('Error saving product:', error);
+            throw error;
+          }
+        }}
+        customers={data.customers}
+        initialData={selectedProduct}
+        onCustomerAdded={(newCustomer) => {
+          // Update customers list
+          data.customers = [...data.customers, newCustomer];
+        }}
+      />
       )}
 
       {isDeleteModalOpen && (

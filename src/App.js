@@ -8,7 +8,7 @@ import ProductsView from './components/products/ProductsView';
 import SharedProductsView from './components/products/SharedProductsView';
 import CustomersTableView from './components/customers/CustomersTableView';
 import ScalesManagement from './components/ScalesManagement';
-import ProductsManagementView from './components/ProductsMngView';
+import ProductsManagementView from './components/products/ProductsMngView';
 import VendorsView from './components/vendors/VendorsView';
 import OrdersView from './components/orders/OrdersView';
 import AdminRoute from './components/auth/AdminRoute';

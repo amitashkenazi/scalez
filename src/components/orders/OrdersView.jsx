@@ -3,7 +3,7 @@ import { useLanguage } from '../../contexts/LanguageContext';
 import { translations } from '../../translations/translations';
 import { Package, AlertCircle, Loader2, RefreshCw, Search, ChevronDown, ChevronUp } from 'lucide-react';
 import apiService from '../../services/api';
-import ProductModal from '../ProductModal';
+import ProductModal from '../products/ProductModal';
 import debounce from 'lodash/debounce';
 
 const ITEMS_PER_PAGE = 20;
