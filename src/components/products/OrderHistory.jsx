@@ -5,6 +5,7 @@ import { translations } from '../../translations/translations';
 import { Receipt } from 'lucide-react';
 
 const OrderHistory = ({ orders }) => {
+  console.log('orders:', orders);
   const { language } = useLanguage();
   // Helper function to get translation
   const t = (key) => {

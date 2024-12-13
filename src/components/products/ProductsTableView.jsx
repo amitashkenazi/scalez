@@ -187,6 +187,7 @@ const ProductsTable = ({
         </thead>
         <tbody className="bg-white divide-y divide-gray-200">
           {sortProducts(products).map((product) => {
+            console.product('product', product);
             const measurement = measurements[product.scale_id];
             const scale = scales.find(s => s.scale_id === product.scale_id);
             const customer = customers.find(c => c.customer_id === product.customer_id);

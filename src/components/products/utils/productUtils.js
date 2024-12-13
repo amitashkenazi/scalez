@@ -160,7 +160,7 @@ export const parseNumericValue = (value) => {
   
   // Get analytics warning level
   export const getAnalyticsWarningLevel = (type, estimationQuantityLeft, quantityLastOrder, daysFromLastOrder, averageDaysBetweenOrders) => {
-  
+    console.log("getAnalyticsWarningLevel: ",estimationQuantityLeft, quantityLastOrder, daysFromLastOrder, averageDaysBetweenOrders);
     if (type === 'quantity') {
       const value = parseFloat(estimationQuantityLeft);
       const threshold = parseFloat(quantityLastOrder * 0.75);
@@ -190,70 +190,70 @@ export const parseNumericValue = (value) => {
   
   
   // Sort products based on various criteria
-  export const sortProducts = (products, sortConfig, measurements, analytics) => {
-    if (!sortConfig.key) return products;
+  // export const sortProducts = (products, sortConfig, measurements, analytics) => {
+  //   if (!sortConfig.key) return products;
   
-    return [...products].sort((a, b) => {
-      let aValue, bValue;
+  //   return [...products].sort((a, b) => {
+  //     let aValue, bValue;
   
-      switch (sortConfig.key) {
-        case 'severity': {
-          const aAnalyticsKey = `${a.customer_id.split('_').pop()}_${a.item_id.split('_').pop()}`;
-          const bAnalyticsKey = `${b.customer_id.split('_').pop()}_${b.item_id.split('_').pop()}`;
-          console.log("utils product: ", products);
-          const aAnalytics = analytics[aAnalyticsKey] ? calculateAnalytics(analytics[aAnalyticsKey]) : null;
-          const bAnalytics = analytics[bAnalyticsKey] ? calculateAnalytics(analytics[bAnalyticsKey]) : null;
+  //     switch (sortConfig.key) {
+  //       case 'severity': {
+  //         const aAnalyticsKey = `${a.customer_id.split('_').pop()}_${a.item_id.split('_').pop()}`;
+  //         const bAnalyticsKey = `${b.customer_id.split('_').pop()}_${b.item_id.split('_').pop()}`;
+  //         console.log("utils product: ", products);
+  //         const aAnalytics = analytics[aAnalyticsKey] ? calculateAnalytics(analytics[aAnalyticsKey]) : null;
+  //         const bAnalytics = analytics[bAnalyticsKey] ? calculateAnalytics(analytics[bAnalyticsKey]) : null;
           
-          aValue = calculateSeverityScore(aAnalytics);
-          bValue = calculateSeverityScore(bAnalytics);
-          break;
-        }
+  //         // aValue = calculateSeverityScore(aAnalytics);
+  //         // bValue = calculateSeverityScore(bAnalytics);
+  //         break;
+  //       }
   
-        case 'name': {
-          aValue = a.name;
-          bValue = b.name;
-          const comparison = compareStrings(aValue, bValue);
-          return sortConfig.direction === 'asc' ? comparison : -comparison;
-        }
+  //       case 'name': {
+  //         aValue = a.name;
+  //         bValue = b.name;
+  //         const comparison = compareStrings(aValue, bValue);
+  //         return sortConfig.direction === 'asc' ? comparison : -comparison;
+  //       }
   
-        case 'weight': {
-          aValue = measurements[a.scale_id]?.weight || -Infinity;
-          bValue = measurements[b.scale_id]?.weight || -Infinity;
-          break;
-        }
+  //       case 'weight': {
+  //         aValue = measurements[a.scale_id]?.weight || -Infinity;
+  //         bValue = measurements[b.scale_id]?.weight || -Infinity;
+  //         break;
+  //       }
   
-        case 'estimationQuantityLeft': {
-          const aAnalyticsKey = `${a.customer_id.split('_').pop()}_${a.item_id.split('_').pop()}`;
-          const bAnalyticsKey = `${b.customer_id.split('_').pop()}_${b.item_id.split('_').pop()}`;
-          const aAnalytics = analytics[aAnalyticsKey] ? calculateAnalytics(analytics[aAnalyticsKey]) : null;
-          const bAnalytics = analytics[bAnalyticsKey] ? calculateAnalytics(analytics[bAnalyticsKey]) : null;
+  //       case 'estimationQuantityLeft': {
+  //         const aAnalyticsKey = `${a.customer_id.split('_').pop()}_${a.item_id.split('_').pop()}`;
+  //         const bAnalyticsKey = `${b.customer_id.split('_').pop()}_${b.item_id.split('_').pop()}`;
+  //         const aAnalytics = analytics[aAnalyticsKey] ? calculateAnalytics(analytics[aAnalyticsKey]) : null;
+  //         const bAnalytics = analytics[bAnalyticsKey] ? calculateAnalytics(analytics[bAnalyticsKey]) : null;
           
-          aValue = parseNumericValue(aAnalytics?.estimationQuantityLeft);
-          bValue = parseNumericValue(bAnalytics?.estimationQuantityLeft);
-          break;
-        }
+  //         aValue = parseNumericValue(aAnalytics?.estimationQuantityLeft);
+  //         bValue = parseNumericValue(bAnalytics?.estimationQuantityLeft);
+  //         break;
+  //       }
   
-        case 'daysFromLastOrder': {
-          const aAnalyticsKey = `${a.customer_id.split('_').pop()}_${a.item_id.split('_').pop()}`;
-          const bAnalyticsKey = `${b.customer_id.split('_').pop()}_${b.item_id.split('_').pop()}`;
-          const aAnalytics = analytics[aAnalyticsKey] ? calculateAnalytics(analytics[aAnalyticsKey]) : null;
-          const bAnalytics = analytics[bAnalyticsKey] ? calculateAnalytics(analytics[bAnalyticsKey]) : null;
+  //       case 'daysFromLastOrder': {
+  //         const aAnalyticsKey = `${a.customer_id.split('_').pop()}_${a.item_id.split('_').pop()}`;
+  //         const bAnalyticsKey = `${b.customer_id.split('_').pop()}_${b.item_id.split('_').pop()}`;
+  //         const aAnalytics = analytics[aAnalyticsKey] ? calculateAnalytics(analytics[aAnalyticsKey]) : null;
+  //         const bAnalytics = analytics[bAnalyticsKey] ? calculateAnalytics(analytics[bAnalyticsKey]) : null;
           
-          aValue = parseNumericValue(aAnalytics?.daysFromLastOrder);
-          bValue = parseNumericValue(bAnalytics?.daysFromLastOrder);
-          break;
-        }
+  //         aValue = parseNumericValue(aAnalytics?.daysFromLastOrder);
+  //         bValue = parseNumericValue(bAnalytics?.daysFromLastOrder);
+  //         break;
+  //       }
   
-        default:
-          return 0;
-      }
+  //       default:
+  //         return 0;
+  //     }
   
-      // Handle special cases
-      if (aValue === -Infinity && bValue === -Infinity) return 0;
-      if (aValue === -Infinity) return 1;
-      if (bValue === -Infinity) return -1;
+  //     // Handle special cases
+  //     if (aValue === -Infinity && bValue === -Infinity) return 0;
+  //     if (aValue === -Infinity) return 1;
+  //     if (bValue === -Infinity) return -1;
       
-      const comparison = aValue > bValue ? 1 : aValue < bValue ? -1 : 0;
-      return sortConfig.direction === 'asc' ? comparison : -comparison;
-    });
-  };
+  //     const comparison = aValue > bValue ? 1 : aValue < bValue ? -1 : 0;
+  //     return sortConfig.direction === 'asc' ? comparison : -comparison;
+  //   });
+  // };

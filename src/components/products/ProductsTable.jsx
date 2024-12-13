@@ -29,10 +29,13 @@ import {
 
 const calculateDaysFromLastOrder = (lastOrderDate) => {
   if (!lastOrderDate) return 0;
+  console.log('lastOrderDate:', lastOrderDate);
   const [day, month, year] = lastOrderDate.split('-').map(num => parseInt(num));
   const orderDate = new Date(2000 + year, month - 1, day);
+  console.log('orderDate:', orderDate);
   const today = new Date();
   const diffTime = Math.abs(today - orderDate);
+  console.log('diffTime:', diffTime);
   return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
 };
 
@@ -209,12 +212,15 @@ const ProductsTable = ({
               ...product,
               daysFromLastOrder: calculateDaysFromLastOrder(product.last_order_date)
             };
+            console.log('metrics:', metrics);
             const measurement = measurements[product.scale_id];
             const scale = scales.find(s => s.scale_id === product.scale_id);
             const customer = customers.find(c => c.customer_id === product.customer_id);
             const statusColor = getStatusColor(measurement, product.thresholds);
             const severityInfo = getSeverityLevel(parseInt(product.severity_score || 0));
-
+            console.log('product:', product);
+            console.log('customer:', customer.name);
+            console.log('product sevirty:', product.severity_score);
             const quantityWarning = getAnalyticsWarningLevel(
               'quantity',
               metrics.estimation_quantity_left,
