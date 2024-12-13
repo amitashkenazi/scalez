@@ -160,7 +160,6 @@ export const parseNumericValue = (value) => {
   
   // Get analytics warning level
   export const getAnalyticsWarningLevel = (type, estimationQuantityLeft, quantityLastOrder, daysFromLastOrder, averageDaysBetweenOrders) => {
-    console.log("getAnalyticsWarningLevel: ",estimationQuantityLeft, quantityLastOrder, daysFromLastOrder, averageDaysBetweenOrders);
     if (type === 'quantity') {
       const value = parseFloat(estimationQuantityLeft);
       const threshold = parseFloat(quantityLastOrder * 0.75);
