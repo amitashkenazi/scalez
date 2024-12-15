@@ -33,17 +33,17 @@ const RouteSteps = ({
 
   const route = directionsResponse.routes[0];
   const legs = route?.legs || [];
-  const waypointOrder = route?.waypoint_order || [];
+  const waypointInvoice = route?.waypoint_order || [];
 
   // Get customers in optimized order
-  const orderedCustomers = waypointOrder.length > 0 
-    ? waypointOrder.map(index => selectedCustomers[index])
+  const orderedCustomers = waypointInvoice.length > 0 
+    ? waypointInvoice.map(index => selectedCustomers[index])
     : selectedCustomers;
 
   console.log('Processed route data:', {
     legs: legs.length,
     orderedCustomers: orderedCustomers.length,
-    waypointOrder
+    waypointInvoice
   });
 
   // Get the name of a stop based on index

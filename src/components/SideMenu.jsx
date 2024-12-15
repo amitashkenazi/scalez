@@ -79,9 +79,9 @@ const SideMenu = ({ activeView, onViewChange }) => {
     },
     {
       icon: FileText,
-      label: t('orders'),
-      view: "orders",
-      description: "Track and manage product orders"
+      label: t('invoices'),
+      view: "invoices",
+      description: "Track and manage product invoices"
     },
     {
       icon: Plug,

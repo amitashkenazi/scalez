@@ -9,7 +9,7 @@ import debounce from 'lodash/debounce';
 const ITEMS_PER_PAGE = 20;
 const DEBOUNCE_DELAY = 500;
 
-const OrderStatus = {
+const InvoicesStatus = {
   OPEN: 'פתוחה',
   CLOSED: 'סגורה',
   IN_PROGRESS: 'בטיפול',
@@ -19,13 +19,13 @@ const OrderStatus = {
 const StatusBadge = ({ status }) => {
   const getStatusStyles = () => {
     switch (status) {
-      case OrderStatus.OPEN:
+      case InvoicesStatus.OPEN:
         return 'bg-blue-100 text-blue-800';
-      case OrderStatus.IN_PROGRESS:
+      case InvoicesStatus.IN_PROGRESS:
         return 'bg-yellow-100 text-yellow-800';
-      case OrderStatus.CLOSED:
+      case InvoicesStatus.CLOSED:
         return 'bg-green-100 text-green-800';
-      case OrderStatus.CANCELLED:
+      case InvoicesStatus.CANCELLED:
         return 'bg-red-100 text-red-800';
       default:
         return 'bg-gray-100 text-gray-800';
@@ -39,8 +39,8 @@ const StatusBadge = ({ status }) => {
   );
 };
 
-const OrderDetails = ({ items, customerName }) => {
-  console.log('[OrderDetails] Rendering with items:', items, 'customerName:', customerName);
+const InvoiceDetails = ({ items, customerName }) => {
+  console.log('[InvoiceDetails] Rendering with items:', items, 'customerName:', customerName);
   
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedItem, setSelectedItem] = useState(null);
@@ -57,44 +57,44 @@ const OrderDetails = ({ items, customerName }) => {
 
   useEffect(() => {
     const fetchCustomers = async () => {
-      console.log('[OrderDetails] Fetching customers');
+      console.log('[InvoiceDetails] Fetching customers');
       try {
         const response = await apiService.getCustomers();
-        console.log('[OrderDetails] Customers fetched:', response);
+        console.log('[InvoiceDetails] Customers fetched:', response);
         setCustomers(response);
       } catch (error) {
-        console.error('[OrderDetails] Error fetching customers:', error);
+        console.error('[InvoiceDetails] Error fetching customers:', error);
       }
     };
     fetchCustomers();
   }, []);
 
   const handleCreateProduct = (item) => {
-    console.log('[OrderDetails] Creating product for item:', item);
+    console.log('[InvoiceDetails] Creating product for item:', item);
     setSelectedItem(item);
     setIsModalOpen(true);
   };
 
   const handleAddProduct = async (productData) => {
-    console.log('[OrderDetails] Adding product:', productData);
+    console.log('[InvoiceDetails] Adding product:', productData);
     try {
       await apiService.createProduct(productData);
       setSuccessMessage(t('productAdded') || 'Product created successfully');
       setIsModalOpen(false);
       setTimeout(() => setSuccessMessage(''), 3000);
     } catch (error) {
-      console.error('[OrderDetails] Error creating product:', error);
+      console.error('[InvoiceDetails] Error creating product:', error);
       throw error;
     }
   };
 
   const handleCustomerAdded = (newCustomer) => {
-    console.log('[OrderDetails] Customer added:', newCustomer);
+    console.log('[InvoiceDetails] Customer added:', newCustomer);
     setCustomers(prev => [...prev, newCustomer]);
   };
 
   if (!Array.isArray(items)) {
-    console.log('[OrderDetails] Invalid items array:', items);
+    console.log('[InvoiceDetails] Invalid items array:', items);
     return null;
   }
 
@@ -105,7 +105,7 @@ const OrderDetails = ({ items, customerName }) => {
           <p className="text-green-700">{successMessage}</p>
         </div>
       )}
-      <h4 className="font-medium mb-2">Order Items:</h4>
+      <h4 className="font-medium mb-2">Invoice Items:</h4>
       <div className="space-y-2">
         {items.map((item, index) => (
           <div key={index} className="flex justify-between items-center bg-white p-3 rounded-lg shadow-sm">
@@ -148,11 +148,11 @@ const OrderDetails = ({ items, customerName }) => {
   );
 };
 
-const OrdersView = () => {
-  console.log('[OrdersView] Component rendering');
+const InvoicesView = () => {
+  console.log('[InvoicesView] Component rendering');
   
-  const [orders, setOrders] = useState([]);
-  const [expandedOrder, setExpandedOrder] = useState(null);
+  const [invoices, setInvoices] = useState([]);
+  const [expandedInvoice, setExpandedInvoice] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isFilterLoading, setIsFilterLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -176,8 +176,8 @@ const OrdersView = () => {
     return `Missing translation: ${key}`;
   };
 
-  const fetchOrders = useCallback(async (isLoadingMore = false, currentPageToken = null, filters = { status: statusFilter, search: searchTerm }) => {
-    console.log('[OrdersView] fetchOrders called with:', {
+  const fetchInvoices = useCallback(async (isLoadingMore = false, currentPageToken = null, filters = { status: statusFilter, search: searchTerm }) => {
+    console.log('[InvoicesView] fetchInvoices called with:', {
       isLoadingMore,
       currentPageToken,
       filters,
@@ -185,17 +185,17 @@ const OrdersView = () => {
     });
 
     if (loadingRef.current) {
-      console.log('[OrdersView] Skipping fetch - already loading');
+      console.log('[InvoicesView] Skipping fetch - already loading');
       return;
     }
     
     loadingRef.current = true;
 
     if (!isLoadingMore) {
-      console.log('[OrdersView] Starting new search');
+      console.log('[InvoicesView] Starting new search');
       setIsFilterLoading(true);
     } else {
-      console.log('[OrdersView] Loading more results');
+      console.log('[InvoicesView] Loading more results');
       setIsLoading(true);
     }
 
@@ -221,46 +221,46 @@ const OrdersView = () => {
         }
       }
 
-      console.log('[OrdersView] Fetching with params:', queryParams.toString());
+      console.log('[InvoicesView] Fetching with params:', queryParams.toString());
       
-      const response = await apiService.request(`orders?${queryParams.toString()}`, { 
+      const response = await apiService.request(`invoices?${queryParams.toString()}`, { 
         method: 'GET' 
       });
 
-      console.log('[OrdersView] API response:', response);
+      console.log('[InvoicesView] API response:', response);
 
-      const newOrders = response?.orders || [];
+      const newInvoices = response?.invoices || [];
       const pageSize = response?.page_size || 0;
       const newPageToken = response?.next_page_token;
 
       if (isLoadingMore && currentPageToken) {
-        console.log('[OrdersView] Appending new orders');
-        setOrders(prev => [...prev, ...newOrders]);
+        console.log('[InvoicesView] Appending new invoices');
+        setInvoices(prev => [...prev, ...newInvoices]);
       } else {
-        console.log('[OrdersView] Setting new orders');
-        setOrders(newOrders);
+        console.log('[InvoicesView] Setting new invoices');
+        setInvoices(newInvoices);
       }
       
       setPageToken(newPageToken);
       // DynamoDB pagination: hasMore is determined by the presence of next_page_token
       setHasMore(!!newPageToken);
       
-      console.log('[OrdersView] Updated state:', {
-        ordersCount: newOrders.length,
+      console.log('[InvoicesView] Updated state:', {
+        invoicesCount: newInvoices.length,
         pageSize,
         newPageToken,
         hasMore: !!newPageToken
       });
 
     } catch (err) {
-      console.error('[OrdersView] Error fetching orders:', err);
-      setError(err.message || 'Failed to fetch orders');
+      console.error('[InvoicesView] Error fetching invoices:', err);
+      setError(err.message || 'Failed to fetch invoices');
       if (!currentPageToken) {
-        setOrders([]);
+        setInvoices([]);
       }
       setHasMore(false);
     } finally {
-      console.log('[OrdersView] Fetch completed');
+      console.log('[InvoicesView] Fetch completed');
       setIsLoading(false);
       setIsFilterLoading(false);
       setIsRefreshing(false);
@@ -268,8 +268,8 @@ const OrdersView = () => {
     }
 }, [statusFilter, searchTerm]);
 
-const lastOrderElementRef = useCallback(node => {
-    console.log('[OrdersView] Setting up intersection observer', {
+const lastInvoiceElementRef = useCallback(node => {
+    console.log('[InvoicesView] Setting up intersection observer', {
       node,
       isLoading,
       isFilterLoading,
@@ -279,18 +279,18 @@ const lastOrderElementRef = useCallback(node => {
     });
 
     if (isLoading || isFilterLoading) {
-      console.log('[OrdersView] Skipping observer setup - loading in progress');
+      console.log('[InvoicesView] Skipping observer setup - loading in progress');
       return;
     }
 
     if (observerRef.current) {
-      console.log('[OrdersView] Disconnecting previous observer');
+      console.log('[InvoicesView] Disconnecting previous observer');
       observerRef.current.disconnect();
     }
 
     observerRef.current = new IntersectionObserver(entries => {
       const first = entries[0];
-      console.log('[OrdersView] Intersection observed:', {
+      console.log('[InvoicesView] Intersection observed:', {
         isIntersecting: first.isIntersecting,
         hasMore,
         loadingRef: loadingRef.current,
@@ -299,8 +299,8 @@ const lastOrderElementRef = useCallback(node => {
       
       // Only load more if we have a pageToken (DynamoDB LastEvaluatedKey)
       if (first.isIntersecting && hasMore && !loadingRef.current && pageToken) {
-        console.log('[OrdersView] Loading more content');
-        fetchOrders(true, pageToken);
+        console.log('[InvoicesView] Loading more content');
+        fetchInvoices(true, pageToken);
       }
     }, {
       rootMargin: '200px',
@@ -308,17 +308,17 @@ const lastOrderElementRef = useCallback(node => {
     });
 
     if (node) {
-      console.log('[OrdersView] Observing new node');
+      console.log('[InvoicesView] Observing new node');
       observerRef.current.observe(node);
     }
-}, [isLoading, isFilterLoading, hasMore, pageToken, fetchOrders]);
+}, [isLoading, isFilterLoading, hasMore, pageToken, fetchInvoices]);
 
   useEffect(() => {
     debouncedFilterChangeRef.current = debounce((filters) => {
-      console.log('[OrdersView] Debounced filter change:', filters);
-      setOrders([]);
+      console.log('[InvoicesView] Debounced filter change:', filters);
+      setInvoices([]);
       setPageToken(null);
-      fetchOrders(false, null, filters);
+      fetchInvoices(false, null, filters);
     }, DEBOUNCE_DELAY);
 
     return () => {
@@ -326,10 +326,10 @@ const lastOrderElementRef = useCallback(node => {
         debouncedFilterChangeRef.current.cancel();
       }
     };
-  }, [fetchOrders]);
+  }, [fetchInvoices]);
 
   useEffect(() => {
-    console.log('[OrdersView] Filter/search changed:', { statusFilter, searchTerm });
+    console.log('[InvoicesView] Filter/search changed:', { statusFilter, searchTerm });
     if (debouncedFilterChangeRef.current) {
       debouncedFilterChangeRef.current({ status: statusFilter, search: searchTerm });
     }
@@ -337,16 +337,16 @@ const lastOrderElementRef = useCallback(node => {
 
   
   const handleRefresh = () => {
-    console.log('[OrdersView] Manual refresh triggered');
+    console.log('[InvoicesView] Manual refresh triggered');
     setIsRefreshing(true);
     setPageToken(null);
-    fetchOrders(false, null, { status: statusFilter, search: searchTerm });
+    fetchInvoices(false, null, { status: statusFilter, search: searchTerm });
   };
 
   const formatDate = (dateString) => {
     if (!dateString) return '';
     try {
-      console.log('[OrdersView] Formatting date:', dateString);
+      console.log('[InvoicesView] Formatting date:', dateString);
       const date = new Date(dateString);
       const day = String(date.getDate()).padStart(2, '0');
       const month = String(date.getMonth() + 1).padStart(2, '0');
@@ -355,7 +355,7 @@ const lastOrderElementRef = useCallback(node => {
       const minutes = String(date.getMinutes()).padStart(2, '0');
       return `${day}-${month}-${year}`;
     } catch (err) {
-      console.error('[OrdersView] Date formatting error:', err);
+      console.error('[InvoicesView] Date formatting error:', err);
       return dateString;
     }
   };
@@ -368,7 +368,7 @@ const lastOrderElementRef = useCallback(node => {
     }).format(amount);
   };
 
-  if (isLoading && orders.length === 0) {
+  if (isLoading && invoices.length === 0) {
     return (
       <div className="flex justify-center items-center h-64">
         <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
@@ -385,7 +385,7 @@ const lastOrderElementRef = useCallback(node => {
               <Package className="h-6 w-6" />
               {t("invoicesTitle")}
             </h2>
-            <p className="text-gray-600 mt-1">Track and manage your orders</p>
+            <p className="text-gray-600 mt-1">Track and manage your invoices</p>
           </div>
           <button
             onClick={handleRefresh}
@@ -402,7 +402,7 @@ const lastOrderElementRef = useCallback(node => {
         <div className="relative flex-1">
           <input
             type="text"
-            placeholder="Search orders..."
+            placeholder="Search invoices..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="w-full pl-10 pr-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
@@ -423,7 +423,7 @@ const lastOrderElementRef = useCallback(node => {
           disabled={isFilterLoading}
         >
           <option value="all">All Status</option>
-          {Object.values(OrderStatus).map(status => (
+          {Object.values(InvoicesStatus).map(status => (
             <option key={status} value={status}>{status}</option>
           ))}
         </select>
@@ -437,7 +437,7 @@ const lastOrderElementRef = useCallback(node => {
       )}
 
       <div className="bg-white rounded-lg shadow overflow-hidden">
-        {!isFilterLoading && orders.length > 0 && (
+        {!isFilterLoading && invoices.length > 0 && (
           <table className="min-w-full divide-y divide-gray-200">
             <thead className="bg-gray-50">
               <tr>
@@ -454,7 +454,7 @@ const lastOrderElementRef = useCallback(node => {
                   Total Amount
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Order Date
+                  Invoice Date
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Notes
@@ -465,50 +465,50 @@ const lastOrderElementRef = useCallback(node => {
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
-              {orders.map((order, index) => {
-                console.log(`[OrdersView] Rendering order ${index}:`, {
-                  orderId: order.order_id,
-                  isLastItem: index === orders.length - 1,
-                  shouldAttachRef: index === orders.length - 1 && !isFilterLoading
+              {invoices.map((invoice, index) => {
+                console.log(`[InvoicesView] Rendering invoice ${index}:`, {
+                  invoiceId: invoice.invoice_id,
+                  isLastItem: index === invoices.length - 1,
+                  shouldAttachRef: index === invoices.length - 1 && !isFilterLoading
                 });
                 
                 return (
-                  <React.Fragment key={order.order_id || Math.random()}>
+                  <React.Fragment key={invoice.invoice_id || Math.random()}>
                     <tr 
-                      ref={index === orders.length - 1 ? lastOrderElementRef : null}
+                      ref={index === invoices.length - 1 ? lastInvoiceElementRef : null}
                       className="hover:bg-gray-50"
                     >
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {order.customer_name || 'Unknown Customer'}
+                        {invoice.customer_name || 'Unknown Customer'}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <StatusBadge status={order.status || 'N/A'} />
+                        <StatusBadge status={invoice.status || 'N/A'} />
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {(order.items && Array.isArray(order.items) ? order.items.length : 0) || '0'} items
+                        {(invoice.items && Array.isArray(invoice.items) ? invoice.items.length : 0) || '0'} items
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {formatCurrency(order.total_amount)}
+                        {formatCurrency(invoice.total_amount)}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {order.order_date}
+                        {invoice.invoice_date}
                       </td>
                       <td className="px-6 py-4 text-sm text-gray-500 max-w-xs truncate">
-                        {order.notes || ''}
+                        {invoice.notes || ''}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                         <button
                           onClick={() => {
-                            console.log('[OrdersView] Toggling order expansion:', {
-                              orderId: order.order_id,
-                              currentExpanded: expandedOrder,
-                              willExpand: expandedOrder !== order.order_id
+                            console.log('[InvoicesView] Toggling invoice expansion:', {
+                              invoiceId: invoice.invoice_id,
+                              currentExpanded: expandedInvoice,
+                              willExpand: expandedInvoice !== invoice.invoice_id
                             });
-                            setExpandedOrder(expandedOrder === order.order_id ? null : order.order_id);
+                            setExpandedInvoice(expandedInvoice === invoice.invoice_id ? null : invoice.invoice_id);
                           }}
                           className="text-blue-600 hover:text-blue-800"
                         >
-                          {expandedOrder === order.order_id ? (
+                          {expandedInvoice === invoice.invoice_id ? (
                             <ChevronUp className="h-5 w-5" />
                           ) : (
                             <ChevronDown className="h-5 w-5" />
@@ -516,12 +516,12 @@ const lastOrderElementRef = useCallback(node => {
                         </button>
                       </td>
                     </tr>
-                    {expandedOrder === order.order_id && (
+                    {expandedInvoice === invoice.invoice_id && (
                       <tr>
                         <td colSpan="7" className="px-6 py-4">
-                          <OrderDetails 
-                            items={order.items || []} 
-                            customerName={order.customer_name}
+                          <InvoiceDetails 
+                            items={invoice.items || []} 
+                            customerName={invoice.customer_name}
                           />
                         </td>
                       </tr>
@@ -533,19 +533,19 @@ const lastOrderElementRef = useCallback(node => {
           </table>
         )}
 
-        {!isFilterLoading && orders.length === 0 && !error && (
+        {!isFilterLoading && invoices.length === 0 && !error && (
           <div className="text-center py-12">
             <Package className="mx-auto h-12 w-12 text-gray-400 mb-4" />
-            <h3 className="mt-2 text-sm font-medium text-gray-900">{t("Noordersfound")}</h3>
+            <h3 className="mt-2 text-sm font-medium text-gray-900">{t("Noinvoicesfound")}</h3>
             <p className="mt-1 text-sm text-gray-500">
               {searchTerm || statusFilter !== 'all'
                 ? 'Try adjusting your filters'
-                : 'No invoices are available. Please add an integration to start receiving orders.'}
+                : 'No invoices are available. Please add an integration to start receiving invoices.'}
             </p>
             <div className="mt-4">
               <button
                 onClick={() => {
-                  console.log('[OrdersView] Add integration clicked');
+                  console.log('[InvoicesView] Add integration clicked');
                 }}
                 className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
               >
@@ -555,7 +555,7 @@ const lastOrderElementRef = useCallback(node => {
           </div>
         )}
 
-        {hasMore && !isFilterLoading && orders.length > 0 && isLoading && (
+        {hasMore && !isFilterLoading && invoices.length > 0 && isLoading && (
           <div className="px-6 py-8 border-t border-gray-200 flex justify-center">
             <div className="h-8 flex items-center justify-center">
               <Loader2 className="h-8 w-8 animate-spin text-gray-400" />
@@ -567,4 +567,4 @@ const lastOrderElementRef = useCallback(node => {
   );
 };
 
-export default OrdersView;
+export default InvoicesView;

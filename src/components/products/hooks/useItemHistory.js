@@ -22,7 +22,7 @@ export const useItemHistory = () => {
       const customerId = product.customer_id.split('_').pop();
       const itemId = product.item_id.split('_').pop();
 
-      const response = await apiService.request('orders/customers/item-history', {
+      const response = await apiService.request('invoices/customers/item-history', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -32,12 +32,12 @@ export const useItemHistory = () => {
 
       if (response?.results) {
         const historyKey = `${customerId}_${itemId}`;
-        const orderHistory = response.results[historyKey];
+        const invoiceHistory = response.results[historyKey];
         
-        if (orderHistory) {
+        if (invoiceHistory) {
           setHistories(prev => ({
             ...prev,
-            [product.product_id]: orderHistory
+            [product.product_id]: invoiceHistory
           }));
         } else {
           throw new Error('No history data available');

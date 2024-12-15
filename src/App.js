@@ -10,7 +10,7 @@ import CustomersTableView from './components/customers/CustomersTableView';
 import ScalesManagement from './components/ScalesManagement';
 import ProductsManagementView from './components/products/ProductsMngView';
 import VendorsView from './components/vendors/VendorsView';
-import OrdersView from './components/orders/OrdersView';
+import InvoicesView from './components/invoices/InvoicesView';
 import AdminRoute from './components/auth/AdminRoute';
 import SideMenu from './components/SideMenu';
 import LandingPage from './components/LandingPage';
@@ -125,7 +125,7 @@ function AppContent() {
         {activeView === 'items' && <ItemsView />}  {/* Add this line */}
         {activeView === 'sharedProducts' && <SharedProductsView />}
         {activeView === 'myAccount' && <MyAccountView />}
-        {activeView === 'orders' && <OrdersView />}
+        {activeView === 'invoices' && <InvoicesView />}
         {activeView === 'customersMap' && <CustomersMapView />}
         {activeView === 'integrations' && <IntegrationsView />}
         {activeView === 'auth/callback' && <GoogleAuthCallback />} 

@@ -24,7 +24,7 @@ export const useProductsData = () => {
 
     try {
       const nextCursor = reset ? null : cursor;
-      const query = `products?$${sortConfig ? `sort_by=${sortConfig.key}&sort_order=${sortConfig.direction}&` : ''}limit=${pageSize}&cursor=${nextCursor || ''}`;
+      const query = `products?$${sortConfig ? `sort_by=${sortConfig.key}&sort_invoice=${sortConfig.direction}&` : ''}limit=${pageSize}&cursor=${nextCursor || ''}`;
       
       const [productsResponse, scales, customers] = await Promise.all([
         apiService.request(query),

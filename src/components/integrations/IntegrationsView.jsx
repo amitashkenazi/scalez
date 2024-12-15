@@ -106,7 +106,7 @@ const IntegrationsView = () => {
               <Plug className="h-6 w-6" />
               {t('integrationstitle')}
             </h2>
-            <p className="text-gray-600 mt-1">{t('integrations.description')}</p>
+            <p className="text-gray-600 mt-1">{t('integrationsDescription')}</p>
           </div>
           <button
             onClick={handleRefresh}

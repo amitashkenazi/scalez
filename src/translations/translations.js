@@ -23,9 +23,9 @@ export const translations = {
     en: "Replace",
     he: "החלף"
   },
-  orderHistory: {
-    en: "Order History",
-    he: "היסטוריית הזמנות"
+  invoiceHistory: {
+    en: "Invoce History",
+    he: "היסטוריית חשבוניות"
   },
   estimationQuantityLeft: {
     en: "Estimation Quantity Left",
@@ -447,6 +447,10 @@ export const translations = {
     en: "Try adjusting your search",
     he: "נסה לשנות את החיפוש"
   },
+  integrationsDescription:{
+    en: "Connect external services and tools to automate your workflow",
+    he: "חבר שירותים חיצוניים וכלים לאוטומציה של תהליכי העבודה שלך"
+  },
   addThroughIntegrations: {
     en: "Add items through integrations to get started",
     he: "הוסף פריטים דרך אינטגרציות כדי להתחיל"
@@ -455,7 +459,7 @@ export const translations = {
     en: "Refresh",
     he: "רענון"
   },
-  orders: {
+  invoices: {
     en: "Invoices",
     he: "חשבוניות"
   },
@@ -571,9 +575,9 @@ export const translations = {
     en: "Consumption Analytics",
     he: "אנליטיקות צריכה"
   },
-  lastOrderQuantity: {
-    en: "Last Order Quantity",
-    he: "כמות הזמנה אחרונה"
+  lastInvoiceQuantity: {
+    en: "Last Invoice Quantity",
+    he: "כמות הזמנה בחשבונית אחרונה"
   },
   dailyConsumptionRate: {
     en: "Daily Consumption Rate",
@@ -607,21 +611,21 @@ export const translations = {
     en: "Total",
     he: "סך הכל"
   },
-  lastOrder: {
-    en: "Last Order",
-    he: "הזמנה אחרונה"
+  lastInvoice: {
+    en: "Last Invoice",
+    he: "חשבונית אחרונה"
   },
   days: {
     en: "Days",
     he: "ימים"
   },
-  averageDaysBetweenOrders: {
-    en: "Average Days Between Orders",
-    he: "ממוצע ימים בין הזמנות"
+  averageDaysBetweenInvoices: {
+    en: "Average Days Between Invoices",
+    he: "ממוצע ימים בין חשבוניות"
   },
-  daysFromLastOrder: {
-    en: "Days from Last Order",
-    he: "ימים מההזמנה האחרונה"
+  daysFromLastInvoice: {
+    en: "Days from Last Invoice",
+    he: "ימים מחשבונית האחרונה"
   },
   averageConsumption: {
     en: "Average Consumption",
@@ -1011,8 +1015,8 @@ export const translations = {
     en: "Connected",
     he: "מחובר"
   },
-  totalOrders: {
-    en: "Total Orders",
+  totalInvoices: {
+    en: "Total Invoices",
     he: "סך כל ההזמנות"
   },
   totalQuantity: {
@@ -1051,7 +1055,7 @@ export const translations = {
     en: "No more items",
     he: "אין עוד פריטים"
   },
-  orderID: {
+  invoiceID: {
     en: "Invoice ID",
     he: "מספר חשבונית"
   },
@@ -1110,5 +1114,13 @@ export const translations = {
   notEnoughData: {
     en: "Not enough data",
     he: "אין מספיק נתונים"
+  },
+  Noinvoicesfound: {
+    en: "No invoices found",
+    he: "לא נמצאו חשבוניות"
+  },
+  username: {
+    en: "Username",
+    he: "שם משתמש"
   }
 }

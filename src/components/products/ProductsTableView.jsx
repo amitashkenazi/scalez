@@ -16,7 +16,7 @@ import {
   AlertTriangle
 } from 'lucide-react';
 import { ProductAnalytics } from './ProductAnalytics';
-import OrderHistory from './OrderHistory';
+import InvoiceHistory from './InvoiceHistory';
 import { 
   getStatusColor, 
   getAnalyticsWarningLevel, 
@@ -70,58 +70,6 @@ const ProductsTable = ({
   };
   const isRTL = language === 'he';
   const [expandedRow, setExpandedRow] = useState(null);
-
-  const sortProducts = (productsToSort) => {
-    if (!sortConfig.key) return productsToSort;
-
-    return [...productsToSort].sort((a, b) => {
-      let aValue = 0;
-      let bValue = 0;
-
-      switch (sortConfig.key) {
-        case 'weight': {
-          const aWeight = measurements[a.scale_id]?.weight || 0;
-          const bWeight = measurements[b.scale_id]?.weight || 0;
-          aValue = aWeight;
-          bValue = bWeight;
-          break;
-        }
-        case 'estimationQuantityLeft': {
-          const aAnalytics = analytics[a.product_id];
-          const bAnalytics = analytics[b.product_id];
-          aValue = calculateSeverityScore(aAnalytics, 'quantity');
-          bValue = calculateSeverityScore(bAnalytics, 'quantity');
-          break;
-        }
-        case 'daysFromLastOrder': {
-          const aAnalytics = analytics[a.product_id];
-          const bAnalytics = analytics[b.product_id];
-          aValue = calculateSeverityScore(aAnalytics, 'days');
-          bValue = calculateSeverityScore(bAnalytics, 'days');
-          break;
-        }
-        case 'severity': {
-          const aAnalytics = analytics[a.product_id];
-          const bAnalytics = analytics[b.product_id];
-          aValue = calculateSeverityScore(aAnalytics);
-          bValue = calculateSeverityScore(bAnalytics);
-          break;
-        }
-        case 'name': {
-          return sortConfig.direction === 'asc' 
-            ? (a.name || '').localeCompare(b.name || '')
-            : (b.name || '').localeCompare(a.name || '');
-        }
-        default:
-          return 0;
-      }
-
-      if (aValue === bValue) return 0;
-      const comparison = aValue > bValue ? 1 : -1;
-      return sortConfig.direction === 'asc' ? comparison : -comparison;
-    });
-  };
-
   const getCustomerName = (customerId) => {
     const customer = customers.find(c => c.customer_id === customerId);
     return customer?.name || t('unknownCustomer');
@@ -173,8 +121,8 @@ const ProductsTable = ({
               isRTL={isRTL}
             />
             <SortHeader 
-              label={t('daysFromLastOrder')}
-              sortKey="daysFromLastOrder"
+              label={t('daysFromLastInvoice')}
+              sortKey="daysFromLastInvoice"
               currentSort={sortConfig}
               onSort={onSort}
               isRTL={isRTL}
@@ -252,8 +200,8 @@ const ProductsTable = ({
                     <div className="flex items-center gap-2">
                       <Calendar className="h-4 w-4" />
                       <span>
-                        {productAnalytics?.daysFromLastOrder 
-                          ? `${productAnalytics.daysFromLastOrder} ${t('days')}`
+                        {productAnalytics?.daysFromLastInvoice 
+                          ? `${productAnalytics.daysFromLastInvoice} ${t('days')}`
                           : t('noData')}
                       </span>
                     </div>
@@ -292,7 +240,7 @@ const ProductsTable = ({
                     <td colSpan="8" className="px-6 py-4 bg-gray-50">
                       <div className="space-y-4">
                         <ProductAnalytics analytics={productAnalytics} />
-                        <OrderHistory orders={productAnalytics?.orderHistory || []} />
+                        <InvoiceHistory invoices={productAnalytics?.invoiceHistory || []} />
                       </div>
                     </td>
                   </tr>

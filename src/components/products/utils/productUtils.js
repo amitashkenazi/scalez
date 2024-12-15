@@ -34,30 +34,30 @@ export const parseNumericValue = (value) => {
     return new Date(2000 + year, month - 1, day);
   };
   
-  // Calculate analytics for orders
-  export const calculateAnalytics = (product, orders) => {
-    if (!Array.isArray(orders) || orders.length === 0) return null;
+  // Calculate analytics for invoices
+  export const calculateAnalytics = (product, invoices) => {
+    if (!Array.isArray(invoices) || invoices.length === 0) return null;
     console.log('calculateAnalytics product',product);
     try {
-      // Sort orders by date
-      const sortedOrders = [...orders].sort((a, b) => {
-        const dateA = parseDate(a.order_date);
-        const dateB = parseDate(b.order_date);
+      // Sort invoices by date
+      const sortedInvoices = [...invoices].sort((a, b) => {
+        const dateA = parseDate(a.invoice_date);
+        const dateB = parseDate(b.invoice_date);
         if (!dateA || !dateB) return 0;
         return dateA - dateB;
       });
   
-      const firstDate = parseDate(sortedOrders[0].order_date);
-      const lastDate = parseDate(sortedOrders[sortedOrders.length - 1].order_date);
+      const firstDate = parseDate(sortedInvoices[0].invoice_date);
+      const lastDate = parseDate(sortedInvoices[sortedInvoices.length - 1].invoice_date);
       const now = new Date();
   
       // Calculate time periods
-      const daysFromLastOrder = Math.floor((now - lastDate) / (1000 * 60 * 60 * 24));
+      const daysFromLastInvoice = Math.floor((now - lastDate) / (1000 * 60 * 60 * 24));
       const totalPeriod = Math.floor((lastDate - firstDate) / (1000 * 60 * 60 * 24)) + 1;
       
       // Extract quantities
-      const quantities = sortedOrders.map(order => parseFloat(order.quantity || 0));
-      const quantityLastOrder = quantities[quantities.length - 1];
+      const quantities = sortedInvoices.map(invoice => parseFloat(invoice.quantity || 0));
+      const quantityLastInvoice = quantities[quantities.length - 1];
       const totalQuantity = quantities.reduce((sum, qty) => sum + qty, 0);
   
       // Calculate daily average
@@ -65,36 +65,36 @@ export const parseNumericValue = (value) => {
   
       // Calculate estimated quantity left
       let estimationQuantityLeft = "Not enough data";
-      if (orders.length > 3) {
-        estimationQuantityLeft = (quantityLastOrder - (dailyAverage * daysFromLastOrder)).toFixed(2);
+      if (invoices.length > 3) {
+        estimationQuantityLeft = (quantityLastInvoice - (dailyAverage * daysFromLastInvoice)).toFixed(2);
       }
   
-      // Calculate average days between orders
-      const orderIntervals = [];
-      for (let i = 1; i < sortedOrders.length; i++) {
-        const currentDate = parseDate(sortedOrders[i].order_date);
-        const prevDate = parseDate(sortedOrders[i - 1].order_date);
+      // Calculate average days between invoices
+      const invoiceIntervals = [];
+      for (let i = 1; i < sortedInvoices.length; i++) {
+        const currentDate = parseDate(sortedInvoices[i].invoice_date);
+        const prevDate = parseDate(sortedInvoices[i - 1].invoice_date);
         if (currentDate && prevDate) {
           const interval = Math.floor((currentDate - prevDate) / (1000 * 60 * 60 * 24));
-          orderIntervals.push(interval);
+          invoiceIntervals.push(interval);
         }
       }
       
-      const averageDaysBetweenOrders = orderIntervals.length > 0 
-        ? (orderIntervals.reduce((sum, interval) => sum + interval, 0) / orderIntervals.length).toFixed(2)
+      const averageDaysBetweenInvoices = invoiceIntervals.length > 0 
+        ? (invoiceIntervals.reduce((sum, interval) => sum + interval, 0) / invoiceIntervals.length).toFixed(2)
         : totalPeriod.toString();
       console.log("productproduct: ",product);
       console.log("productproduct: ",product.daily_average);
       return {
         dailyAverage: product.daily_average,
-        quantityLastOrder,
-        daysFromLastOrder: daysFromLastOrder.toString(),
+        quantityLastInvoice,
+        daysFromLastInvoice: daysFromLastInvoice.toString(),
         estimationQuantityLeft,
-        averageDaysBetweenOrders,
-        lastOrderDate: sortedOrders[sortedOrders.length - 1].order_date,
-        totalOrders: sortedOrders.length,
+        averageDaysBetweenInvoices,
+        lastInvoiceDate: sortedInvoices[sortedInvoices.length - 1].invoice_date,
+        totalInvoices: sortedInvoices.length,
         totalQuantity: totalQuantity.toFixed(2),
-        orderHistory: sortedOrders,
+        invoiceHistory: sortedInvoices,
         dailyConsumptionRate: product.daily_consumption_percentage,
       };
     } catch (error) {
@@ -108,10 +108,9 @@ export const parseNumericValue = (value) => {
     if (!analytics) return 0;
   
     let score = 0;
-    
-    // Factor 1: Days since last order vs average (0-50 points)
-    const daysFromLast = parseFloat(analytics.daysFromLastOrder);
-    const avgDays = parseFloat(analytics.averageDaysBetweenOrders);
+    // Factor 1: Days since last invoice vs average (0-50 points)
+    const daysFromLast = parseFloat(analytics.daysFromLastInvoice);
+    const avgDays = parseFloat(analytics.averageDaysBetweenInvoices);
     
     if (!isNaN(daysFromLast) && !isNaN(avgDays) && avgDays > 0) {
       const daysRatio = daysFromLast / avgDays;
@@ -121,12 +120,12 @@ export const parseNumericValue = (value) => {
       else score += 10;
     }
   
-    // Factor 2: Estimated quantity remaining vs last order quantity (0-50 points)
+    // Factor 2: Estimated quantity remaining vs last invoice quantity (0-50 points)
     const estimatedLeft = parseFloat(analytics.estimationQuantityLeft);
-    const lastOrderQty = parseFloat(analytics.quantityLastOrder);
+    const lastInvoiceQty = parseFloat(analytics.quantityLastInvoice);
     
-    if (!isNaN(estimatedLeft) && !isNaN(lastOrderQty) && lastOrderQty > 0) {
-      const qtyRatio = estimatedLeft / lastOrderQty;
+    if (!isNaN(estimatedLeft) && !isNaN(lastInvoiceQty) && lastInvoiceQty > 0) {
+      const qtyRatio = estimatedLeft / lastInvoiceQty;
       if (qtyRatio <= 0.25) score += 50;
       else if (qtyRatio <= 0.5) score += 35;
       else if (qtyRatio <= 0.75) score += 20;
@@ -159,10 +158,10 @@ export const parseNumericValue = (value) => {
   };
   
   // Get analytics warning level
-  export const getAnalyticsWarningLevel = (type, estimationQuantityLeft, quantityLastOrder, daysFromLastOrder, averageDaysBetweenOrders) => {
+  export const getAnalyticsWarningLevel = (type, estimationQuantityLeft, quantityLastInvoice, daysFromLastInvoice, averageDaysBetweenInvoices) => {
     if (type === 'quantity') {
       const value = parseFloat(estimationQuantityLeft);
-      const threshold = parseFloat(quantityLastOrder * 0.75);
+      const threshold = parseFloat(quantityLastInvoice * 0.75);
       
       if (value <= threshold * 0.5) {
         return { className: 'bg-red-50 text-red-700 font-medium', warningLevel: 'critical' };
@@ -173,8 +172,8 @@ export const parseNumericValue = (value) => {
     }
   
     if (type === 'days') {
-      const value = parseFloat(daysFromLastOrder);
-      const avgDays = parseFloat(averageDaysBetweenOrders);
+      const value = parseFloat(daysFromLastInvoice);
+      const avgDays = parseFloat(averageDaysBetweenInvoices);
       
       if (value >= avgDays) {
         return { className: 'bg-red-50 text-red-700 font-medium', warningLevel: 'critical' };
@@ -188,71 +187,3 @@ export const parseNumericValue = (value) => {
   };
   
   
-  // Sort products based on various criteria
-  // export const sortProducts = (products, sortConfig, measurements, analytics) => {
-  //   if (!sortConfig.key) return products;
-  
-  //   return [...products].sort((a, b) => {
-  //     let aValue, bValue;
-  
-  //     switch (sortConfig.key) {
-  //       case 'severity': {
-  //         const aAnalyticsKey = `${a.customer_id.split('_').pop()}_${a.item_id.split('_').pop()}`;
-  //         const bAnalyticsKey = `${b.customer_id.split('_').pop()}_${b.item_id.split('_').pop()}`;
-  //         console.log("utils product: ", products);
-  //         const aAnalytics = analytics[aAnalyticsKey] ? calculateAnalytics(analytics[aAnalyticsKey]) : null;
-  //         const bAnalytics = analytics[bAnalyticsKey] ? calculateAnalytics(analytics[bAnalyticsKey]) : null;
-          
-  //         // aValue = calculateSeverityScore(aAnalytics);
-  //         // bValue = calculateSeverityScore(bAnalytics);
-  //         break;
-  //       }
-  
-  //       case 'name': {
-  //         aValue = a.name;
-  //         bValue = b.name;
-  //         const comparison = compareStrings(aValue, bValue);
-  //         return sortConfig.direction === 'asc' ? comparison : -comparison;
-  //       }
-  
-  //       case 'weight': {
-  //         aValue = measurements[a.scale_id]?.weight || -Infinity;
-  //         bValue = measurements[b.scale_id]?.weight || -Infinity;
-  //         break;
-  //       }
-  
-  //       case 'estimationQuantityLeft': {
-  //         const aAnalyticsKey = `${a.customer_id.split('_').pop()}_${a.item_id.split('_').pop()}`;
-  //         const bAnalyticsKey = `${b.customer_id.split('_').pop()}_${b.item_id.split('_').pop()}`;
-  //         const aAnalytics = analytics[aAnalyticsKey] ? calculateAnalytics(analytics[aAnalyticsKey]) : null;
-  //         const bAnalytics = analytics[bAnalyticsKey] ? calculateAnalytics(analytics[bAnalyticsKey]) : null;
-          
-  //         aValue = parseNumericValue(aAnalytics?.estimationQuantityLeft);
-  //         bValue = parseNumericValue(bAnalytics?.estimationQuantityLeft);
-  //         break;
-  //       }
-  
-  //       case 'daysFromLastOrder': {
-  //         const aAnalyticsKey = `${a.customer_id.split('_').pop()}_${a.item_id.split('_').pop()}`;
-  //         const bAnalyticsKey = `${b.customer_id.split('_').pop()}_${b.item_id.split('_').pop()}`;
-  //         const aAnalytics = analytics[aAnalyticsKey] ? calculateAnalytics(analytics[aAnalyticsKey]) : null;
-  //         const bAnalytics = analytics[bAnalyticsKey] ? calculateAnalytics(analytics[bAnalyticsKey]) : null;
-          
-  //         aValue = parseNumericValue(aAnalytics?.daysFromLastOrder);
-  //         bValue = parseNumericValue(bAnalytics?.daysFromLastOrder);
-  //         break;
-  //       }
-  
-  //       default:
-  //         return 0;
-  //     }
-  
-  //     // Handle special cases
-  //     if (aValue === -Infinity && bValue === -Infinity) return 0;
-  //     if (aValue === -Infinity) return 1;
-  //     if (bValue === -Infinity) return -1;
-      
-  //     const comparison = aValue > bValue ? 1 : aValue < bValue ? -1 : 0;
-  //     return sortConfig.direction === 'asc' ? comparison : -comparison;
-  //   });
-  // };

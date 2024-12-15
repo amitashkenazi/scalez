@@ -4,8 +4,8 @@ import { useLanguage } from '../../contexts/LanguageContext';
 import { translations } from '../../translations/translations';
 import { Receipt } from 'lucide-react';
 
-const OrderHistory = ({ orders }) => {
-  console.log('orders:', orders);
+const InvoicesHistory = ({ invoices }) => {
+  console.log('invoices:', invoices);
   const { language } = useLanguage();
   // Helper function to get translation
   const t = (key) => {
@@ -24,9 +24,9 @@ const OrderHistory = ({ orders }) => {
     );
   };
 
-  const sortedOrders = [...orders].sort((a, b) => {
-    const dateA = new Date(...a.order_date.split("-").reverse());
-    const dateB = new Date(...b.order_date.split("-").reverse());
+  const sortedInvoices = [...invoices].sort((a, b) => {
+    const dateA = new Date(...a.invoice_date.split("-").reverse());
+    const dateB = new Date(...b.invoice_date.split("-").reverse());
     return dateB - dateA;
   });
 
@@ -34,7 +34,7 @@ const OrderHistory = ({ orders }) => {
     <div className="p-4 bg-gray-50 rounded-lg">
       <div className="flex items-center gap-2 mb-4">
         <Receipt className="h-5 w-5 text-gray-500" />
-        <h3 className="text-lg font-semibold">{t('orderHistory')}</h3>
+        <h3 className="text-lg font-semibold">{t('invoiceHistory')}</h3>
       </div>
 
       <div className="overflow-x-auto">
@@ -54,27 +54,27 @@ const OrderHistory = ({ orders }) => {
                 {t('total')}
               </th>
               <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                {t('orderID')}
+                {t('invoiceID')}
               </th>
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-200">
-            {sortedOrders.map((order, index) => (
+            {sortedInvoices.map((invoice, index) => (
               <tr key={index} className="hover:bg-gray-50">
                 <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-500">
-                  {formatDate(order.order_date)}
+                  {formatDate(invoice.invoice_date)}
                 </td>
                 <td className="px-4 py-2 whitespace-nowrap text-sm font-medium text-gray-900">
-                  {order.quantity}
+                  {invoice.quantity}
                 </td>
                 <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-900">
-                  ₪{order.price}
+                  ₪{invoice.price}
                 </td>
                 <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-900">
-                  ₪{order.total}
+                  ₪{invoice.total}
                 </td>
                 <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-500">
-                  {order.item_external_id}
+                  {invoice.item_external_id}
                 </td>
               </tr>
             ))}
@@ -82,14 +82,14 @@ const OrderHistory = ({ orders }) => {
           <tfoot className="bg-gray-50">
             <tr>
               <td className="px-4 py-2 text-sm font-medium text-gray-900">
-                {t('totalOrders')}: {orders.length}
+                {t('totalInvoices')}: {invoices.length}
               </td>
               <td className="px-4 py-2 text-sm font-medium text-gray-900">
-                {t('totalQuantity')}: {orders.reduce((sum, order) => sum + (parseFloat(order.quantity) || 0), 0)}
+                {t('totalQuantity')}: {invoices.reduce((sum, invoice) => sum + (parseFloat(invoice.quantity) || 0), 0)}
               </td>
               <td></td>
               <td className="px-4 py-2 text-sm font-medium text-gray-900">
-                {t('totalAmount')}: ₪{orders.reduce((sum, order) => sum + (parseFloat(order.total) || 0), 0).toFixed(2)}
+                {t('totalAmount')}: ₪{invoices.reduce((sum, invoice) => sum + (parseFloat(invoice.total) || 0), 0).toFixed(2)}
               </td>
               <td></td>
             </tr>
@@ -100,4 +100,4 @@ const OrderHistory = ({ orders }) => {
   );
 };
 
-export default OrderHistory;
+export default InvoicesHistory;

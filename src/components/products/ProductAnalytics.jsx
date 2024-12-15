@@ -7,8 +7,8 @@ import { TrendingUp, AlertCircle } from 'lucide-react';
 const ProductAnalytics = ({ analytics }) => {
   const { language } = useLanguage();
   const t = (key) => translations[key]?.[language] || `Missing translation: ${key}`;
-  console.log('aaaaAnalytics:', analytics, analytics.orderHistory.length);
-  if (!analytics || analytics.orderHistory.length <= 3) {
+  console.log('aaaaAnalytics:', analytics, analytics.invoiceHistory.length);
+  if (!analytics || analytics.invoiceHistory.length <= 3) {
     return (
       <div className="space-y-4">
         <div className="flex items-center gap-2">
@@ -54,11 +54,11 @@ const ProductAnalytics = ({ analytics }) => {
 
         <div className="bg-white rounded-lg p-3 shadow-sm">
           <span className="text-sm text-gray-500 font-medium">
-            {t('averageDaysBetweenOrders')}
+            {t('averageDaysBetweenInvoices')}
           </span>
           <div className="mt-1">
             <span className="text-lg font-semibold">
-              {analytics.averageDaysBetweenOrders}
+              {analytics.averageDaysBetweenInvoices}
             </span>
             <span className="text-sm text-gray-500 ml-1">{t('days')}</span>
           </div>
@@ -66,11 +66,11 @@ const ProductAnalytics = ({ analytics }) => {
 
         <div className="bg-white rounded-lg p-3 shadow-sm">
           <span className="text-sm text-gray-500 font-medium">
-            {t('lastOrderQuantity')}
+            {t('lastInvoiceQuantity')}
           </span>
           <div className="mt-1">
             <span className="text-lg font-semibold">
-              {analytics.quantityLastOrder}
+              {analytics.quantityLastInvoice}
             </span>
             <span className="text-sm text-gray-500 ml-1">
               {t('units')}

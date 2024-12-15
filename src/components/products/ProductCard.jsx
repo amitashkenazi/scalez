@@ -16,7 +16,7 @@ const ProductCard = ({ product, scale, customers, latestMeasurement }) => {
         }
         return `Missing translation: ${key}`;
     };
-    const [lastOrder, setLastOrder] = useState(null);
+    const [lastInvoice, setLastInvoice] = useState(null);
     const [consumptionStats, setConsumptionStats] = useState(null);
     const [scaleId, setScaleId] = useState(null);
     const isRTL = language === 'he';
@@ -33,78 +33,78 @@ const ProductCard = ({ product, scale, customers, latestMeasurement }) => {
     };
 
     useEffect(() => {
-      const fetchOrders = async () => {
+      const fetchInvoices = async () => {
         if (product.customer_id && product.item_id) {
           try {
-            // Fetch latest order
-            const lastOrderResponse = await apiService.request(
-              `orders/customer/${product.customer_id}/last-order/${product.item_id}`,
+            // Fetch latest invoice
+            const lastInvoiceResponse = await apiService.request(
+              `invoices/customer/${product.customer_id}/last-invoice/${product.item_id}`,
               { method: 'GET' }
             );
-            setLastOrder(lastOrderResponse);
+            setLastInvoice(lastInvoiceResponse);
   
-            // Fetch all orders for consumption calculation
-            const orders = await apiService.request(
-              `orders/customer/${product.customer_id}/item-history/${lastOrderResponse.item_external_id}`,
+            // Fetch all invoices for consumption calculation
+            const invoices = await apiService.request(
+              `invoices/customer/${product.customer_id}/item-history/${lastInvoiceResponse.item_external_id}`,
               { method: 'GET' }
             );
             try {
-              if (orders && orders.length > 1) {
-                // Sort the orders array by order_date
-                const sortedOrders = orders.sort((a, b) => {
-                  const [dayA, monthA, yearA] = a.order_date.split("-");
-                  const [dayB, monthB, yearB] = b.order_date.split("-");
+              if (invoices && invoices.length > 1) {
+                // Sort the invoices array by invoice_date
+                const sortedInvoices = invoices.sort((a, b) => {
+                  const [dayA, monthA, yearA] = a.invoice_date.split("-");
+                  const [dayB, monthB, yearB] = b.invoice_date.split("-");
                   const dateA = new Date(20 + yearA, monthA - 1, dayA);
                   const dateB = new Date(20 + yearB, monthB - 1, dayB);
                   return dateA - dateB;
                 });
             
                 // Extract the first and last dates
-                const firstDateParts = sortedOrders[0].order_date.split("-");
+                const firstDateParts = sortedInvoices[0].invoice_date.split("-");
                 const firstDate = new Date(20 + firstDateParts[2], firstDateParts[1] - 1, firstDateParts[0]);
-                const lastDateParts = sortedOrders[sortedOrders.length - 1].order_date.split("-");
+                const lastDateParts = sortedInvoices[sortedInvoices.length - 1].invoice_date.split("-");
                 const lastDate = new Date(20 + lastDateParts[2], lastDateParts[1] - 1, lastDateParts[0]);
-                const daysFromLastOrder = (new Date() - lastDate) / (1000 * 60 * 60 * 24);
+                const daysFromLastInvoice = (new Date() - lastDate) / (1000 * 60 * 60 * 24);
                 // Calculate the difference in days
                 const daysDiff = (lastDate - firstDate) / (1000 * 60 * 60 * 24);
-                const quntityLastOrder = sortedOrders[sortedOrders.length - 1].quantity;
+                const quntityLastInvoice = sortedInvoices[sortedInvoices.length - 1].quantity;
                 
                 // Calculate total quantity
-                const totalQuantity = sortedOrders.reduce((sum, order) => sum + parseFloat(order.quantity), 0);
+                const totalQuantity = sortedInvoices.reduce((sum, invoice) => sum + parseFloat(invoice.quantity), 0);
                 const dailyAverage = (totalQuantity / daysDiff);
-                const estimationQuntityLeft = quntityLastOrder - (dailyAverage * daysFromLastOrder);
-                const averageDaysBetweenOrders = daysDiff / (sortedOrders.length - 1);
+                const estimationQuntityLeft = quntityLastInvoice - (dailyAverage * daysFromLastInvoice);
+                const averageDaysBetweenInvoices = daysDiff / (sortedInvoices.length - 1);
             
                 // Set the consumption stats
                 setConsumptionStats({
                   dailyAverage: dailyAverage.toFixed(2),
-                  quntityLastOrder: quntityLastOrder,
-                  daysFromLastOrder:daysFromLastOrder.toFixed(0),
+                  quntityLastInvoice: quntityLastInvoice,
+                  daysFromLastInvoice:daysFromLastInvoice.toFixed(0),
                   estimationQuntityLeft: estimationQuntityLeft.toFixed(2),
-                  averageDaysBetweenOrders: averageDaysBetweenOrders.toFixed(2)
+                  averageDaysBetweenInvoices: averageDaysBetweenInvoices.toFixed(2)
                 });
               }
             } catch (error) {
-              console.error('Error fetching orders:', error);
+              console.error('Error fetching invoices:', error);
             }
           } catch (error) {
-            console.error('Error fetching orders:', error);
+            console.error('Error fetching invoices:', error);
           }
         }
       };
       
-      fetchOrders();
+      fetchInvoices();
     }, [product.customer_id, product.item_id, product.item_external_id]);
     if (!product) return null;
   
     const getDangerClassNames = (type, value) => {
       if (type === 'quantity') {
-        return parseFloat(value) <= parseFloat(lastOrder?.quantity * quantityLeftPrecentage)
+        return parseFloat(value) <= parseFloat(lastInvoice?.quantity * quantityLeftPrecentage)
           ? 'bg-red-50 text-red-700'
           : 'bg-white text-gray-900';
       }
       if (type === 'days') {
-        const avgDays = parseFloat(consumptionStats?.averageDaysBetweenOrders || 0);
+        const avgDays = parseFloat(consumptionStats?.averageDaysBetweenInvoices || 0);
         return parseFloat(value) <= (avgDays * dayFromLastPrderPrecentage)
           ? 'bg-red-50 text-red-700'
           : 'bg-white text-gray-900';
@@ -245,18 +245,18 @@ const ProductCard = ({ product, scale, customers, latestMeasurement }) => {
             </>
           )}
   
-          {/* {lastOrder && (
+          {/* {lastInvoice && (
             <div className="mt-4 border-t border-gray-100 pt-4">
               <div className="flex justify-between items-center mb-3">
                 <div className="flex items-center gap-2">
                   <Receipt size={16} className="text-gray-500" />
                   <span className="text-sm font-medium text-gray-700">
-                    {t('lastOrder')}
+                    {t('lastInvoice')}
                   </span>
                 </div>
                 <span className="text text-gray-500">
                   {(() => {
-                    const parts = lastOrder.order_date.split("-");
+                    const parts = lastInvoice.invoice_date.split("-");
                     const date = new Date(20 + parts[2], parts[1] - 1, parts[0]);
                     return date.toLocaleDateString();
                   })()}
@@ -266,21 +266,21 @@ const ProductCard = ({ product, scale, customers, latestMeasurement }) => {
                 <div className="bg-white rounded-md p-3 shadow-sm">
                   <span className="text-xs text-gray-500 block mb-1">{t('quantity')}</span>
                   <span className="text-lg font-semibold">
-                    {lastOrder.quantity || 0}
+                    {lastInvoice.quantity || 0}
                     <span className="text-xs text-gray-500 ml-1">{t('units')}</span>
                   </span>
                 </div>
                 <div className="bg-white rounded-md p-3 shadow-sm">
                   <span className="text-xs text-gray-500 block mb-1">{t('price')}</span>
                   <span className="text-lg font-semibold">
-                    ₪{lastOrder.price || 0}
+                    ₪{lastInvoice.price || 0}
                     <span className="text-xs text-gray-500 ml-1">/ {t('unit')}</span>
                   </span>
                 </div>
                 <div className="bg-white rounded-md p-3 shadow-sm">
                   <span className="text-xs text-gray-500 block mb-1">{t('total')}</span>
                   <span className="text-lg font-semibold">
-                    ₪{lastOrder.total || 0}
+                    ₪{lastInvoice.total || 0}
                   </span>
                 </div>
               </div>
@@ -320,11 +320,11 @@ const ProductCard = ({ product, scale, customers, latestMeasurement }) => {
                     <div className="bg-white rounded-md p-3 shadow-sm">
                         <div className="flex flex-col h-full justify-between">
                             <span className="text-xs text-gray-500 font-medium">
-                                {t('averageDaysBetweenOrders')}
+                                {t('averageDaysBetweenInvoices')}
                             </span>
                             <div className="mt-1">
                                 <span className="text-lg font-semibold">
-                                    {consumptionStats.averageDaysBetweenOrders}
+                                    {consumptionStats.averageDaysBetweenInvoices}
                                 </span>
                                 <span className="text-xs text-gray-500 ml-1">{t('days')}</span>
                             </div>
@@ -332,15 +332,15 @@ const ProductCard = ({ product, scale, customers, latestMeasurement }) => {
                     </div>
 
                     <div className={`rounded-md p-3 shadow-sm transition-colors duration-300 ${
-                        getDangerClassNames('days', consumptionStats.daysFromLastOrder)
+                        getDangerClassNames('days', consumptionStats.daysFromLastInvoice)
                     }`}>
                         <div className="flex flex-col h-full justify-between">
                             <span className="text-xs text-gray-500 font-medium">
-                                {t('daysFromLastOrder')}
+                                {t('daysFromLastInvoice')}
                             </span>
                             <div className="mt-1">
                                 <span className="text-lg font-semibold">
-                                    {consumptionStats.daysFromLastOrder}
+                                    {consumptionStats.daysFromLastInvoice}
                                 </span>
                                 <span className="text-xs text-gray-500 ml-1">{t('days')}</span>
                             </div>

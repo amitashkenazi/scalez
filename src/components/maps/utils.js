@@ -1,11 +1,11 @@
 import apiService from '../../services/api';
 
 // Check if customer has pending delivery
-export const hasWaitingDelivery = (customer, orders) => {
-    return orders.some(order => {
+export const hasWaitingDelivery = (customer, invoices) => {
+    return invoices.some(invoice => {
       const [hebrewName, englishName] = customer.name.split(' - ');
-      return (order.customer_name === hebrewName || order.customer_name === englishName) &&
-        order.status === 'waiting_for_delivery';
+      return (invoice.customer_name === hebrewName || invoice.customer_name === englishName) &&
+        invoice.status === 'waiting_for_delivery';
     });
   };
   

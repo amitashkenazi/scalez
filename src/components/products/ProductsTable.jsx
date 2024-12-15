@@ -17,7 +17,7 @@ import {
   Loader2
 } from 'lucide-react';
 import ProductAnalytics from './ProductAnalytics';
-import OrderHistory from './OrderHistory';
+import InvoiceHistory from './InvoiceHistory';
 import { useItemHistory } from './hooks/useItemHistory';
 import {
   getStatusColor,
@@ -27,12 +27,12 @@ import {
   getSeverityLevel
 } from './utils/productUtils';
 
-const calculateDaysFromLastOrder = (lastOrderDate) => {
-  if (!lastOrderDate) return 0;
-  const [day, month, year] = lastOrderDate.split('-').map(num => parseInt(num));
-  const orderDate = new Date(2000 + year, month - 1, day);
+const calculateDaysFromLastInvoice = (lastInvoiceDate) => {
+  if (!lastInvoiceDate) return 0;
+  const [day, month, year] = lastInvoiceDate.split('-').map(num => parseInt(num));
+  const invoiceDate = new Date(2000 + year, month - 1, day);
   const today = new Date();
-  const diffTime = Math.abs(today - orderDate);
+  const diffTime = Math.abs(today - invoiceDate);
   return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
 };
 
@@ -110,9 +110,9 @@ const ProductsTable = ({
           bValue = parseFloat(b?.estimation_quantity_left || 0);
           break;
         }
-        case 'daysFromLastOrder': {
-          aValue = calculateDaysFromLastOrder(a.last_order_date);
-          bValue = calculateDaysFromLastOrder(b.last_order_date);
+        case 'daysFromLastInvoice': {
+          aValue = calculateDaysFromLastInvoice(a.last_invoice_date);
+          bValue = calculateDaysFromLastInvoice(b.last_invoice_date);
           break;
         }
         case 'severity': {
@@ -189,8 +189,8 @@ const ProductsTable = ({
               isRTL={isRTL}
             />
             <SortHeader
-              label={t('daysFromLastOrder')}
-              sortKey="daysFromLastOrder"
+              label={t('daysFromLastInvoice')}
+              sortKey="daysFromLastInvoice"
               currentSort={sortConfig}
               onSort={onSort}
               isRTL={isRTL}
@@ -207,7 +207,7 @@ const ProductsTable = ({
 
             const metrics = {
               ...product,
-              daysFromLastOrder: calculateDaysFromLastOrder(product.last_order_date)
+              daysFromLastInvoice: calculateDaysFromLastInvoice(product.last_invoice_date)
             };
             const measurement = measurements[product.scale_id];
             const scale = scales.find(s => s.scale_id === product.scale_id);
@@ -217,17 +217,17 @@ const ProductsTable = ({
             const quantityWarning = getAnalyticsWarningLevel(
               'quantity',
               metrics.estimation_quantity_left,
-              metrics.quantity_last_order,
-              metrics.daysFromLastOrder,
-              metrics.average_days_between_orders
+              metrics.quantity_last_invoice,
+              metrics.daysFromLastInvoice,
+              metrics.average_days_between_invoices
             );
 
             const daysWarning = getAnalyticsWarningLevel(
               'days',
               metrics.estimation_quantity_left,
-              metrics.quantity_last_order,
-              metrics.daysFromLastOrder,
-              metrics.average_days_between_orders
+              metrics.quantity_last_invoice,
+              metrics.daysFromLastInvoice,
+              metrics.average_days_between_invoices
             );
 
             return (
@@ -279,7 +279,7 @@ const ProductsTable = ({
                     <div className="flex items-center gap-2">
                       <ShoppingBag className="h-4 w-4" />
                       <span>
-                        {metrics.recent_orders_count > 3
+                        {metrics.recent_invoices_count > 3
                           ? metrics.estimation_quantity_left
                           : t('notEnoughData')}
                       </span>
@@ -289,8 +289,8 @@ const ProductsTable = ({
                     <div className="flex items-center gap-2">
                       <Calendar className="h-4 w-4" />
                       <span>
-                        {metrics.daysFromLastOrder
-                          ? `${metrics.daysFromLastOrder} ${t('days')}`
+                        {metrics.daysFromLastInvoice
+                          ? `${metrics.daysFromLastInvoice} ${t('days')}`
                           : t('noData')}
                       </span>
                     </div>
@@ -339,7 +339,7 @@ const ProductsTable = ({
                       ) : histories[product.product_id] ? (
                         <div className="space-y-4">
                           <ProductAnalytics analytics={calculateAnalytics(product, histories[product.product_id])} />
-                          <OrderHistory orders={histories[product.product_id]} />
+                          <InvoiceHistory invoices={histories[product.product_id]} />
                         </div>
                       ) : (
                         <div className="text-center py-4 text-gray-500">

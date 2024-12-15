@@ -14,7 +14,7 @@ import { useAccount } from '../../contexts/AccountContext';
 const CustomersMapView = () => {
   // State
   const [customers, setCustomers] = useState([]);
-  const [orders, setOrders] = useState([]);
+  const [invoices, setInvoices] = useState([]);
   const [measurements, setMeasurements] = useState({});
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -65,10 +65,10 @@ const CustomersMapView = () => {
         setIsLoading(true);
       }
       
-      const [productsResponse, customersResponse, ordersResponse] = await Promise.all([
+      const [productsResponse, customersResponse, invoicesResponse] = await Promise.all([
         apiService.getProducts(),
         apiService.getCustomers(),
-        apiService.request('orders', { method: 'GET' })
+        apiService.request('invoices', { method: 'GET' })
       ]);
 
       // Enrich customers with coordinates and products
@@ -92,7 +92,7 @@ const CustomersMapView = () => {
       );
 
       setCustomers(enrichedCustomers);
-      setOrders(ordersResponse);
+      setInvoices(invoicesResponse);
 
       // Get scale IDs and fetch measurements
       const scaleIds = [...new Set(productsResponse
@@ -216,7 +216,7 @@ const CustomersMapView = () => {
                   key={customer.customer_id}
                   customer={customer}
                   onLocationClick={handleCustomerClick}
-                  orders={orders}
+                  invoices={invoices}
                 />
               ))}
             </div>
