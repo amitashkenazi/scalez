@@ -1122,5 +1122,26 @@ export const translations = {
   username: {
     en: "Username",
     he: "שם משתמש"
+  },
+  // ... existing translations
+  customerDeactivated: {
+    en: 'Customer has been deactivated',
+    he: 'הלקוח הושבת בהצלחה'
+  },
+  customerActivated: {
+    en: 'Customer has been activated',
+    he: 'הלקוח הופעל בהצלחה'
+  },
+  deactivateCustomer: {
+    en: 'Deactivate Customer',
+    he: 'השבת לקוח'
+  },
+  activateCustomer: {
+    en: 'Activate Customer',
+    he: 'הפעל לקוח'
+  },
+  errorUpdatingCustomerStatus: {
+    en: 'Error updating customer status',
+    he: 'שגיאה בעדכון סטטוס הלקוח'
   }
-}
+};

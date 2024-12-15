@@ -2,9 +2,11 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { translations } from '../../translations/translations';
 import apiService from '../../services/api';
-import { Search, SortAsc, SortDesc, RefreshCw, PlusCircle, Trash2, Pencil, AlertCircle, Loader2 } from 'lucide-react';
+import { Search, SortAsc, SortDesc, RefreshCw, PlusCircle, Trash2, Pencil, AlertCircle, Loader2, PowerOff } from 'lucide-react';
 import CustomerModal from '../CustomerModal';
 import DeleteConfirmationModal from '../modals/DeleteConfirmationModal';
+
+
 
 const TableHeader = ({ header, sortConfig, handleSort, isRTL }) => (
   <th
@@ -67,6 +69,34 @@ const CustomersTableView = () => {
       setError(t('errorFetchingCustomers') || 'Failed to fetch customers');
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const handleToggleActive = async (customer) => {
+    try {
+      setError(null);
+      console.log('Toggling customer active:', customer, customer.customer_id);
+      await apiService.toggleCustomerActive(customer.customer_id);
+      
+      // Update the customer in the local state
+      setCustomers(prev => prev.map(c => {
+        if (c.customer_id === customer.customer_id) {
+          return {
+            ...c,
+            is_active: !c.is_active
+          };
+        }
+        return c;
+      }));
+      
+      showSuccessMessage(
+        customer.is_active ? 
+          t('customerDeactivated') : 
+          t('customerActivated')
+      );
+    } catch (err) {
+      setError(t('errorUpdatingCustomerStatus'));
+      console.error('Error toggling customer status:', err);
     }
   };
 
@@ -300,6 +330,15 @@ const CustomersTableView = () => {
                       <Pencil className="h-5 w-5" />
                     </button>
                     <button
+                      onClick={() => handleToggleActive(customer)}
+                      className={`${
+                        customer.is_active ? 'text-green-600 hover:text-green-800' : 'text-gray-400 hover:text-gray-600'
+                      }`}
+                      title={customer.is_active ? t('deactivateCustomer') : t('activateCustomer')}
+                    >
+                      <PowerOff className="h-5 w-5" />
+                    </button>
+                    <button
                       onClick={() => {
                         setSelectedCustomer(customer);
                         setIsDeleteModalOpen(true);
@@ -348,6 +387,15 @@ const CustomersTableView = () => {
                   className="text-blue-600 hover:text-blue-800"
                 >
                   <Pencil className="h-5 w-5" />
+                </button>
+                <button
+                  onClick={() => handleToggleActive(customer)}
+                  className={`${
+                    customer.is_active ? 'text-green-600 hover:text-green-800' : 'text-gray-400 hover:text-gray-600'
+                  }`}
+                  title={customer.is_active ? t('deactivateCustomer') : t('activateCustomer')}
+                >
+                  <PowerOff className="h-5 w-5" />
                 </button>
                 <button
                   onClick={() => {

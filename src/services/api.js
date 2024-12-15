@@ -134,7 +134,7 @@ class ApiService {
       method: 'GET'
     });
   }
-  
+
   connectIntegration(integrationId, credentials) {
     return this.request(`integrations/${integrationId}/connect`, {
       method: 'POST',
@@ -541,49 +541,56 @@ class ApiService {
       throw error;
     }
   }
-  
 
- /**
- * Get optimized directions between points
- * @param {Object} params - Direction request parameters
- * @param {Object} params.origin - Origin coordinates {lat, lng}
- * @param {Object} params.destination - Destination coordinates {lat, lng}
- * @param {Array} params.waypoints - Array of waypoint objects
- * @param {Object} params.options - Additional options
- * @returns {Promise<Object>} Optimized directions response
- */
- async getDirections({ origin, destination, waypoints = [], options = {} }) {
-  try {
-    console.log('Requesting optimized route:', {
-      origin,
-      destination,
-      waypoints,
-      options
-    });
 
-    // Include all stops as waypoints except origin
-    const allWaypoints = waypoints.map(wp => ({
-      location: wp.location || wp,
-      stopover: true
-    }));
-
-    const response = await this.request('maps/optimize-route', {
-      method: 'POST',
-      body: JSON.stringify({
+  /**
+  * Get optimized directions between points
+  * @param {Object} params - Direction request parameters
+  * @param {Object} params.origin - Origin coordinates {lat, lng}
+  * @param {Object} params.destination - Destination coordinates {lat, lng}
+  * @param {Array} params.waypoints - Array of waypoint objects
+  * @param {Object} params.options - Additional options
+  * @returns {Promise<Object>} Optimized directions response
+  */
+  async getDirections({ origin, destination, waypoints = [], options = {} }) {
+    try {
+      console.log('Requesting optimized route:', {
         origin,
-        destination: origin, // For round trip
-        waypoints: allWaypoints,
-        return_to_origin: true
-      })
-    });
+        destination,
+        waypoints,
+        options
+      });
 
-    console.log('Optimized route response:', response);
-    return response;
-  } catch (error) {
-    console.error('Error getting optimized route:', error);
-    throw error;
+      // Include all stops as waypoints except origin
+      const allWaypoints = waypoints.map(wp => ({
+        location: wp.location || wp,
+        stopover: true
+      }));
+
+      const response = await this.request('maps/optimize-route', {
+        method: 'POST',
+        body: JSON.stringify({
+          origin,
+          destination: origin, // For round trip
+          waypoints: allWaypoints,
+          return_to_origin: true
+        })
+      });
+
+      console.log('Optimized route response:', response);
+      return response;
+    } catch (error) {
+      console.error('Error getting optimized route:', error);
+      throw error;
+    }
   }
-}
+
+  async toggleCustomerActive(customerId){
+    console.log('toggle customer active: ', customerId); // Debug log
+    return await this.request(`customers/${customerId}/toggle-active`, {
+      method: 'POST'
+    });
+  }
 
 }
 
