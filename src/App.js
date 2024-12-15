@@ -13,7 +13,6 @@ import VendorsView from './components/vendors/VendorsView';
 import InvoicesView from './components/invoices/InvoicesView';
 import AdminRoute from './components/auth/AdminRoute';
 import SideMenu from './components/SideMenu';
-import LandingPage from './components/LandingPage';
 import IntegrationsView from './components/integrations/IntegrationsView';
 import MyAccountView from './components/MyAccountView';
 import { Menu as MenuIcon } from 'lucide-react';
@@ -33,7 +32,6 @@ import {
 
 
 function AppContent() {
-  const { user } = useAuth();
   const { language } = useLanguage();
   const [activeView, setActiveView] = useState('products');
   const [isMenuOpen, setIsMenuOpen] = useState(true);

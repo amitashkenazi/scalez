@@ -7,7 +7,6 @@ import {
   Users,
   Share,
   UserCircle,
-  MapIcon,
   Database,
   Plug,
   LayoutDashboard,

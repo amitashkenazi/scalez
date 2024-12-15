@@ -1,15 +1,13 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { translations } from '../../translations/translations';
-import { Package, AlertCircle, Loader2, RefreshCw, List, MapPin } from 'lucide-react';
+import { Package, AlertCircle, Loader2, RefreshCw, List } from 'lucide-react';
 import apiService from '../../services/api';
-import { useMap } from '../../contexts/MapContext';
 import Map from './Map';
 import CustomerCard from './components/CustomerCard';
 import { geocodeAddress } from './utils';
 import ApiStats from '../ApiStats';
 import PersistentMapContainer from './PersistentMapContainer';
-import { useAccount } from '../../contexts/AccountContext';
 
 const CustomersMapView = () => {
   // State
@@ -138,12 +136,6 @@ const CustomersMapView = () => {
   const handleCustomerClick = useCallback((customer) => {
     setSelectedMarker(customer);
   }, []);
-
-  const handleNavigate = (customer) => {
-    const { lat, lng } = customer;
-    // Open in default maps app
-    window.open(`https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}`);
-  };
 
   const getLastRefreshTimeString = () => {
     return lastRefreshTime.toLocaleTimeString(language === 'he' ? 'he-IL' : 'en-US', {

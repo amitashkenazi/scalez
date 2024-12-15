@@ -1,6 +1,5 @@
 import React from 'react';
 import { useLanguage } from '../../../contexts/LanguageContext';
-import { translations } from '../../../translations/translations';
 import { hasWaitingDelivery } from '../utils';
 import { Navigation } from 'lucide-react';
 
@@ -9,7 +8,6 @@ const CustomerCard = ({ customer, onLocationClick, invoices }) => {
   const [hebrewName, englishName] = customer?.name?.split(' - ') || ['', ''];
   const displayName = language === 'he' ? hebrewName : englishName;
   const isPendingDelivery = customer ? hasWaitingDelivery(customer, invoices) : false;
-  const isRTL = language === 'he';
 
   if (!customer) {
     return null;
