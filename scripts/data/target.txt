@@ -1,0 +1,124 @@
+import React, { useState, useEffect, useRef } from 'react';
+import { useLanguage } from '../contexts/LanguageContext';
+import { translations } from '../translations/translations';
+import { X, Loader2, AlertCircle, Search, Plus } from 'lucide-react';
+import apiService from '../services/api';
+import CustomerModal from './CustomerModal';
+import ScaleModal from './ScaleModal';
+
+const ProductModal = ({ 
+  isOpen, 
+  onClose, 
+  onSubmit, 
+  customers, 
+  initialData = null,
+  preSelectedCustomerName = null,
+  onCustomerAdded 
+}) => {
+  // Store cached items in a ref to persist across re-renders
+  const itemsCache = useRef(null);
+  
+  const [formData, setFormData] = useState({
+    name: '',
+    customer_id: '',
+    customer_name: '',
+    scale_id: '',
+    item_id: '',
+    thresholds: {
+      upper: 40,
+      lower: 8
+    }
+  });
+
+  const [availableItems, setAvailableItems] = useState([]);
+  const [availableScales, setAvailableScales] = useState([]);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [errors, setErrors] = useState({});
+  const [isCustomerModalOpen, setIsCustomerModalOpen] = useState(false);
+  const [isScaleModalOpen, setIsScaleModalOpen] = useState(false);
+  const [customerSearchQuery, setCustomerSearchQuery] = useState('');
+  const [itemSearchQuery, setItemSearchQuery] = useState('');
+  const [showCustomerDropdown, setShowCustomerDropdown] = useState(false);
+  const [showItemDropdown, setShowItemDropdown] = useState(false);
+  const [selectedItem, setSelectedItem] = useState(null);
+  const [selectedCustomer, setSelectedCustomer] = useState(null);
+  const [productId, setProductId] = useState(null);
+
+  const { language } = useLanguage();
+  const t = translations[language];
+  const isRTL = language === 'he';
+
+  // Modified fetch items function to use cache
+  const fetchItems = async () => {
+    try {
+      // If we have cached items, use them
+      if (itemsCache.current) {
+        console.log('Using cached items');
+        setAvailableItems(itemsCache.current);
+        
+        // Set selected item if we have initialData
+        if (initialData?.item_id) {
+          const matchingItem = itemsCache.current.find(
+            item => item.external_id === initialData.item_code
+          );
+          if (matchingItem) {
+            setSelectedItem(matchingItem);
+            setItemSearchQuery(matchingItem.name);
+          }
+        }
+        return;
+      }
+
+      // If no cache, fetch from server
+      console.log('Fetching items from server');
+      const response = await apiService.request('items', {
+        method: 'GET'
+      });
+      
+      // Store in cache and state
+      itemsCache.current = response;
+      setAvailableItems(response);
+      
+      // Set selected item if we have initialData
+      if (initialData?.item_id && response) {
+        const matchingItem = response.find(
+          item => item.external_id === initialData.item_code
+        );
+        if (matchingItem) {
+          setSelectedItem(matchingItem);
+          setItemSearchQuery(matchingItem.name);
+        }
+      }
+    } catch (error) {
+      console.error('Error fetching items:', error);
+      setErrors(prev => ({ ...prev, items: 'Error loading items' }));
+    }
+  };
+
+  // Fetch available items and scales when modal opens
+  useEffect(() => {
+    const fetchScales = async () => {
+      try {
+        const response = await apiService.getScales();
+        setAvailableScales(response);
+      } catch (error) {
+        console.error('Error fetching scales:', error);
+        setErrors(prev => ({ ...prev, scales: 'Error loading scales' }));
+      }
+    };
+
+    if (isOpen) {
+      fetchItems();
+      fetchScales();
+    }
+  }, [isOpen, initialData]);
+
+  // Rest of the component remains the same...
+  // All other functions and JSX remain unchanged
+
+  return (
+    // Existing JSX remains the same...
+  );
+};
+
+export default ProductModal;

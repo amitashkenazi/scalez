@@ -332,7 +332,7 @@ const CustomersTableView = () => {
                     <button
                       onClick={() => handleToggleActive(customer)}
                       className={`${
-                        customer.is_active ? 'text-green-600 hover:text-green-800' : 'text-gray-400 hover:text-gray-600'
+                        customer.is_active ? 'text-gray-400 hover:text-gray-600': 'text-red-600 hover:text-red-800'
                       }`}
                       title={customer.is_active ? t('deactivateCustomer') : t('activateCustomer')}
                     >

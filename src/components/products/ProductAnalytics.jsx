@@ -7,7 +7,6 @@ import { TrendingUp, AlertCircle } from 'lucide-react';
 const ProductAnalytics = ({ analytics }) => {
   const { language } = useLanguage();
   const t = (key) => translations[key]?.[language] || `Missing translation: ${key}`;
-  console.log('aaaaAnalytics:', analytics, analytics.invoiceHistory.length);
   if (!analytics || analytics.invoiceHistory.length <= 3) {
     return (
       <div className="space-y-4">
